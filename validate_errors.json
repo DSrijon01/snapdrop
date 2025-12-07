@@ -1,0 +1,18 @@
+[
+  {
+    "path": "assets/0.json",
+    "error": "missing field `description` at line 14 column 1"
+  },
+  {
+    "path": "assets/collection.json",
+    "error": "missing field `description` at line 14 column 1"
+  },
+  {
+    "path": "assets/1.json",
+    "error": "missing field `description` at line 14 column 1"
+  },
+  {
+    "path": "assets/2.json",
+    "error": "missing field `description` at line 14 column 1"
+  }
+]

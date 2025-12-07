@@ -1,0 +1,42 @@
+{
+  "program": {
+    "candyMachine": "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG",
+    "candyGuard": "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo",
+    "candyMachineCreator": "6PPNJMPuxxko5Re5o7Hidjo34psc6tbLQDKabs6pBfQD",
+    "collectionMint": "12oWXxcE1xHyh4FVfcSQeUwYTsAM8SUKfnMA6mhhPRof"
+  },
+  "items": {
+    "-1": {
+      "name": "Devdutta #0",
+      "image_hash": "c7bfb472707b86aafe9aeaa707809a8c18d83b712c1664f0067bec4798f66a38",
+      "image_link": "https://gateway.irys.xyz/3CD8igcjoW8uS2aPYpF3tisvy3ykXH9tRfUZAfjMMnKX?ext=png",
+      "metadata_hash": "e31bfbdc64d6e0fa0e7af9dd1190e6cc5634c3fad73a1072a72be401afbdaaea",
+      "metadata_link": "https://gateway.irys.xyz/AUXQEceAj1LckRkA3wovybPP5MiHGXthbViRSTzetNTf",
+      "onChain": true
+    },
+    "0": {
+      "name": "Devdutta #0",
+      "image_hash": "c7bfb472707b86aafe9aeaa707809a8c18d83b712c1664f0067bec4798f66a38",
+      "image_link": "https://gateway.irys.xyz/9am8xdYnQJjc3p7pqDiLeWpeBEdr1R9GsufMTVEk56P3?ext=png",
+      "metadata_hash": "e31bfbdc64d6e0fa0e7af9dd1190e6cc5634c3fad73a1072a72be401afbdaaea",
+      "metadata_link": "https://gateway.irys.xyz/7A6N9XSiw6zhXw37pzKkTUZHnwXb1ttoVAD2sJ5BvUPZ",
+      "onChain": true
+    },
+    "1": {
+      "name": "Devdutta #1",
+      "image_hash": "cfe2d7b91a3c353b497a50838c082391a0491e825f6dc8b1823644898b511882",
+      "image_link": "https://gateway.irys.xyz/77YHTSvf6ihGArbLScmT21yx76MpdvtqYmPabhoWs6hq?ext=png",
+      "metadata_hash": "d49bdadda953387bf9045dfbe57802b29a8960dd1db010c6a33bd381abf72f2e",
+      "metadata_link": "https://gateway.irys.xyz/7XpFVnyQwHWpyvtMAaXhHDUkK792hj5539rtfVnWG1Uo",
+      "onChain": true
+    },
+    "2": {
+      "name": "Devdutta #2",
+      "image_hash": "5f0bd95d39087682f78b8ba18b4b502ca1bcaae79b97e23fe16be31b9f852b49",
+      "image_link": "https://gateway.irys.xyz/DCo58VeQbcoqQnDgSsd8RVrwDvx6eueT3LLAs13kKbjD?ext=png",
+      "metadata_hash": "bc1ac62f0ca584bac04594e8f9dddcc7521227112ffcd0a5561db98016be2999",
+      "metadata_link": "https://gateway.irys.xyz/BowHqGKvJvTMGuL6zBEGAuGuhtn886ow3RfacwMJLwJ7",
+      "onChain": true
+    }
+  }
+}
