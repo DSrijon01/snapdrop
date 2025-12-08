@@ -1,9 +1,11 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { FC, useEffect, useState } from "react";
-import { Metaplex } from "@metaplex-foundation/js";
-// import { PublicKey } from "@solana/web3.js"; // Unused
+import { FC, useEffect, useState, useMemo } from "react";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { fetchAllDigitalAssetByOwner, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
 
 interface NFT {
     name: string;
@@ -29,12 +31,19 @@ interface Props {
 
 export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const { connection } = useConnection();
-    const { publicKey } = useWallet();
+    const wallet = useWallet();
     const [nfts, setNfts] = useState<NFT[]>([]);
     const [loading, setLoading] = useState(false);
 
+    // Initialize Umi
+    const umi = useMemo(() => {
+        return createUmi(connection.rpcEndpoint)
+            .use(walletAdapterIdentity(wallet))
+            .use(mplTokenMetadata());
+    }, [connection.rpcEndpoint, wallet]);
+
     useEffect(() => {
-        if (!publicKey) {
+        if (!wallet.publicKey) {
             setNfts([]);
             return;
         }
@@ -42,25 +51,30 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         const fetchNFTs = async () => {
             setLoading(true);
             try {
-                const metaplex = Metaplex.make(connection);
                 // Force a small delay to ensure chain data is propagated
                 await new Promise(r => setTimeout(r, 2000));
                 
-                const userNfts = await metaplex.nfts().findAllByOwner({ owner: publicKey });
+                const owner = toPublicKey(wallet.publicKey!.toBase58());
+                const assets = await fetchAllDigitalAssetByOwner(umi, owner);
                 
                 // Process metadata
-                const loadedNfts = await Promise.all(userNfts.map(async (nft: any) => {
+                const loadedNfts = await Promise.all(assets.map(async (asset: any) => {
                     // Try to load JSON metadata if uri exists
-                    if (nft.uri) {
+                    let json = undefined;
+                    if (asset.metadata.uri) {
                          try {
-                             const response = await fetch(nft.uri);
-                             const json = await response.json();
-                             return { ...nft, json } as NFT;
-                         } catch (unknownError) { // Rename e to unknownError
-                             return nft as NFT;
+                             const response = await fetch(asset.metadata.uri);
+                             json = await response.json();
+                         } catch (unknownError) {
+                             console.error("Failed to load metadata json", unknownError);
                          }
                     }
-                    return nft as NFT;
+                    return {
+                        name: asset.metadata.name,
+                        uri: asset.metadata.uri,
+                        image: json?.image || "",
+                        json
+                    } as NFT;
                 }));
 
                 setNfts(loadedNfts);
@@ -74,9 +88,9 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         };
 
         fetchNFTs();
-    }, [publicKey, connection, refreshTrigger]);
+    }, [wallet.publicKey, umi, refreshTrigger]);
 
-    if (!publicKey) return (
+    if (!wallet.publicKey) return (
         <div className="text-center text-gray-500 py-10 italic">
             Connect wallet to view your SnapDrop stream.
         </div>
