@@ -14,6 +14,17 @@ const images = [
     "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&auto=format&fit=crop&q=60", // Pinkish
 ];
 
+interface Particle {
+  id: number;
+  width: number;
+  height: number;
+  initialX: number;
+  initialY: number;
+  moveX: number;
+  moveY: number;
+  duration: number;
+}
+
 interface Props {
   refreshTrigger?: number;
 }
@@ -21,15 +32,30 @@ interface Props {
 export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   const [mounted, setMounted] = useState(false);
   const [shuffledImages, setShuffledImages] = useState<string[]>([]);
+  const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Shuffle images whenever refreshTrigger changes
+  // Shuffle images and generate particles on refresh
   useEffect(() => {
+    // Shuffle images
     const shuffled = [...images].sort(() => Math.random() - 0.5);
     setShuffledImages(shuffled);
+
+    // Generate random particles
+    const newParticles = Array.from({ length: 20 }).map((_, i) => ({
+      id: i,
+      width: Math.random() * 200 + 100,
+      height: Math.random() * 200 + 100,
+      initialX: Math.random() * 100 - 50,
+      initialY: Math.random() * 100 - 50,
+      moveX: Math.random() * 50 - 25,
+      moveY: Math.random() * 50 - 25,
+      duration: Math.random() * 10 + 10,
+    }));
+    setParticles(newParticles);
   }, [refreshTrigger]);
 
   if (!mounted) return null;
@@ -39,23 +65,23 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
       <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 to-pink-900/20 mix-blend-overlay" />
       
       <div className="flex flex-wrap opacity-30">
-        {Array.from({ length: 20 }).map((_, i) => (
+        {particles.map((p, i) => (
           <motion.div
-            key={`${i}-${refreshTrigger}`} // Force re-render on refresh
+            key={`${p.id}-${refreshTrigger}`}
             className="m-2 rounded-lg overflow-hidden relative shadow-lg"
             style={{
-                width: Math.random() * 200 + 100,
-                height: Math.random() * 200 + 100,
+                width: p.width,
+                height: p.height,
             }}
-            initial={{ opacity: 0, scale: 0.8, x: Math.random() * 100 - 50, y: Math.random() * 100 - 50 }}
+            initial={{ opacity: 0, scale: 0.8, x: p.initialX, y: p.initialY }}
             animate={{
               opacity: [0.2, 0.5, 0.2],
               scale: [0.9, 1.1, 0.9],
-              x: [0, Math.random() * 50 - 25, 0],
-              y: [0, Math.random() * 50 - 25, 0],
+              x: [0, p.moveX, 0],
+              y: [0, p.moveY, 0],
             }}
             transition={{
-              duration: Math.random() * 10 + 10,
+              duration: p.duration,
               repeat: Infinity,
               ease: "linear",
             }}

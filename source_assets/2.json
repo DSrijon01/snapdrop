@@ -1,0 +1,9 @@
+{
+	"name": "Shuk #2",
+	"symbol": "DEV",
+	"description": "SnapDrop NFT",
+	"image": "2.png",
+	"properties": {
+		"files": [{ "uri": "2.png", "type": "image/png" }]
+	}
+}

@@ -3,14 +3,24 @@
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { FC, useEffect, useState } from "react";
 import { Metaplex } from "@metaplex-foundation/js";
-import { PublicKey } from "@solana/web3.js";
+// import { PublicKey } from "@solana/web3.js"; // Unused
+
+interface NFT {
+    name: string;
+    image: string;
+    uri?: string;
+    json?: {
+        name?: string;
+        image?: string;
+    };
+}
 
 // Mock data for display when no NFTs found or for preview
-const MOCK_NFTS = [
-    { name: "Snap #001", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&auto=format&fit=crop&q=60" },
-    { name: "Snap #002", image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&auto=format&fit=crop&q=60" },
-    { name: "Snap #003", image: "https://images.unsplash.com/photo-1634973357906-d35208ad0cd0?w=400&auto=format&fit=crop&q=60" },
-    { name: "Snap #004", image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&auto=format&fit=crop&q=60" },
+const MOCK_NFTS: NFT[] = [
+    { name: "Snap #001", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80" },
+    { name: "Snap #002", image: "https://images.unsplash.com/photo-1614812513172-567d2fe96a75?w=400&q=80" }, 
+    { name: "Snap #003", image: "https://images.unsplash.com/photo-1637858868799-7f26a0640eb6?w=400&q=80" },
+    { name: "Snap #004", image: "https://images.unsplash.com/photo-1642427749670-f20e2e76ed8c?w=400&q=80" },
 ];
 
 interface Props {
@@ -20,7 +30,7 @@ interface Props {
 export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const { connection } = useConnection();
     const { publicKey } = useWallet();
-    const [nfts, setNfts] = useState<any[]>([]);
+    const [nfts, setNfts] = useState<NFT[]>([]);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -45,12 +55,12 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                          try {
                              const response = await fetch(nft.uri);
                              const json = await response.json();
-                             return { ...nft, json };
-                         } catch (e) {
-                             return nft;
+                             return { ...nft, json } as NFT;
+                         } catch (unknownError) { // Rename e to unknownError
+                             return nft as NFT;
                          }
                     }
-                    return nft;
+                    return nft as NFT;
                 }));
 
                 setNfts(loadedNfts);
@@ -92,15 +102,26 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     </div>
                 ))
             ) : (
-                <div className="col-span-full text-center py-10">
-                    <p className="text-gray-400 mb-4">No NFTs found in this wallet.</p>
-                    <p className="text-xs text-gray-600">Showing mock stream below:</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4 opacity-50">
-                         {MOCK_NFTS.map((nft, i) => (
-                            <img key={i} src={nft.image} className="rounded-lg grayscale hover:grayscale-0 transition-all"/>
-                         ))}
+                // Empty State / Mock Stream
+                <>
+                    <div className="col-span-full mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex flex-col items-start gap-1">
+                        <h4 className="text-xl font-bold text-white">Your NFTs Await</h4>
+                        <p className="text-sm text-gray-300">
+                            You don't have any SnapDrops yet. Here's a <span className="text-blue-400 font-bold">preview</span> of how your gallery will look.
+                        </p>
                     </div>
-                </div>
+
+                    {MOCK_NFTS.map((nft, i) => (
+                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900 border border-white/10 hover:border-blue-500/50 transition-all">
+                            <img 
+                                src={nft.image} 
+                                alt={nft.name}
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                            />
+                            {/* Clean hover effect only, no badges or text */}
+                        </div>
+                    ))}
+                </>
             )}
         </div>
     );

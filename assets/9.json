@@ -1,0 +1,14 @@
+{
+    "name": "SnapDrop #10",
+    "symbol": "DEV",
+    "description": "SnapDrop Random Drop",
+    "image": "9.png",
+    "properties": {
+        "files": [
+            {
+                "uri": "9.png",
+                "type": "image/png"
+            }
+        ]
+    }
+}

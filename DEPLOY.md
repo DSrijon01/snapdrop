@@ -43,3 +43,14 @@ Once the Action finishes (check the **Actions** tab), your site will be live at:
 ## Important Note on Routing
 If you deploy to a sub-path (like `/snapdrop`), you might need to add `basePath: '/snapdrop'` to `next.config.ts`.
 If you deploy to `<username>.github.io` (root domain), the current config is perfect.
+
+## Troubleshooting
+
+### Error: `Get Pages site failed. Please verify that the repository has Pages enabled...`
+This means you haven't enabled GitHub Pages in your repository settings yet.
+
+**Fix:**
+1.  Go to **Settings** > **Pages**.
+2.  Under **Build and deployment**, ensure **Source** is set to **GitHub Actions**.
+3.  If it was already set, try toggling it to "Deploy from a branch" and back to "GitHub Actions" to force a refresh.
+4.  Go to the **Actions** tab and re-run the failed workflow.

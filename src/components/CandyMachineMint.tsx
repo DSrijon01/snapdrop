@@ -1,10 +1,10 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { FC, useState, useMemo, useEffect } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { FC, useState, useMemo } from "react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { fetchCandyMachine, mintV2, mplCandyMachine, safeFetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
+import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 
@@ -15,7 +15,6 @@ interface Props {
 export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     // ...
     // (Keep existing hooks)
-    const { connection } = useConnection();
     const wallet = useWallet();
     const [isMinting, setIsMinting] = useState(false);
     const [status, setStatus] = useState<string>("");
@@ -32,13 +31,20 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
         return u;
     }, [wallet.wallet]);
 
-    const CANDY_MACHINE_ID = umiPublicKey("FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG");
-    const CANDY_GUARD_ID = umiPublicKey("GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo"); // From sugar guard show
+    const CANDY_MACHINE_ID = umiPublicKey("DdU4yDWH7UgAboiEYe8D5ZQm5z7ES2n5wvgNKNYxQMF1");
+    const CANDY_GUARD_ID = umiPublicKey("7K2opq28esRjAxjpyyPnhRCZzjdBJh8S2Cha1XgRW4DV"); // Random Drop IDs
 
     const handleMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
             setStatus("Please connect your wallet first!");
             return;
+        }
+
+        // Check Balance
+        const balance = await umi.rpc.getBalance(umiPublicKey(wallet.publicKey));
+        if (balance.basisPoints < BigInt(100_000_000)) { // 0.1 SOL
+             setStatus("Not Enough SOL");
+             return;
         }
 
         setIsMinting(true);
@@ -84,13 +90,13 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                 onMintSuccess();
             }
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Mint failed:", error);
             let message = "Mint failed! ";
-            if (error.message) {
+            if (error instanceof Error) {
                  message += error.message;
-            } else if (error.name) {
-                message += error.name;
+            } else {
+                message += String(error);
             }
             setStatus(message);
         } finally {
