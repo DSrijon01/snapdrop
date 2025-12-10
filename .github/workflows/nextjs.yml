@@ -75,6 +75,9 @@ jobs:
         run: ${{ steps.detect-package-manager.outputs.manager }} ${{ steps.detect-package-manager.outputs.command }}
       - name: Build with Next.js
         run: ${{ steps.detect-package-manager.outputs.runner }} next build
+        env:
+          NEXT_PUBLIC_CANDY_MACHINE_ID: DdU4yDWH7UgAboiEYe8D5ZQm5z7ES2n5wvgNKNYxQMF1
+          NEXT_PUBLIC_CANDY_GUARD_ID: 7K2opq28esRjAxjpyyPnhRCZzjdBJh8S2Cha1XgRW4DV
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

@@ -31,8 +31,8 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
         return u;
     }, [wallet.wallet]);
 
-    const CANDY_MACHINE_ID = umiPublicKey("DdU4yDWH7UgAboiEYe8D5ZQm5z7ES2n5wvgNKNYxQMF1");
-    const CANDY_GUARD_ID = umiPublicKey("7K2opq28esRjAxjpyyPnhRCZzjdBJh8S2Cha1XgRW4DV"); // Random Drop IDs
+    const CANDY_MACHINE_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_MACHINE_ID!);
+    const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID!); // Random Drop IDs
 
     const handleMint = async () => {
         if (!wallet.connected || !wallet.publicKey) {
@@ -42,7 +42,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
         // Check Balance
         const balance = await umi.rpc.getBalance(umiPublicKey(wallet.publicKey));
-        if (balance.basisPoints < BigInt(100_000_000)) { // 0.1 SOL
+        if (balance.basisPoints < BigInt(10_000_000)) { // 0.01 SOL
              setStatus("Not Enough SOL");
              return;
         }
