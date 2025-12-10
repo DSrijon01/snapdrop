@@ -1,29 +1,38 @@
 # SnapDrop
 
-Snapshot your moments as NFTs on Solana.
+> Snapshot your moments as NFTs on Solana.
 
-## Getting Started
+![Demo](public/assets/demo.webp)
 
-1.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
+## 🚀 Overview
+SnapDrop is a decentralized application (dApp) built on Solana that allows users to:
+- **Connect Wallet**: Seamlessly integrate with Solana wallets.
+- **View Gallery**: Visualize your owned NFTs in a sleek, animated stream.
+- **Mint NFTs**: Participate in random NFT drops via Candy Machine.
 
-2.  **Run the development server**:
-    ```bash
-    npm run dev
-    ```
+## ✨ Features
+- **Dynamic UI**: Responsive design with neon aesthetics and smooth animations.
+- **Solana Integration**: Powered by Metaplex Candy Machine and Umi.
+- **Instant Minting**: One-click minting experience.
 
-3.  **Open** [http://localhost:3000](http://localhost:3000) with your browser.
+## 🛠 Tech Stack
+- **Frontend**: Next.js 15, React 19, TailwindCSS v4
+- **Blockchain**: Solana Web3.js, Metaplex Umi
+- **State Management**: React Context, Wallet Adapter
 
-## Deployment
+## 📦 Getting Started
 
-This project is configured for static export to **GitHub Pages**.
+1. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-### Deploy Steps
-1.  Push to `main`.
-2.  Go to GitHub Repo > Settings > Pages.
-3.  Select **GitHub Actions** as the source.
-4.  The site will be deployed automatically.
+2. **Run the development server**:
+   ```bash
+   npm run dev
+   ```
 
-See `DEPLOY.md` for more details.
+3. **Open** [http://localhost:3000](http://localhost:3000)
+
+## 🚢 Deployment
+Configured for GitHub Pages. See `DEPLOY.md`.
