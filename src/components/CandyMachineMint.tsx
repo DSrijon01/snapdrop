@@ -1,7 +1,7 @@
 "use client";
 
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { FC, useState, useMemo, useEffect, useCallback } from "react";
+import { FC, useState, useMemo, useEffect, useCallback, ReactNode } from "react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { fetchCandyMachine, mintV2, mplCandyMachine, safeFetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
@@ -19,7 +19,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     const { connection } = useConnection();
     const wallet = useWallet();
     const [isMinting, setIsMinting] = useState(false);
-    const [status, setStatus] = useState<string>("");
+    const [status, setStatus] = useState<ReactNode>("");
     const [balance, setBalance] = useState<number | null>(null);
 
     // Initialize Umi
@@ -65,7 +65,16 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             checkBalance();
         } catch (error: any) {
             console.error("Airdrop failed:", error);
-            setStatus("Airdrop failed: " + (error.message || error.name));
+            const errStr = JSON.stringify(error);
+            if (errStr.includes("429") || errStr.includes("limit")) {
+                 setStatus(
+                    <span>
+                        Airdrop limit reached. Visit <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="underline text-pink-300 hover:text-white">faucet.solana.com</a>
+                    </span>
+                 );
+            } else {
+                 setStatus("Airdrop failed: " + (error.message || error.name));
+            }
         } finally {
             setIsMinting(false);
         }
@@ -159,7 +168,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                             : 'bg-gradient-to-r from-green-500 to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25'}
                     `}
                 >
-                    {isMinting ? "Processing..." : "Mint NFT (0.01 SOL)"}
+                    {isMinting ? "Processing..." : "Mint NFT (0.1 SOL)"}
                 </button>
 
                  {/* Show Airdrop button if balance is low (e.g., < 1 SOL) and connected */}
@@ -175,9 +184,9 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             </div>
             
             {status && (
-                <p className={`mt-4 text-sm ${status.includes("success") ? "text-green-400" : "text-pink-400"}`}>
+                <div className={`mt-4 text-sm ${typeof status === "string" && status.includes("success") ? "text-green-400" : "text-pink-400"}`}>
                     {status}
-                </p>
+                </div>
             )}
         </div>
     );
