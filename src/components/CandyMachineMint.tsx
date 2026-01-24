@@ -34,8 +34,8 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
         return u;
     }, [wallet.wallet]);
 
-    const CANDY_MACHINE_ID = umiPublicKey("FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG");
-    const CANDY_GUARD_ID = umiPublicKey("GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo"); // From sugar guard show
+    const CANDY_MACHINE_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_MACHINE_ID || "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG");
+    const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID || "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo");
 
     const checkBalance = useCallback(async () => {
         if (wallet.publicKey) {
