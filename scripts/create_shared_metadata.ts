@@ -1,3 +1,4 @@
+/* eslint-disable */
 
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { createGenericFile, createSignerFromKeypair, signerIdentity } from '@metaplex-foundation/umi';

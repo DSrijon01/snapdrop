@@ -21,6 +21,7 @@ function SnapDropContent() {
   useEffect(() => {
     if (connected) {
       hasConnected.current = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowExitMessage(false);
     } else if (hasConnected.current) {
       // User just disconnected

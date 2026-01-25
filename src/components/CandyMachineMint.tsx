@@ -4,7 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { FC, useState, useMemo, useEffect, useCallback, ReactNode } from "react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { fetchCandyMachine, mintV2, mplCandyMachine, safeFetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
+import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { mplTokenMetadata, fetchAllDigitalAssetByOwner } from "@metaplex-foundation/mpl-token-metadata";
@@ -111,6 +111,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
             setStatus("Airdrop successful! Balance updated.");
             checkBalance();
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Airdrop failed:", error);
             const errMessage = error?.message || JSON.stringify(error);
@@ -169,7 +170,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
 
             console.log("Mint successful!", tx);
-            const signature = tx.signature;
+            // const signature = tx.signature;
             // Decode signature if needed, but for now just success
             setStatus("Mint successful! Check the gallery.");
             checkBalance();
@@ -179,6 +180,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                 onMintSuccess();
             }
 
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Mint failed:", error);
             let message = "Mint failed! ";

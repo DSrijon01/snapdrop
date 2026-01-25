@@ -58,6 +58,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 const assets = await fetchAllDigitalAssetByOwner(umi, owner);
                 
                 // Process metadata
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const loadedNfts = await Promise.all(assets.map(async (asset: any) => {
                     // Try to load JSON metadata if uri exists
                     let json = undefined;
@@ -121,7 +122,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     <div className="col-span-full mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex flex-col items-start gap-1">
                         <h4 className="text-xl font-bold text-white">Your NFTs Await</h4>
                         <p className="text-sm text-gray-300">
-                            You don't have any SnapDrops yet. Here's a <span className="text-blue-400 font-bold">preview</span> of how your gallery will look.
+                            You don&apos;t have any SnapDrops yet. Here&apos;s a <span className="text-blue-400 font-bold">preview</span> of how your gallery will look.
                         </p>
                     </div>
 

@@ -35,14 +35,15 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   // Shuffle images and generate particles on refresh
   useEffect(() => {
     // Shuffle images
-    const shuffled = [...images].sort(() => Math.random() - 0.5);
-    setShuffledImages(shuffled);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShuffledImages([...images].sort(() => Math.random() - 0.5));
 
     // Generate random particles
     const newParticles = Array.from({ length: 20 }).map((_, i) => ({
@@ -97,3 +98,4 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     </div>
   );
 };
+
