@@ -57,23 +57,30 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     const handleRequestAirdrop = async () => {
         if (!wallet.publicKey) return;
         setIsMinting(true);
-        setStatus("Requesting 1 SOL Airdrop...");
+        setStatus("Requesting 0.5 SOL Airdrop...");
         try {
-            const signature = await connection.requestAirdrop(wallet.publicKey, 1 * LAMPORTS_PER_SOL);
-            await connection.confirmTransaction(signature, "confirmed");
+            const signature = await connection.requestAirdrop(wallet.publicKey, 0.5 * LAMPORTS_PER_SOL);
+            
+            const latestBlockhash = await connection.getLatestBlockhash();
+            await connection.confirmTransaction({
+                signature,
+                blockhash: latestBlockhash.blockhash,
+                lastValidBlockHeight: latestBlockhash.lastValidBlockHeight
+            }, "confirmed");
+
             setStatus("Airdrop successful! Balance updated.");
             checkBalance();
         } catch (error: any) {
             console.error("Airdrop failed:", error);
-            const errStr = JSON.stringify(error);
-            if (errStr.includes("429") || errStr.includes("limit")) {
+            const errMessage = error?.message || JSON.stringify(error);
+            if (errMessage.includes("429") || errMessage.includes("limit")) {
                  setStatus(
                     <span>
-                        Airdrop limit reached. Visit <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="underline text-pink-300 hover:text-white">faucet.solana.com</a>
+                        Airdrop limit reached (IP shared). Visit <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="underline text-pink-300 hover:text-white">faucet.solana.com</a>
                     </span>
                  );
             } else {
-                 setStatus("Airdrop failed: " + (error.message || error.name));
+                 setStatus("Airdrop failed: " + errMessage);
             }
         } finally {
             setIsMinting(false);
@@ -178,7 +185,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                         disabled={isMinting}
                         className="w-full py-2 px-6 rounded-lg font-bold text-pink-400 border border-pink-500/50 hover:bg-pink-500/10 transition-all duration-300 text-sm"
                     >
-                        Request Airdrop (1 SOL)
+                        Request Airdrop (0.5 SOL)
                     </button>
                 )}
             </div>
