@@ -7,6 +7,7 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 import { fetchCandyMachine, mintV2, mplCandyMachine, safeFetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
+import { mplTokenMetadata, fetchAllDigitalAssetByOwner } from "@metaplex-foundation/mpl-token-metadata";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 interface Props {
@@ -25,7 +26,8 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     // Initialize Umi
     const umi = useMemo(() => {
         const u = createUmi("https://api.devnet.solana.com")
-            .use(mplCandyMachine());
+            .use(mplCandyMachine())
+            .use(mplTokenMetadata());
         
         if (wallet.wallet?.adapter) {
             u.use(walletAdapterIdentity(wallet.wallet.adapter));
@@ -36,6 +38,11 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
     const CANDY_MACHINE_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_MACHINE_ID || "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG");
     const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID || "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo");
+    
+    // Limits
+    const MAX_MINTS_PER_WALLET = 2;
+    const [mintCount, setMintCount] = useState<number | null>(null);
+    const [isCheckingLimit, setIsCheckingLimit] = useState(false);
 
     const checkBalance = useCallback(async () => {
         if (wallet.publicKey) {
@@ -50,9 +57,43 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
         }
     }, [connection, wallet.publicKey]);
 
+    const checkEligibility = useCallback(async () => {
+        if (!umi || !wallet.publicKey) {
+            setMintCount(null);
+            return;
+        }
+
+        setIsCheckingLimit(true);
+        try {
+            // 1. Fetch Candy Machine to get collection Mint
+            const cm = await fetchCandyMachine(umi, CANDY_MACHINE_ID);
+            const collectionMint = cm.collectionMint;
+
+            // 2. Fetch all assets owned by user
+            const assets = await fetchAllDigitalAssetByOwner(umi, umiPublicKey(wallet.publicKey));
+            
+            // 3. Filter for our collection
+            // Note: On Devnet/Testnet metadata might be tricky, but we check if the item 
+            // belongs to the verified collection of the Candy Machine.
+            const userMints = assets.filter(asset => {
+                const group = asset.metadata.collection;
+                return group && group.value.verified && group.value.key === collectionMint;
+            });
+
+            console.log("User owns:", userMints.length, "from collection:", collectionMint);
+            setMintCount(userMints.length);
+
+        } catch (e) {
+            console.error("Failed to check eligibility:", e);
+        } finally {
+            setIsCheckingLimit(false);
+        }
+    }, [umi, wallet.publicKey, CANDY_MACHINE_ID]);
+
     useEffect(() => {
         checkBalance();
-    }, [checkBalance]);
+        checkEligibility();
+    }, [checkBalance, checkEligibility]);
 
     const handleRequestAirdrop = async () => {
         if (!wallet.publicKey) return;
@@ -132,6 +173,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             // Decode signature if needed, but for now just success
             setStatus("Mint successful! Check the gallery.");
             checkBalance();
+            checkEligibility();
             
             if (onMintSuccess) {
                 onMintSuccess();
@@ -167,15 +209,24 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             <div className="flex flex-col gap-3">
                 <button
                     onClick={handleMint}
-                    disabled={isMinting || !wallet.connected}
+                    disabled={isMinting || !wallet.connected || (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)}
                     className={`
                         w-full py-3 px-6 rounded-lg font-bold text-white transition-all duration-300
                         ${isMinting 
                             ? 'bg-gray-600 cursor-not-allowed' 
-                            : 'bg-gradient-to-r from-green-500 to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25'}
+                            : (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)
+                              ? 'bg-gray-700 cursor-not-allowed opacity-75'
+                              : 'bg-gradient-to-r from-green-500 to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25'}
                     `}
                 >
-                    {isMinting ? "Processing..." : "Mint NFT (0.1 SOL)"}
+                    {isMinting 
+                        ? "Processing..." 
+                        : (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)
+                             ? `Limit Reached (${mintCount}/${MAX_MINTS_PER_WALLET})`
+                             : isCheckingLimit 
+                                ? "Checking..."
+                                : "Mint NFT (0.1 SOL)"
+                    }
                 </button>
 
                  {/* Show Airdrop button if balance is low (e.g., < 1 SOL) and connected */}
