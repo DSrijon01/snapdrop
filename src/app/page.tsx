@@ -1,7 +1,7 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { ClientWalletMultiButton as WalletMultiButton } from "@/components/ClientWalletMultiButton";
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { CandyMachineMint } from "@/components/CandyMachineMint";
 import { NFTGallery } from "@/components/NFTGallery";
