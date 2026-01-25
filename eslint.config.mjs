@@ -12,7 +12,14 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    "scripts/**",
   ]),
+  {
+      rules: {
+          "@next/next/no-img-element": "off",
+          "@typescript-eslint/no-explicit-any": "off"
+      }
+  }
 ]);
 
 export default eslintConfig;
