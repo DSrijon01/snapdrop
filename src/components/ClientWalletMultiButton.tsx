@@ -2,6 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { WalletReadyState } from "@solana/wallet-adapter-base";
 import dynamic from "next/dynamic";
 
 const BaseWalletMultiButton = dynamic(
@@ -16,7 +17,7 @@ export const ClientWalletMultiButton = (props: any) => {
 
   const handleClick = () => {
     // Check if any wallet is installed (readyState === "Installed")
-    const installedWallets = wallets.filter((w) => w.readyState === "Installed");
+    const installedWallets = wallets.filter((w) => w.readyState === WalletReadyState.Installed);
 
     if (installedWallets.length === 0) {
       // No wallet installed -> Redirect to Phantom
