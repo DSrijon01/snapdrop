@@ -77,7 +77,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             // belongs to the verified collection of the Candy Machine.
             const userMints = assets.filter(asset => {
                 const group = asset.metadata.collection;
-                return group && group.value.verified && group.value.key === collectionMint;
+                return group && group.__option === 'Some' && group.value.verified && group.value.key === collectionMint;
             });
 
             console.log("User owns:", userMints.length, "from collection:", collectionMint);
