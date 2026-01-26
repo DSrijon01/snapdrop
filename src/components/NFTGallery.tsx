@@ -58,7 +58,6 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 const assets = await fetchAllDigitalAssetByOwner(umi, owner);
                 
                 // Process metadata
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const loadedNfts = await Promise.all(assets.map(async (asset: any) => {
                     // Try to load JSON metadata if uri exists
                     let json = undefined;

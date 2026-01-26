@@ -111,7 +111,6 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
             setStatus("Airdrop successful! Balance updated.");
             checkBalance();
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Airdrop failed:", error);
             const errMessage = error?.message || JSON.stringify(error);
@@ -180,7 +179,6 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                 onMintSuccess();
             }
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } catch (error: any) {
             console.error("Mint failed:", error);
             let message = "Mint failed! ";

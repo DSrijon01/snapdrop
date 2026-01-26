@@ -10,7 +10,6 @@ const BaseWalletMultiButton = dynamic(
   { ssr: false }
 );
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const ClientWalletMultiButton = (props: any) => {
   const { connected, wallets } = useWallet();
   const { setVisible } = useWalletModal();
