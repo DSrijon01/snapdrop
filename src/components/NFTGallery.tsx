@@ -177,31 +177,32 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
             ) : (
                 // Empty State / Mock Stream
                 <>
-                    <div className="col-span-full mb-4 p-4 rounded-xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/20 flex flex-col items-start gap-1">
-                        <h4 className="text-xl font-bold text-white">Your NFTs Await</h4>
-                        <p className="text-sm text-gray-300">
-                            You don&apos;t have any SnapDrops yet. Here&apos;s a <span className="text-blue-400 font-bold">preview</span> of how your gallery will look.
+                    <div className="col-span-full mb-4 p-6 rounded-2xl bg-black/40 border border-red-900/30 flex flex-col items-start gap-2 shadow-lg">
+                        <h4 className="text-xl font-black text-white tracking-tight uppercase italic">Your Collection</h4>
+                        <p className="text-sm text-gray-400 font-light">
+                            You don&apos;t have any NFTs yet. Mint one to start your collection. Here is a <span className="text-red-500 font-bold">preview</span>.
                         </p>
                     </div>
 
                     {MOCK_NFTS.map((nft, i) => (
-                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-lg bg-gray-900 border border-white/10 hover:border-blue-500/50 transition-all">
+                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-xl bg-gray-900 border border-white/5 hover:border-red-600/50 transition-all hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]">
                             <img 
                                 src={nft.image} 
                                 alt={nft.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 grayscale group-hover:grayscale-0"
                             />
                             
                             {/* Owner Info Mock */}
-                            <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                                <div className="w-6 h-6 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
+                            <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 absolute bottom-2 left-2 z-10">
+                                <div className="w-6 h-6 rounded-none bg-red-600 flex items-center justify-center text-[10px] font-bold text-white transform skew-x-[-10deg]">
                                     {(nft as any).ownerName?.[0] || "U"}
                                 </div>
                                 <div className="flex flex-col">
-                                    <span className="text-xs text-white font-semibold leading-none">{(nft as any).ownerName || "Unknown"}</span>
-                                    <span className="text-[10px] text-gray-400 font-mono leading-none">{(nft as any).ownerAddress || "Wallet"}</span>
+                                    <span className="text-xs text-white font-bold leading-none">{(nft as any).ownerName || "Unknown"}</span>
+                                    <span className="text-[10px] text-red-400 font-mono leading-none">{(nft as any).ownerAddress || "Wallet"}</span>
                                 </div>
                             </div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />
                         </div>
                     ))}
                 </>

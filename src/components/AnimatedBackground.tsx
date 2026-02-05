@@ -4,14 +4,11 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 const images = [
-  "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=500&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1595078475328-1ab05d0a6a0e?w=500&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=500&auto=format&fit=crop&q=60",
-  "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=500&auto=format&fit=crop&q=60",
-    "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&auto=format&fit=crop&q=60", // Solana-ish
-    "https://images.unsplash.com/photo-1622630994162-4b25455c320b?w=500&auto=format&fit=crop&q=60", // Abstract Green
-    "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&auto=format&fit=crop&q=60", // Pinkish
+  "https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&auto=format&fit=crop&q=60", // Dark Abstract
+  "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=500&auto=format&fit=crop&q=60", // Cyberpunk City
+  "https://images.unsplash.com/photo-1620336655174-3266ecc69911?w=500&auto=format&fit=crop&q=60", // Glitch Red
+  "https://images.unsplash.com/photo-1535868463750-c78d9543614f?w=500&auto=format&fit=crop&q=60", // Neon Red Signs
+  "https://images.unsplash.com/photo-1605810230434-7631ac76ec81?w=500&auto=format&fit=crop&q=60", // Future Technology
 ];
 
 interface Particle {
@@ -62,8 +59,8 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-black/90">
-      <div className="absolute inset-0 bg-gradient-to-br from-green-900/20 to-pink-900/20 mix-blend-overlay" />
+    <div className="fixed inset-0 z-[-1] overflow-hidden bg-black">
+      <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 via-black to-red-950/40 mix-blend-overlay" />
       
       <div className="flex flex-wrap opacity-30">
         {particles.map((p, i) => (

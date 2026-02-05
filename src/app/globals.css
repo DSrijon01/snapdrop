@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme {
-  --color-neon-pink: #ff00ff;
-  --color-neon-green: #00ff00;
+  --color-sith-red: #ff0033;
+  --color-cyber-black: #050505;
   --font-display: "Inter", "sans-serif";
 }
 
@@ -20,6 +20,10 @@ body {
 
 @layer utilities {
   .text-shadow-glow {
-    text-shadow: 0 0 10px rgba(236, 72, 153, 0.5), 0 0 20px rgba(34, 197, 94, 0.3);
+    text-shadow: 0 0 10px rgba(255, 0, 51, 0.6), 0 0 20px rgba(100, 0, 0, 0.4);
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+      display: none;
   }
 }

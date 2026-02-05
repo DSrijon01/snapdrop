@@ -194,33 +194,35 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     };
 
     return (
-        <div className="p-6 bg-black/60 backdrop-blur-md border border-pink-500/30 rounded-xl text-center max-w-sm mx-auto shadow-[0_0_20px_rgba(236,72,153,0.3)]">
-            <h2 className="text-2xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-pink-500">
-                SnapDrop Mint
+        <div className="p-6 bg-black/80 backdrop-blur-xl border border-red-900/40 rounded-xl text-center max-w-sm mx-auto shadow-[0_0_30px_rgba(220,38,38,0.15)] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-red-900/10 via-transparent to-black pointer-events-none" />
+            
+            <h2 className="text-2xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-white uppercase italic tracking-tighter transform -skew-x-6 relative z-10">
+                Mint NFT
             </h2>
-            <p className="text-gray-300 mb-6 text-sm">
-                Get a random unique NFT from our collection.
+            <p className="text-gray-400 mb-6 text-sm font-light relative z-10">
+                Get a unique digital collectible from the Street Sync collection.
             </p>
             
             {balance !== null && (
-                 <p className="text-xs text-gray-400 mb-4">Balance: {balance.toFixed(3)} SOL</p>
+                 <p className="text-xs text-red-400/80 mb-4 font-mono relative z-10">Balance: {balance.toFixed(3)} SOL</p>
             )}
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 relative z-10">
                 <button
                     onClick={handleMint}
                     disabled={isMinting || !wallet.connected || (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)}
                     className={`
-                        w-full py-3 px-6 rounded-lg font-bold text-white transition-all duration-300
+                        w-full py-3 px-6 rounded-none font-black text-white transition-all duration-300 transform skew-x-[-10deg] uppercase tracking-widest border border-transparent
                         ${isMinting 
-                            ? 'bg-gray-600 cursor-not-allowed' 
+                            ? 'bg-gray-800 cursor-not-allowed text-gray-500' 
                             : (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)
-                              ? 'bg-gray-700 cursor-not-allowed opacity-75'
-                              : 'bg-gradient-to-r from-green-500 to-pink-600 hover:scale-105 hover:shadow-lg hover:shadow-pink-500/25'}
+                              ? 'bg-red-900/20 border-red-900/50 text-red-700 cursor-not-allowed'
+                              : 'bg-red-600 hover:bg-red-700 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:scale-[1.02] border-red-500/30'}
                     `}
                 >
                     {isMinting 
-                        ? "Processing..." 
+                        ? "Minting..." 
                         : (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)
                              ? `Limit Reached (${mintCount}/${MAX_MINTS_PER_WALLET})`
                              : isCheckingLimit 
@@ -234,15 +236,15 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                      <button
                         onClick={handleRequestAirdrop}
                         disabled={isMinting}
-                        className="w-full py-2 px-6 rounded-lg font-bold text-pink-400 border border-pink-500/50 hover:bg-pink-500/10 transition-all duration-300 text-sm"
+                        className="w-full py-2 px-6 rounded-none font-bold text-red-500 border border-red-900/50 hover:bg-red-900/20 transition-all duration-300 text-xs uppercase tracking-wider transform skew-x-[-10deg]"
                     >
-                        Request Airdrop (0.5 SOL)
+                        Request Funds (0.5 SOL)
                     </button>
                 )}
             </div>
             
             {status && (
-                <div className={`mt-4 text-sm ${typeof status === "string" && status.includes("success") ? "text-green-400" : "text-pink-400"}`}>
+                <div className={`mt-4 text-xs font-mono relative z-10 ${typeof status === "string" && status.includes("success") ? "text-green-500" : "text-red-400"}`}>
                     {status}
                 </div>
             )}
