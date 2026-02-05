@@ -185,21 +185,23 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     </div>
 
                     {MOCK_NFTS.map((nft, i) => (
-                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-xl bg-gray-900 border border-white/5 hover:border-red-600/50 transition-all hover:shadow-[0_0_20px_rgba(220,38,38,0.2)]">
+                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-2xl bg-[#121212] border border-white/5 hover:border-red-600/30 transition-all hover:shadow-[0_0_20px_rgba(220,38,38,0.15)]">
                             <img 
                                 src={nft.image} 
                                 alt={nft.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 grayscale group-hover:grayscale-0"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
                             />
                             
                             {/* Owner Info Mock */}
-                            <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 absolute bottom-2 left-2 z-10">
-                                <div className="w-6 h-6 rounded-none bg-red-600 flex items-center justify-center text-[10px] font-bold text-white transform skew-x-[-10deg]">
-                                    {(nft as any).ownerName?.[0] || "U"}
-                                </div>
-                                <div className="flex flex-col">
-                                    <span className="text-xs text-white font-bold leading-none">{(nft as any).ownerName || "Unknown"}</span>
-                                    <span className="text-[10px] text-red-400 font-mono leading-none">{(nft as any).ownerAddress || "Wallet"}</span>
+                            <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 absolute bottom-2 left-2 z-10 w-[calc(100%-16px)]">
+                                <div className="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/10 flex items-center gap-2 w-full">
+                                    <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] font-bold text-white">
+                                        {(nft as any).ownerName?.[0] || "U"}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-xs text-white font-bold leading-none">{(nft as any).ownerName || "Unknown"}</span>
+                                        <span className="text-[10px] text-gray-400 font-mono leading-none">{(nft as any).ownerAddress || "Wallet"}</span>
+                                    </div>
                                 </div>
                             </div>
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-60" />

@@ -51,6 +51,42 @@ function SnapDropContent() {
         <WalletMultiButton className="!bg-gradient-to-r !from-red-700 !to-black hover:!from-red-600 hover:!to-gray-900 transition-all !rounded-none !skew-x-[-10deg] !font-bold !border !border-red-500/50" />
       </header>
       
+      {/* OpenSea-style Tab Navigation (Only visible when connected) */}
+      {connected && (
+        <div className="border-b border-white/10 bg-black/40 backdrop-blur-sm sticky top-[88px] z-20">
+            <div className="container mx-auto px-6 flex items-center gap-8">
+                <button
+                    onClick={() => setActiveTab('stream')}
+                    className={`py-4 text-base font-bold relative transition-colors ${
+                        activeTab === 'stream' ? 'text-white' : 'text-gray-400 hover:text-white'
+                    }`}
+                >
+                    Collection
+                    {activeTab === 'stream' && (
+                        <motion.div 
+                            layoutId="activeTab"
+                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-red-600 rounded-full"
+                        />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('marketplace')}
+                    className={`py-4 text-base font-bold relative transition-colors ${
+                        activeTab === 'marketplace' ? 'text-white' : 'text-gray-400 hover:text-white'
+                    }`}
+                >
+                    Marketplace
+                    {activeTab === 'marketplace' && (
+                        <motion.div 
+                            layoutId="activeTab"
+                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-red-600 rounded-full"
+                        />
+                    )}
+                </button>
+            </div>
+        </div>
+      )}
+
       <div className="flex-1 flex flex-col relative z-0">
         {!connected ? (
           <div className="flex-1 flex flex-col items-center justify-center p-4 text-center">
@@ -71,63 +107,29 @@ function SnapDropContent() {
              </div>
           </div>
         ) : (
-          <div className="container mx-auto p-4 md:p-8 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-             
-             {/* Tab Navigation */}
-             <div className="flex justify-center mb-8">
-                 <div className="bg-black/40 backdrop-blur-lg border border-white/10 p-1.5 rounded-full flex gap-1 relative shadow-xl">
-                      <button 
-                          onClick={() => setActiveTab('stream')}
-                          className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-all z-10 ${activeTab === 'stream' ? 'text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                      >
-                          My Stream
-                          {activeTab === 'stream' && (
-                              <motion.div 
-                                  layoutId="tab-bg"
-                                  className="absolute inset-0 bg-gradient-to-r from-green-600 to-pink-600 rounded-full -z-10"
-                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                              />
-                          )}
-                      </button>
-                      <button 
-                          onClick={() => setActiveTab('marketplace')}
-                          className={`relative px-8 py-2.5 rounded-full text-sm font-bold transition-all z-10 ${activeTab === 'marketplace' ? 'text-white shadow-lg' : 'text-gray-400 hover:text-white'}`}
-                      >
-                          Marketplace
-                          {activeTab === 'marketplace' && (
-                              <motion.div 
-                                  layoutId="tab-bg"
-                                  className="absolute inset-0 bg-gradient-to-r from-green-600 to-pink-600 rounded-full -z-10"
-                                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                              />
-                          )}
-                      </button>
-                 </div>
-             </div>
+            <div className="animate-in fade-in duration-500">
+                {activeTab === 'stream' ? (
+                    <div className="container mx-auto p-6 space-y-8">
+                        {/* Mint Section */}
+                        <section>
+                            <CandyMachineMint onMintSuccess={handleMintSuccess} />
+                        </section>
 
-             {activeTab === 'stream' ? (
-                <>
-                    {/* Mint Section */}
-                    <section className="flex justify-center">
-                        <CandyMachineMint onMintSuccess={handleMintSuccess} />
-                    </section>
-
-                    {/* Gallery Section */}
-                    <section>
-                        <div className="flex items-center justify-between mb-6">
-                        <h3 className="text-2xl font-bold text-white flex items-center gap-2">
-                            <span className="w-2 h-8 bg-gradient-to-b from-green-400 to-pink-500 rounded-full"/>
-                            Your Stream
-                        </h3>
-                        </div>
-                        <NFTGallery refreshTrigger={refreshTrigger} />
-                    </section>
-                </>
-             ) : (
-                 <Marketplace />
-             )}
-
-          </div>
+                        {/* Gallery Section */}
+                        <section>
+                            <div className="flex items-center justify-between mb-6">
+                            <h3 className="text-2xl font-bold text-white flex items-center gap-2">
+                                <span className="w-2 h-8 bg-gradient-to-b from-green-400 to-pink-500 rounded-full"/>
+                                Your Stream
+                            </h3>
+                            </div>
+                            <NFTGallery refreshTrigger={refreshTrigger} />
+                        </section>
+                    </div>
+                ) : (
+                    <Marketplace />
+                )}
+            </div>
         )}
       </div>
 
