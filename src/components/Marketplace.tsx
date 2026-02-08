@@ -47,7 +47,7 @@ export const Marketplace: FC = () => {
             />
             
             {/* Header / Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between sticky top-24 z-20 bg-background/80 backdrop-blur-xl p-4 rounded-2xl border border-border shadow-xl">
+            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between sticky top-[146px] z-30 bg-background/80 backdrop-blur-xl p-4 rounded-2xl border border-border shadow-xl">
                 {/* Search */}
                 <div className="relative w-full md:w-96">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

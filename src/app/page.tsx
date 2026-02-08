@@ -44,7 +44,7 @@ function StreetSyncContent() {
     <main className="min-h-screen relative flex flex-col bg-background text-foreground transition-colors duration-300">
       <AnimatedBackground refreshTrigger={bgRefreshTrigger} />
 
-      <header className="p-6 flex justify-between items-center z-10 sticky top-0 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="p-6 flex justify-between items-center z-50 sticky top-0 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2">
             <Logo size={40} className="rounded-sm" /> 
            <h1 className="text-3xl font-black text-[var(--brand-text-color)] tracking-tighter cursor-default select-none uppercase italic transform -skew-x-6 font-display">
@@ -59,7 +59,7 @@ function StreetSyncContent() {
       
       {/* OpenSea-style Tab Navigation (Only visible when connected) */}
       {connected && (
-        <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[88px] z-20">
+        <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[88px] z-40">
             <div className="container mx-auto px-6 flex items-center gap-8">
                 <button
                     onClick={() => setActiveTab('stream')}
