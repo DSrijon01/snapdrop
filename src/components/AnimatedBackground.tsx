@@ -59,8 +59,8 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
   if (!mounted) return null;
 
   return (
-    <div className="fixed inset-0 z-[-1] overflow-hidden bg-black">
-      <div className="absolute inset-0 bg-gradient-to-br from-red-900/40 via-black to-red-950/40 mix-blend-overlay" />
+    <div className="fixed inset-0 z-[-1] overflow-hidden bg-background transition-colors duration-300">
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-50/80 via-background to-red-50/80 dark:from-blue-900/20 dark:via-background dark:to-blue-900/20 mix-blend-multiply dark:mix-blend-normal" />
       
       <div className="flex flex-wrap opacity-30">
         {particles.map((p, i) => (

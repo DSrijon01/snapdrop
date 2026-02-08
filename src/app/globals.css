@@ -1,29 +1,149 @@
 @import "tailwindcss";
 
 @theme {
-  --color-sith-red: #ff0033;
-  --color-cyber-black: #050505;
-  --font-display: "Inter", "sans-serif";
+  --color-brand-primary: #2081e2;
+  --color-brand-hover: #1868b7;
+  --color-bg-light: #ffffff;
+  --color-bg-dark: #121212;
+  /* Newyork + Street + Supreme + Mechanical Typography */
+  --font-display: var(--font-space-grotesk), "Inter", "sans-serif";
+  --font-sans: var(--font-space-grotesk), "Inter", "sans-serif"; /* Ensure this is default */
+  --font-mono: "Courier New", Courier, "Hiragino Sans", monospace;
+  --font-mechanical: "Courier New", Courier, "Hiragino Sans", monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover);
+  
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary-hover: var(--secondary-hover);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
 }
 
-:root {
-  --background: #000000;
-  --foreground: #ededed;
+@layer base {
+  :root {
+    /* Supreme Theme (Light Mode) */
+    --background: #ffffff;
+    --foreground: #000000; /* Pure Black specifically for Supreme aesthetic */
+    --primary: #DA291C; /* Supreme Red */
+    --primary-foreground: #ffffff;
+    --primary-hover: #b3202c; /* Darker red */
+    
+    --secondary: #fbfdff;
+    --secondary-foreground: #000000;
+    --secondary-hover: #f3f4f6;
+
+    --muted: #f3f4f6;
+    --muted-foreground: #6b7280;
+    
+    --border: #e5e7eb;
+    --input: #e5e7eb;
+    --ring: #DA291C; /* Supreme Red Ring */
+
+    --card: #ffffff;
+    --card-foreground: #000000;
+    
+    --accent: #DA291C; /* Supreme Red */
+    --accent-foreground: #ffffff;
+    
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --radius: 0rem; /* Supreme is boxy/sharp */
+    
+    --brand-text-color: #FF1801; /* F1 Red Default */
+  }
+
+  .dark {
+    /* OpenSea Theme (Dark Mode) */
+    --background: #121212; /* Deep dark background */
+    --foreground: #ffffff;
+    --primary: #2081e2; /* OpenSea Blue */
+    --primary-foreground: #ffffff;
+    --primary-hover: #1868b7;
+
+    --secondary: #1b1b1b;
+    --secondary-foreground: #ffffff;
+    --secondary-hover: #2d2d2d;
+
+    --muted: #1f2937;
+    --muted-foreground: #9ca3af;
+
+    --border: #374151;
+    --input: #374151;
+    --ring: #1d4ed8;
+
+    --card: #1b1b1b; /* Slightly lighter than bg */
+    --card-foreground: #ffffff;
+    
+    --accent: #2081e2;
+    --accent-foreground: #ffffff;
+    
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    
+    --radius: 0.75rem; /* OpenSea has rounded corners */
+    
+    --brand-text-color: #2081e2; /* OpenSea Blue in Dark Mode */
+  }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-display);
-  overflow-x: hidden;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
 }
 
 @layer utilities {
   .text-shadow-glow {
-    text-shadow: 0 0 10px rgba(255, 0, 51, 0.6), 0 0 20px rgba(100, 0, 0, 0.4);
+    text-shadow: 0 0 10px rgba(32, 129, 226, 0.4), 0 0 20px rgba(32, 129, 226, 0.2);
   }
   
   .scrollbar-hide::-webkit-scrollbar {
       display: none;
+  }
+  
+  /* Glassmorphism utilities */
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border-b border-border;
+  }
+  
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-sm border border-border;
+  }
+
+  .font-technical {
+    @apply font-mono font-bold;
+  }
+  
+  /* Enforce Bold for all mono usages as requested */
+  .font-mono {
+    @apply font-bold;
+  }
+  
+  /* FORCE OVERRIDE for debugging */
+  h1, h2, h3, h4, h5, h6, button {
+    font-family: var(--font-space-grotesk), "Inter", "sans-serif" !important;
   }
 }

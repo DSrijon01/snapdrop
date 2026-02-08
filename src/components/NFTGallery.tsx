@@ -114,8 +114,8 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     }, [wallet.publicKey, umi, refreshTrigger]);
 
     if (!wallet.publicKey) return (
-        <div className="text-center text-gray-500 py-10 italic">
-            Connect wallet to view your SnapDrop stream.
+        <div className="text-center text-muted-foreground py-10 italic">
+            Connect wallet to view your Street Sync stream.
         </div>
     );
 
@@ -132,7 +132,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: i * 0.05 }}
-                        className="group relative aspect-square overflow-hidden rounded-xl bg-gray-900 border border-white/10 hover:border-green-500/50 transition-all cursor-pointer shadow-lg hover:shadow-green-500/20"
+                        className="group relative aspect-square overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer shadow-lg hover:shadow-primary/20"
                         onClick={() => setSelectedNft(nft)}
                     >
                         <img 
@@ -146,7 +146,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
                         {/* Content */}
                         <div className="absolute inset-0 p-4 flex flex-col justify-end translate-y-4 group-hover:translate-y-0 transition-transform duration-300">
-                            <h4 className="text-white font-bold truncate text-lg mb-1">{nft.name || nft.json?.name || `NFT #${i}`}</h4>
+                            <h4 className="text-white font-bold truncate text-lg mb-1 drop-shadow-md font-display">{nft.name || nft.json?.name || `NFT #${i}`}</h4>
                             
                             {/* Attribute Badge */}
                             {nft.json?.attributes && (
@@ -164,11 +164,11 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 </div>
                                 <div className="flex flex-col">
                                     <span className="text-xs text-white font-semibold leading-none">{nft.ownerName || "Unknown"}</span>
-                                    <span className="text-[10px] text-gray-400 font-mono leading-none">{nft.ownerAddress || "Wallet"}</span>
+                                    <span className="text-[10px] text-gray-400 font-mono font-bold leading-none tracking-tight">{nft.ownerAddress || "Wallet"}</span>
                                 </div>
                             </div>
 
-                            <button className="w-full py-2 bg-gradient-to-r from-green-500 to-emerald-600 rounded-lg text-white text-xs font-bold uppercase tracking-wider transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all shadow-lg shadow-green-900/20">
+                            <button className="w-full py-2 bg-gradient-to-r from-primary to-primary/80 rounded-lg text-primary-foreground text-xs font-bold uppercase tracking-wider transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all shadow-lg shadow-primary/20">
                                 See Details
                             </button>
                         </div>
@@ -177,15 +177,15 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
             ) : (
                 // Empty State / Mock Stream
                 <>
-                    <div className="col-span-full mb-4 p-6 rounded-2xl bg-black/40 border border-red-900/30 flex flex-col items-start gap-2 shadow-lg">
-                        <h4 className="text-xl font-black text-white tracking-tight uppercase italic">Your Collection</h4>
-                        <p className="text-sm text-gray-400 font-light">
-                            You don&apos;t have any NFTs yet. Mint one to start your collection. Here is a <span className="text-red-500 font-bold">preview</span>.
+                    <div className="col-span-full mb-4 p-6 rounded-2xl bg-card/80 border border-border flex flex-col items-start gap-2 shadow-lg">
+                        <h4 className="text-xl font-black text-foreground tracking-tight uppercase italic font-display">Your Collection</h4>
+                        <p className="text-sm text-muted-foreground font-light">
+                            You don&apos;t have any NFTs yet. Mint one to start your collection. Here is a <span className="text-primary font-bold">preview</span>.
                         </p>
                     </div>
 
                     {MOCK_NFTS.map((nft, i) => (
-                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-2xl bg-[#121212] border border-white/5 hover:border-red-600/30 transition-all hover:shadow-[0_0_20px_rgba(220,38,38,0.15)]">
+                        <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/30 transition-all hover:shadow-[0_0_20px_rgba(var(--primary),0.15)]">
                             <img 
                                 src={nft.image} 
                                 alt={nft.name}
@@ -195,12 +195,12 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             {/* Owner Info Mock */}
                             <div className="flex items-center gap-2 mb-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100 absolute bottom-2 left-2 z-10 w-[calc(100%-16px)]">
                                 <div className="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-white/10 flex items-center gap-2 w-full">
-                                    <div className="w-6 h-6 rounded-full bg-red-600 flex items-center justify-center text-[10px] font-bold text-white">
+                                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground">
                                         {(nft as any).ownerName?.[0] || "U"}
                                     </div>
                                     <div className="flex flex-col">
                                         <span className="text-xs text-white font-bold leading-none">{(nft as any).ownerName || "Unknown"}</span>
-                                        <span className="text-[10px] text-gray-400 font-mono leading-none">{(nft as any).ownerAddress || "Wallet"}</span>
+                                        <span className="text-[10px] text-gray-400 font-mono font-bold leading-none tracking-tight">{(nft as any).ownerAddress || "Wallet"}</span>
                                     </div>
                                 </div>
                             </div>
@@ -226,17 +226,17 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative bg-[#0a0a0a] border border-white/10 rounded-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl"
+                            className="relative bg-card border border-border rounded-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl"
                         >
                             <button 
                                 onClick={() => setSelectedNft(null)}
-                                className="absolute top-4 right-4 z-10 p-2 bg-black/50 hover:bg-white/10 rounded-full text-white transition-colors"
+                                className="absolute top-4 right-4 z-10 p-2 bg-background/50 hover:bg-foreground/10 rounded-full text-foreground transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                             </button>
 
                             {/* Image Section */}
-                            <div className="w-full md:w-1/2 bg-black/50 aspect-square md:aspect-auto relative group">
+                            <div className="w-full md:w-1/2 bg-gray-100 aspect-square md:aspect-auto relative group">
                                 <img 
                                     src={selectedNft.json?.image || selectedNft.image} 
                                     alt={selectedNft.name}
@@ -244,39 +244,38 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 />
                             </div>
 
-                            {/* Details Section */}
-                            <div className="w-full md:w-1/2 p-6 md:p-8 overflow-y-auto bg-gradient-to-br from-white/5 to-transparent custom-scrollbar">
+                             <div className="w-full md:w-1/2 p-6 md:p-8 overflow-y-auto bg-card custom-scrollbar">
                                 <div className="flex items-center gap-2 mb-2">
-                                     <div className="inline-block px-3 py-1 rounded-full bg-green-500/20 text-green-400 text-[10px] font-bold border border-green-500/30 uppercase tracking-wider">
+                                     <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
                                         Verified Collection
                                     </div>
                                     {selectedNft.json?.symbol && (
-                                        <span className="text-gray-500 text-xs font-mono">{selectedNft.json.symbol}</span>
+                                        <span className="text-muted-foreground text-xs font-mono font-bold tracking-tight">{selectedNft.json.symbol}</span>
                                     )}
                                 </div>
                                
-                                <h2 className="text-3xl font-black text-white mb-4 leading-tight">{selectedNft.name || selectedNft.json?.name}</h2>
+                                <h2 className="text-3xl font-black text-foreground mb-4 leading-tight font-display uppercase tracking-tight">{selectedNft.name || selectedNft.json?.name}</h2>
                                 
                                 <div className="space-y-6">
                                     <div>
-                                        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
                                             Description
                                         </h3>
-                                        <p className="text-gray-300 leading-relaxed text-sm bg-black/20 p-4 rounded-xl border border-white/5">
+                                        <p className="text-foreground leading-relaxed text-sm bg-muted p-4 rounded-xl border border-border">
                                             {selectedNft.description || selectedNft.json?.description || "No description provided."}
                                         </p>
                                     </div>
 
                                     {selectedNft.json?.attributes && (
                                         <div>
-                                            <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                Attributes <span className="text-gray-600">({selectedNft.json.attributes.length})</span>
+                                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                                                Attributes <span className="text-foreground">({selectedNft.json.attributes.length})</span>
                                             </h3>
                                             <div className="grid grid-cols-2 gap-2">
                                                 {selectedNft.json.attributes.map((attr, idx) => (
-                                                    <div key={idx} className="p-3 bg-white/5 rounded-lg border border-white/5 hover:border-white/10 transition-colors group">
-                                                        <p className="text-[10px] text-gray-500 uppercase font-bold mb-1 group-hover:text-gray-400 transition-colors">{attr.trait_type}</p>
-                                                        <p className="text-sm text-gray-200 font-bold truncate" title={attr.value}>{attr.value}</p>
+                                                    <div key={idx} className="p-3 bg-muted rounded-lg border border-border hover:border-muted-foreground/30 transition-colors group">
+                                                        <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1 group-hover:text-foreground transition-colors">{attr.trait_type}</p>
+                                                        <p className="text-sm text-foreground font-bold truncate" title={attr.value}>{attr.value}</p>
                                                     </div>
                                                 ))}
                                             </div>
@@ -289,7 +288,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                             href={`https://solscan.io/token/${selectedNft.uri ? 'mock-for-now' : ''}`} 
                                             target="_blank" 
                                             rel="noreferrer"
-                                            className="w-full py-3 rounded-xl bg-white/5 border border-white/10 text-white font-bold text-center text-sm hover:bg-white/10 transition-colors flex items-center justify-center gap-2"
+                                            className="w-full py-3 rounded-xl bg-muted border border-border text-foreground font-bold text-center text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
                                         >
                                            <span>View on Solscan</span>
                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>

@@ -117,7 +117,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             if (errMessage.includes("429") || errMessage.includes("limit")) {
                  setStatus(
                     <span>
-                        Airdrop limit reached (IP shared). Visit <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="underline text-pink-300 hover:text-white">faucet.solana.com</a>
+                        Airdrop limit reached (IP shared). Visit <a href="https://faucet.solana.com" target="_blank" rel="noopener noreferrer" className="underline text-primary hover:text-primary/80">faucet.solana.com</a>
                     </span>
                  );
             } else {
@@ -194,18 +194,18 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     };
 
     return (
-        <div className="p-6 bg-black/80 backdrop-blur-xl border border-red-900/40 rounded-xl text-center max-w-sm mx-auto shadow-[0_0_30px_rgba(220,38,38,0.15)] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-red-900/10 via-transparent to-black pointer-events-none" />
+        <div className="p-6 bg-card/80 backdrop-blur-xl border border-border rounded-xl text-center max-w-sm mx-auto shadow-xl relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/10 pointer-events-none" />
             
-            <h2 className="text-2xl font-black mb-4 text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-white uppercase italic tracking-tighter transform -skew-x-6 relative z-10">
+            <h2 className="text-2xl font-black mb-4 text-foreground uppercase italic tracking-tighter transform -skew-x-6 relative z-10 font-display">
                 Mint NFT
             </h2>
-            <p className="text-gray-400 mb-6 text-sm font-light relative z-10">
+            <p className="text-muted-foreground mb-6 text-sm font-light relative z-10">
                 Get a unique digital collectible from the Street Sync collection.
             </p>
             
             {balance !== null && (
-                 <p className="text-xs text-red-400/80 mb-4 font-mono relative z-10">Balance: {balance.toFixed(3)} SOL</p>
+                 <p className="text-xs text-muted-foreground mb-4 font-mono font-bold relative z-10 tracking-tight">Balance: {balance.toFixed(3)} SOL</p>
             )}
 
             <div className="flex flex-col gap-3 relative z-10">
@@ -213,12 +213,12 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                     onClick={handleMint}
                     disabled={isMinting || !wallet.connected || (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)}
                     className={`
-                        w-full py-3 px-6 rounded-none font-black text-white transition-all duration-300 transform skew-x-[-10deg] uppercase tracking-widest border border-transparent
+                        w-full py-3 px-6 rounded-none font-black text-primary-foreground transition-all duration-300 transform skew-x-[-10deg] uppercase tracking-widest border border-transparent font-display
                         ${isMinting 
-                            ? 'bg-gray-800 cursor-not-allowed text-gray-500' 
+                            ? 'bg-muted cursor-not-allowed text-muted-foreground' 
                             : (mintCount !== null && mintCount >= MAX_MINTS_PER_WALLET)
-                              ? 'bg-red-900/20 border-red-900/50 text-red-700 cursor-not-allowed'
-                              : 'bg-red-600 hover:bg-red-700 hover:shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:scale-[1.02] border-red-500/30'}
+                              ? 'bg-primary/80 border-primary/50 text-primary-foreground cursor-not-allowed hover:bg-primary/70 hover:scale-[1.02] hover:shadow-lg'
+                              : 'bg-primary hover:bg-primary/90 hover:shadow-lg hover:scale-[1.02] border-primary/30'}
                     `}
                 >
                     {isMinting 
@@ -233,10 +233,10 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
                  {/* Show Airdrop button if balance is low (e.g., < 1 SOL) and connected */}
                 {wallet.connected && balance !== null && balance < 1 && (
-                     <button
+                    <button
                         onClick={handleRequestAirdrop}
                         disabled={isMinting}
-                        className="w-full py-2 px-6 rounded-none font-bold text-red-500 border border-red-900/50 hover:bg-red-900/20 transition-all duration-300 text-xs uppercase tracking-wider transform skew-x-[-10deg]"
+                        className="w-full py-2 px-6 rounded-none font-bold text-primary border-2 border-primary hover:bg-primary/10 transition-all duration-300 text-xs uppercase tracking-wider transform skew-x-[-10deg] font-display"
                     >
                         Request Funds (0.5 SOL)
                     </button>
@@ -244,7 +244,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             </div>
             
             {status && (
-                <div className={`mt-4 text-xs font-mono relative z-10 ${typeof status === "string" && status.includes("success") ? "text-green-500" : "text-red-400"}`}>
+                <div className={`mt-4 text-xs font-mono font-bold relative z-10 uppercase tracking-tight ${typeof status === "string" && status.includes("success") ? "text-green-500" : "text-destructive"}`}>
                     {status}
                 </div>
             )}
