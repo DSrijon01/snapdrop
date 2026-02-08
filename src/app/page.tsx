@@ -44,16 +44,16 @@ function StreetSyncContent() {
     <main className="min-h-screen relative flex flex-col bg-background text-foreground transition-colors duration-300">
       <AnimatedBackground refreshTrigger={bgRefreshTrigger} />
 
-      <header className="p-6 flex justify-between items-center z-50 sticky top-0 bg-background/80 backdrop-blur-md border-b border-border">
+      <header className="p-4 md:p-6 flex justify-between items-center z-50 sticky top-0 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2">
-            <Logo size={40} className="rounded-sm" /> 
-           <h1 className="text-3xl font-black text-[var(--brand-text-color)] tracking-tighter cursor-default select-none uppercase italic transform -skew-x-6 font-display">
+            <Logo size={32} className="rounded-sm md:w-10 md:h-10" /> 
+           <h1 className="hidden md:block text-3xl font-black text-[var(--brand-text-color)] tracking-tighter cursor-default select-none uppercase italic transform -skew-x-6 font-display">
              Street Sync
            </h1>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
             <ThemeToggle />
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 transition-all !rounded-xl !font-bold !text-primary-foreground" />
+            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 transition-all !rounded-xl !font-bold !text-primary-foreground !px-3 md:!px-6 !text-sm md:!text-base !h-10 md:!h-12" />
         </div>
       </header>
       
