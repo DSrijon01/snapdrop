@@ -3,6 +3,6 @@
 4:I[45101,["/snapdrop/_next/static/chunks/d5b86f61f366d98e.js"],"MetadataBoundary"]
 5:"$Sreact.suspense"
 7:I[36875,["/snapdrop/_next/static/chunks/d5b86f61f366d98e.js"],"IconMark"]
-0:{"buildId":"9Q19h1xLs2eAtDiz5gHzg","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"K1gSykqtR8-LvRkH4WY9s","rsc":["$","$1","h",{"children":[null,["$","$L2",null,{"children":"$@3"}],["$","div",null,{"hidden":true,"children":["$","$L4",null,{"children":["$","$5",null,{"name":"Next.Metadata","children":"$@6"}]}]}],["$","meta",null,{"name":"next-size-adjust","content":""}]]}],"loading":null,"isPartial":false}
 3:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1"}]]
-6:[["$","title","0",{"children":"Street Sync | The Dark Side of Solana"}],["$","meta","1",{"name":"description","content":"Collect, trade, and dominate the digital underworld. A decentralized NFT marketplace on Solana."}],["$","link","2",{"rel":"icon","href":"/snapdrop/favicon.ico?favicon.0b3bf435.ico","sizes":"256x256","type":"image/x-icon"}],["$","$L7","3",{}]]
+6:[["$","title","0",{"children":"Street Sync | Sync Your Street"}],["$","meta","1",{"name":"description","content":"The next generation of digital collectibles. Connect your wallet to access the marketplace."}],["$","link","2",{"rel":"icon","href":"/icon?213612ec6a066aa8","type":"image/png","sizes":"32x32"}],["$","$L7","3",{}]]
