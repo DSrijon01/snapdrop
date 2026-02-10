@@ -1,8 +1,14 @@
 "use client";
 
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { NFT3DViewer } from "./NFT3DViewer";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { Transaction, SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+
+// Global Treasury Wallet
+const TREASURY_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
+const MOCK_ESCROW_PDA = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu"); // Placeholder
 
 // Mock Data for Marketplace
 const MARKET_ITEMS = [
@@ -16,14 +22,21 @@ const MARKET_ITEMS = [
     { id: 8, name: "Yokai #2291", rank: 2100, price: 1.8, image: "https://images.unsplash.com/photo-1642425149856-639f379ad461?w=400&fit=crop", lastSale: 1.2 },
 ];
 
-export const Marketplace: FC = () => {
+interface MarketplaceProps {
+    displayMode?: 'all' | 'user-listings' | 'mock-only';
+}
+
+export const Marketplace: FC<MarketplaceProps> = ({ displayMode = 'mock-only' }) => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selected3DItem, setSelected3DItem] = useState<(typeof MARKET_ITEMS)[0] | null>(null);
     
+    // In Mock mode, we just use static data
+    const sourceItems = MARKET_ITEMS;
+    
     // Filter and Sort items
-    const filteredItems = MARKET_ITEMS.filter(item => 
+    const filteredItems = sourceItems.filter(item => 
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
     ).sort((a, b) => {
         if (sortOrder === 'asc') {
@@ -32,6 +45,70 @@ export const Marketplace: FC = () => {
             return b.price - a.price;
         }
     });
+
+    const { connection } = useConnection();
+    const { publicKey, sendTransaction } = useWallet();
+    const [isBuying, setIsBuying] = useState<number | null>(null);
+
+    const handleBuy = async (item: any) => {
+        if (!publicKey) return; // Wallet must be connected
+        setIsBuying(item.id);
+
+        try {
+            const price = item.price * LAMPORTS_PER_SOL;
+            const platformFee = price * 0.02; // 2% Platform Fee
+            const sellerReceive = price - platformFee;
+
+            // Use the actual seller from the listing, or fallback to mock for demo items
+            // If item.seller exists (User Listing), use it. otherwise use Mock.
+            // Mock Marketplace always pays the Treasury/Mock Address
+            let sellerPubkey = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu"); 
+            
+            
+            // Prevent buying own item check removed for Mock Marketplace as users don't list here anymore.
+
+
+            const transaction = new Transaction();
+
+            // 1. Pay Seller (Price - Fee)
+            transaction.add(
+                SystemProgram.transfer({
+                    fromPubkey: publicKey,
+                    toPubkey: sellerPubkey,
+                    lamports: sellerReceive,
+                })
+            );
+
+            // 2. Pay Platform Fee -> Treasury (Atomic Settlement Requirement)
+            transaction.add(
+                SystemProgram.transfer({
+                    fromPubkey: publicKey,
+                    toPubkey: TREASURY_WALLET,
+                    lamports: platformFee,
+                })
+            );
+
+            // 3. Transfer NFT (Escrow -> Buyer)
+            // CRITICAL: This instruction requires the Escrow Authority (PDA) to sign or be invoked by the Program.
+            // Since we are client-side only without the Program's private key, we cannot physically execute this instruction 
+            // without the Smart Contract backend. 
+            // For this showcase, we explicitly acknowledge this limitation. 
+            // If we had the program, we'd add: program.methods.executeSale(...)
+            
+            console.log("Constructed Atomic Transaction: Pay Seller + Pay Treasury");
+
+            const signature = await sendTransaction(transaction, connection);
+            await connection.confirmTransaction(signature, "confirmed");
+            
+            alert(`Purchase Successful! Signature: ${signature}`);
+
+        } catch (error) {
+            console.error("Buy failed:", error);
+            alert("Purchase failed. See console.");
+        } finally {
+            setIsBuying(null);
+        }
+    };
 
     const toggleSort = () => {
         setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -168,9 +245,13 @@ export const Marketplace: FC = () => {
                                         Buy Now
                                     </button>
                                 ) : (
-                                    <div className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded border border-primary/20">
-                                        Buy Now
-                                    </div>
+                                    <button 
+                                        onClick={() => handleBuy(item)}
+                                        disabled={isBuying === item.id}
+                                        className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
+                                    >
+                                        {isBuying === item.id ? "..." : "Buy Now"}
+                                    </button>
                                 )}
                             </div>
                         </div>

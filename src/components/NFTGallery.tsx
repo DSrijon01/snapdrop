@@ -1,16 +1,22 @@
 "use client";
 
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet, useAnchorWallet } from "@solana/wallet-adapter-react";
 import { FC, useEffect, useState, useMemo } from "react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { fetchAllDigitalAssetByOwner, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
 import { motion, AnimatePresence } from "framer-motion";
+import { ListingModal } from "./ListingModal";
+import { Program, AnchorProvider } from "@coral-xyz/anchor";
+import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 
 interface NFT {
     name: string;
     image: string;
+    mint?: string;
     uri?: string;
     description?: string;
     json?: {
@@ -22,6 +28,8 @@ interface NFT {
     };
     ownerName?: string;
     ownerAddress?: string;
+    isListed?: boolean;
+    listingPrice?: number;
 }
 
 const USER_NAMES = ["CryptoKing", "SolanaSurfer", "NFTHunter", "PixelPioneer", "ChainWizard", "MetaMogul", "BlockBaron", "TokenTitan"];
@@ -38,10 +46,10 @@ const generateRandomOwner = () => {
 
 // Mock data for display when no NFTs found or for preview
 const MOCK_NFTS = [
-    { name: "Cosmic Cube #001", image: "https://images.unsplash.com/photo-1614726365206-3532c1c696e9?w=400&h=400&fit=crop", ownerName: "CosmicTraveler", ownerAddress: "Cosm...9x1" },
-    { name: "Neon Genesis", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", ownerName: "NeonKnight", ownerAddress: "Neon...7z2" },
-    { name: "Abstract Thought", image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", ownerName: "AbstractArt", ownerAddress: "Abst...3y8" },
-    { name: "Pixel Punk", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", ownerName: "PixelPunk", ownerAddress: "Pixe...1a9" },
+    { name: "Cosmic Cube #001", image: "https://images.unsplash.com/photo-1614726365206-3532c1c696e9?w=400&h=400&fit=crop", ownerName: "CosmicTraveler", ownerAddress: "Cosm...9x1", mint: "MockMintAddress1" },
+    { name: "Neon Genesis", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", ownerName: "NeonKnight", ownerAddress: "Neon...7z2", mint: "MockMintAddress2" },
+    { name: "Abstract Thought", image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", ownerName: "AbstractArt", ownerAddress: "Abst...3y8", mint: "MockMintAddress3" },
+    { name: "Pixel Punk", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", ownerName: "PixelPunk", ownerAddress: "Pixe...1a9", mint: "MockMintAddress4" },
 ];
 
 interface Props {
@@ -51,11 +59,124 @@ interface Props {
 export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const { connection } = useConnection();
     const wallet = useWallet();
+    const anchorWallet = useAnchorWallet();
     const [nfts, setNfts] = useState<NFT[]>([]);
     const [loading, setLoading] = useState(false);
     const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
+    const [listingNft, setListingNft] = useState<NFT | null>(null);
+    const [delistingId, setDelistingId] = useState<string | null>(null);
 
-    // Initialize Umi
+    const handleListComplete = (price: number, signature: string) => {
+        // In a real app, we'd update the backend state here.
+        // For this showcase, we update local View state to reflect the chain change
+        if (listingNft && wallet.publicKey) {
+            const newItem = {
+                id: Date.now(), // Unique ID
+                name: listingNft.name || listingNft.json?.name,
+                image: listingNft.image || listingNft.json?.image,
+                price: price,
+                rank: Math.floor(Math.random() * 5000), // Mock rank
+                mint: listingNft.mint,
+                isListed: true,
+                seller: wallet.publicKey.toBase58(), 
+                // NO KEYS STORED - SAFE
+            };
+            
+            // We only need to hide it from "Your Stream" locally for immediate feedback.
+            // The "For Sale" tab will pick it up from the blockchain automatically.
+            
+            // Dispatch event to notify components if needed (optional)
+            window.dispatchEvent(new Event('storage'));
+            
+            // Immediately remove from local view to simulate "Moving to Escrow"
+            setNfts(prev => prev.filter(n => n.mint !== listingNft.mint));
+        }
+
+        console.log(`Listed for ${price} SOL. Signature: ${signature}`);
+        setListingNft(null);
+        setSelectedNft(null);
+    };
+
+    const handleDelist = async (nft: NFT) => {
+        if (!anchorWallet || !wallet.publicKey || !nft.mint) return;
+        
+        // Removed native confirm to improve UX
+        // if (!confirm("Are you sure you want to delist this item?")) return;
+
+        setDelistingId(nft.mint);
+        try {
+            const mintPubkey = new PublicKey(nft.mint);
+            
+            // Use AnchorProvider with anchorWallet
+            const provider = new AnchorProvider(connection, anchorWallet, {});
+            const program = new Program(IDL as any, provider as any);
+            
+            // Use shared utils for PDA derivation
+            const [listingPDA] = findListingAddress(mintPubkey, wallet.publicKey);
+            const [escrowPDA] = findEscrowAddress(mintPubkey, wallet.publicKey);
+            
+            const sellerTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
+
+            // --- CRITICAL FIX: Ensure Seller ATA exists ---
+            const sellerTokenAccountInfo = await connection.getAccountInfo(sellerTokenAccount);
+            const preInstructions = [];
+
+            if (!sellerTokenAccountInfo) {
+                console.log("Seller ATA missing. Recreating...");
+                // Import this at top if missing: import { createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+                preInstructions.push(
+                    createAssociatedTokenAccountInstruction(
+                        wallet.publicKey,
+                        sellerTokenAccount,
+                        wallet.publicKey,
+                        mintPubkey
+                    )
+                );
+            }
+
+             console.log("Canceling listing for:", {
+                mint: mintPubkey.toBase58(),
+                seller: wallet.publicKey.toBase58(),
+                listingPDA: listingPDA.toBase58(),
+                escrowPDA: escrowPDA.toBase58(),
+                sellerTokenAccount: sellerTokenAccount.toBase58()
+             });
+
+             const signature = await program.methods
+                .cancelListing()
+                .accounts({
+                    seller: wallet.publicKey,
+                    mint: mintPubkey,
+                    listingAccount: listingPDA,
+                    escrowTokenAccount: escrowPDA,
+                    sellerTokenAccount: sellerTokenAccount,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                })
+                .preInstructions(preInstructions)
+                .rpc();
+            
+            console.log("Cancel signature:", signature);
+            await connection.confirmTransaction(signature, "confirmed");
+            alert("Delisted successfully (Listing Cancelled)!");
+            
+            // Refresh
+            window.dispatchEvent(new Event('storage')); // Trigger refresh
+            // Manually update local state
+            setNfts(prev => prev.filter(n => n.mint !== nft.mint)); // Remove from listed view (it will reappear in owned view on refresh)
+
+        } catch (e: any) {
+            console.error("Delist failed detailed:", e);
+            if (e.logs) {
+                console.error("Program Logs:", e.logs);
+            }
+            alert(`Failed to delist: ${e.message || "Unknown error"}. Check console for details.`);
+        } finally {
+            setDelistingId(null);
+        }
+    };
+
+    // ... (Initialize Umi) ...
     const umi = useMemo(() => {
         return createUmi(connection.rpcEndpoint)
             .use(walletAdapterIdentity(wallet))
@@ -71,40 +192,91 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         const fetchNFTs = async () => {
             setLoading(true);
             try {
-                // Force a small delay to ensure chain data is propagated
+                // Force a small delay
                 await new Promise(r => setTimeout(r, 2000));
                 
                 const owner = toPublicKey(wallet.publicKey!.toBase58());
-                const assets = await fetchAllDigitalAssetByOwner(umi, owner);
                 
-                // Process metadata
-                const loadedNfts = await Promise.all(assets.map(async (asset: any) => {
-                    // Try to load JSON metadata if uri exists
+                // 1. Fetch Items in Wallet
+                const assets = await fetchAllDigitalAssetByOwner(umi, owner);
+                const walletNfts = await Promise.all(assets.map(async (asset: any) => {
                     let json = undefined;
                     if (asset.metadata.uri) {
                          try {
                              const response = await fetch(asset.metadata.uri);
                              json = await response.json();
-                         } catch (unknownError) {
-                             console.error("Failed to load metadata json", unknownError);
-                         }
+                         } catch (unknownError) { console.error("Failed to load metadata json", unknownError); }
                     }
                     return {
                         name: asset.metadata.name,
                         uri: asset.metadata.uri,
+                        mint: asset.publicKey,
                         image: json?.image || "",
                         description: json?.description || "",
                         json,
-                        ownerName: generateRandomOwner().name,
-                        ownerAddress: generateRandomOwner().addr
+                        ownerName: "Me",
+                        ownerAddress: wallet.publicKey!.toBase58(),
+                        isListed: false
                     } as NFT;
                 }));
 
-                setNfts(loadedNfts);
+                // 2. Fetch "My Listings" (Items in Escrow)
+                const provider = new AnchorProvider(connection, wallet as any, {});
+                const program = new Program(IDL as any, provider as any);
+                
+                // Fetch all listings
+                 const accountClient = (program.account as any).listingAccount;
+                 const allListings = await accountClient.all([
+                    {
+                        memcmp: {
+                            offset: 8, // Discriminator
+                            bytes: wallet.publicKey!.toBase58() // Seller is first field
+                        }
+                    }
+                 ]);
+                 
+                 const listedNfts = await Promise.all(allListings.map(async (acc: any) => {
+                    const data = acc.account;
+                    const mintAddr = data.mint.toBase58();
+                    // Fetch metadata for mint
+                    try {
+                        const asset = await import("@metaplex-foundation/mpl-token-metadata").then(m => m.fetchDigitalAsset(umi, toPublicKey(mintAddr)));
+                        let json = undefined;
+                        if (asset.metadata.uri) {
+                             const r = await fetch(asset.metadata.uri);
+                             json = await r.json();
+                        }
+                        return {
+                            name: asset.metadata.name,
+                            image: json?.image || "",
+                            mint: mintAddr,
+                            description: json?.description,
+                            json,
+                            ownerName: "Me (Listed)",
+                            ownerAddress: "Escrow",
+                            isListed: true,
+                            listingPrice: data.price.toNumber() / 1000000000
+                        } as NFT;
+                    } catch (e) {
+                        return null;
+                    }
+                 }));
+
+                const validListedNfts = listedNfts.filter(n => n !== null) as NFT[];
+                
+                // Combine
+                let availableNfts = [...validListedNfts, ...walletNfts];
+
+                // --- LEGACY LOCAL STORAGE REMOVED ---
+                // We now rely purely on on-chain data.
+                // If you bought an item, it is transferred to your wallet.
+                // 'fetchAllDigitalAssetByOwner' will pick it up automatically in the next fetch cycle.
+
+                setNfts(availableNfts);
             } catch (error) {
                 console.error("Error fetching NFTs:", error);
                 // Fallback to mock for demo if fetch fails
-                setNfts(MOCK_NFTS); 
+                setNfts([]); 
             } finally {
                 setLoading(false);
             }
@@ -283,16 +455,43 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                     )}
                                     
                                     {/* Action Buttons */}
-                                    <div className="pt-4 flex justify-center">
-                                        <a 
-                                            href={`https://solscan.io/token/${selectedNft.uri ? 'mock-for-now' : ''}`} 
-                                            target="_blank" 
-                                            rel="noreferrer"
-                                            className="w-full py-3 rounded-xl bg-muted border border-border text-foreground font-bold text-center text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
-                                        >
-                                           <span>View on Solscan</span>
-                                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                        </a>
+                                    <div className="pt-4 flex flex-col gap-3">
+                                        <div className="flex gap-3">
+                                            <a 
+                                                href={`https://solscan.io/token/${selectedNft.mint || ''}?cluster=devnet`} 
+                                                target="_blank" 
+                                                rel="noreferrer"
+                                                className="flex-1 py-3 rounded-xl bg-muted border border-border text-foreground font-bold text-center text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <span>View on Solscan</span>
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                            </a>
+                                            
+                                            {/* List Button (Scope A: Only if owner - simulated check for now as we are the owner of what we fetch) */}
+                                            {/* Logic: fetchAllDigitalAssetByOwner fetches OUR assets, so we are always the owner */}
+                                            {/* List or Delist Button */}
+                                            {selectedNft.isListed ? (
+                                                <div className="flex-1 flex flex-col gap-1">
+                                                     <button 
+                                                        onClick={() => handleDelist(selectedNft)}
+                                                        disabled={!!delistingId}
+                                                        className="w-full py-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl font-bold text-sm uppercase tracking-wide shadow-lg shadow-destructive/20 transition-all disabled:opacity-50"
+                                                    >
+                                                        {delistingId === selectedNft.mint ? "Delisting..." : "Delist Item"}
+                                                    </button>
+                                                    <p className="text-[10px] text-center text-muted-foreground font-bold">
+                                                        *Gas fees only
+                                                    </p>
+                                                </div>
+                                            ) : (
+                                                <button 
+                                                    onClick={() => setListingNft(selectedNft)}
+                                                    className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-sm uppercase tracking-wide shadow-lg shadow-primary/20 transition-all"
+                                                >
+                                                    List for Sale
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -300,6 +499,16 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* Listing Modal */}
+            {listingNft && (
+                <ListingModal 
+                    isOpen={!!listingNft} 
+                    onClose={() => setListingNft(null)} 
+                    nft={listingNft}
+                    onListComplete={handleListComplete}
+                />
+            )}
         </div>
     );
 };

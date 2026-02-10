@@ -1,0 +1,1 @@
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/sbpf-solana-solana/release/street_sync.so: /Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/src/lib.rs

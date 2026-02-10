@@ -8,20 +8,23 @@ import { NFTGallery } from "@/components/NFTGallery";
 import { WalletContextProvider } from "@/components/WalletContextProvider";
 
 import { Marketplace } from "@/components/Marketplace";
+import { ForSale } from "@/components/ForSale";
 import { ThemeToggle } from "@/components/ThemeToggle"; 
 import { Logo } from "@/components/Logo";
+import { MobileSyncModal } from "@/components/MobileSyncModal";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
 function StreetSyncContent() {
   const { connected } = useWallet();
-  const [activeTab, setActiveTab] = useState<'stream' | 'marketplace'>('stream');
+  const [activeTab, setActiveTab] = useState<'stream' | 'marketplace' | 'for-sale'>('stream');
   const [refreshTrigger, setRefreshTrigger] = useState(0); // For gallery
   const [bgRefreshTrigger, setBgRefreshTrigger] = useState(0); // For background
   
   // Track connection history for "See You Again" state
   const hasConnected = useRef(false);
   const [showExitMessage, setShowExitMessage] = useState(false);
+  const [showMobileSync, setShowMobileSync] = useState(false);
 
   useEffect(() => {
     if (connected) {
@@ -43,6 +46,8 @@ function StreetSyncContent() {
   return (
     <main className="min-h-screen relative flex flex-col bg-background text-foreground transition-colors duration-300">
       <AnimatedBackground refreshTrigger={bgRefreshTrigger} />
+      
+      <MobileSyncModal isOpen={showMobileSync} onClose={() => setShowMobileSync(false)} />
 
       <header className="p-4 md:p-6 flex justify-between items-center z-50 sticky top-0 bg-background/80 backdrop-blur-md border-b border-border">
         <div className="flex items-center gap-2">
@@ -52,6 +57,17 @@ function StreetSyncContent() {
            </h1>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
+            <button 
+              onClick={() => setShowMobileSync(true)}
+              className="p-2 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-foreground border border-border"
+              aria-label="Mobile Sync"
+              title="Sync to Mobile"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                <path d="M12 18h.01"></path>
+              </svg>
+            </button>
             <ThemeToggle />
             <WalletMultiButton className="!bg-primary hover:!bg-primary/90 transition-all !rounded-xl !font-bold !text-primary-foreground !px-3 md:!px-6 !text-sm md:!text-base !h-10 md:!h-12" />
         </div>
@@ -83,6 +99,20 @@ function StreetSyncContent() {
                 >
                     Marketplace
                     {activeTab === 'marketplace' && (
+                        <motion.div 
+                            layoutId="activeTab"
+                            className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"
+                        />
+                    )}
+                </button>
+                <button
+                    onClick={() => setActiveTab('for-sale')}
+                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors ${
+                        activeTab === 'for-sale' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                    For Sale
+                    {activeTab === 'for-sale' && (
                         <motion.div 
                             layoutId="activeTab"
                             className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full"
@@ -133,8 +163,10 @@ function StreetSyncContent() {
                             <NFTGallery refreshTrigger={refreshTrigger} />
                         </section>
                     </div>
+                ) : activeTab === 'marketplace' ? (
+                    <Marketplace displayMode="mock-only" />
                 ) : (
-                    <Marketplace />
+                    <ForSale />
                 )}
             </div>
         )}

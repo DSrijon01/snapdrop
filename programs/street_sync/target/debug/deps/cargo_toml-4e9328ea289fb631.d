@@ -1,0 +1,10 @@
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/debug/deps/cargo_toml-4e9328ea289fb631.d: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/cargo_toml.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/afs.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/error.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/inheritable.rs
+
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/debug/deps/libcargo_toml-4e9328ea289fb631.rlib: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/cargo_toml.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/afs.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/error.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/inheritable.rs
+
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/debug/deps/libcargo_toml-4e9328ea289fb631.rmeta: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/cargo_toml.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/afs.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/error.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/inheritable.rs
+
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/cargo_toml.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/afs.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/error.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/cargo_toml-0.19.2/src/inheritable.rs:

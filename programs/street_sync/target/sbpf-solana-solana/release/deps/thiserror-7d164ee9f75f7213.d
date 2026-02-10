@@ -1,0 +1,10 @@
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/sbpf-solana-solana/release/deps/libthiserror-7d164ee9f75f7213.rmeta: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/sbpf-solana-solana/release/deps/libthiserror-7d164ee9f75f7213.rlib: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/srijonbiswas/.gemini/antigravity/scratch/snapdrop/programs/street_sync/target/sbpf-solana-solana/release/deps/thiserror-7d164ee9f75f7213.d: /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs /Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs
+
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/lib.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/aserror.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/display.rs:
+/Users/srijonbiswas/.cargo/registry/src/index.crates.io-6f17d22bba15001f/thiserror-1.0.69/src/provide.rs:
