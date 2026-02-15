@@ -66,7 +66,7 @@ const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onCli
 };
 
 interface MarketplaceProps {
-    displayMode?: 'all' | 'user-listings' | 'mock-only'; // Kept for compat
+    displayMode?: 'all' | 'user-listings' | 'mock-only' | 'real'; // Kept for compat
 }
 
 export const Marketplace: FC<MarketplaceProps> = () => {
