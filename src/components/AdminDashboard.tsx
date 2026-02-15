@@ -71,7 +71,7 @@ export const AdminDashboard: FC = () => {
             // Filter out tokens with 0 balance
             // Filter out potential NFTs: Decimals = 0 AND Amount = 1
             const filteredTokens = allTokens.filter(t => {
-                const isNft = t.decimals === 0 && t.amount === 1n;
+                const isNft = t.decimals === 0 && t.amount === BigInt(1);
                 return t.amount > 0 && !isNft;
             });
             
