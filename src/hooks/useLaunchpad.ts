@@ -60,8 +60,8 @@ export const useLaunchpad = () => {
         if (!program) return;
         setLoading(true);
         try {
-            // @ts-ignore
             console.log("Fetching bonding curves...");
+            // @ts-ignore
             const accounts = await program.account.bondingCurve.all();
             console.log("Fetched curves:", accounts);
             setCurves(accounts);
