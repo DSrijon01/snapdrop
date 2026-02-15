@@ -1,5 +1,5 @@
 {
-  "address": "wTiiJAuiwtsMsn9pznUymBLyYj2Mt6pFDRC4XLgsEWu",
+  "address": "3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY",
   "metadata": {
     "name": "street_sync",
     "version": "0.1.0",
@@ -107,26 +107,22 @@
       "args": []
     },
     {
-      "name": "delist_item",
+      "name": "cancel_listing",
       "discriminator": [
-        243,
-        224,
-        175,
-        39,
-        170,
-        10,
-        179,
-        114
+        41,
+        183,
+        50,
+        232,
+        230,
+        233,
+        157,
+        70
       ],
       "accounts": [
         {
           "name": "seller",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "treasury",
-          "writable": true
         },
         {
           "name": "mint"

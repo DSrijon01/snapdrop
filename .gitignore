@@ -40,3 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# Solana / Anchor
+.anchor
+test-ledger
+target/
+programs/launchpad/target/
+programs/street_sync/target/

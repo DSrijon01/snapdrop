@@ -15,9 +15,12 @@ import { MobileSyncModal } from "@/components/MobileSyncModal";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 
+const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
+import { AdminDashboard } from "@/components/AdminDashboard";
+
 function StreetSyncContent() {
-  const { connected } = useWallet();
-  const [activeTab, setActiveTab] = useState<'stream' | 'marketplace' | 'for-sale'>('stream');
+  const { connected, publicKey } = useWallet();
+  const [activeTab, setActiveTab] = useState<'stream' | 'marketplace' | 'for-sale' | 'admin'>('stream');
   const [refreshTrigger, setRefreshTrigger] = useState(0); // For gallery
   const [bgRefreshTrigger, setBgRefreshTrigger] = useState(0); // For background
   
@@ -25,6 +28,8 @@ function StreetSyncContent() {
   const hasConnected = useRef(false);
   const [showExitMessage, setShowExitMessage] = useState(false);
   const [showMobileSync, setShowMobileSync] = useState(false);
+
+  const isAdmin = publicKey?.toBase58() === ADMIN_WALLET;
 
   useEffect(() => {
     if (connected) {
@@ -76,10 +81,10 @@ function StreetSyncContent() {
       {/* OpenSea-style Tab Navigation (Only visible when connected) */}
       {connected && (
         <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[88px] z-40">
-            <div className="container mx-auto px-6 flex items-center gap-8">
+            <div className="container mx-auto px-6 flex items-center gap-8 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('stream')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors ${
+                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'stream' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -93,7 +98,7 @@ function StreetSyncContent() {
                 </button>
                 <button
                     onClick={() => setActiveTab('marketplace')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors ${
+                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'marketplace' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -107,7 +112,7 @@ function StreetSyncContent() {
                 </button>
                 <button
                     onClick={() => setActiveTab('for-sale')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors ${
+                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'for-sale' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -119,6 +124,20 @@ function StreetSyncContent() {
                         />
                     )}
                 </button>
+                {isAdmin && (
+                    <button
+                        onClick={() => setActiveTab('admin')}
+                        className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap text-red-500 hover:text-red-400`}
+                    >
+                        One Click Launch
+                         {activeTab === 'admin' && (
+                            <motion.div 
+                                layoutId="activeTab"
+                                className="absolute bottom-0 left-0 right-0 h-[2px] bg-red-500 rounded-full"
+                            />
+                        )}
+                    </button>
+                )}
             </div>
         </div>
       )}
@@ -164,7 +183,11 @@ function StreetSyncContent() {
                         </section>
                     </div>
                 ) : activeTab === 'marketplace' ? (
-                    <Marketplace displayMode="mock-only" />
+                    <Marketplace displayMode="real" />
+                ) : activeTab === 'admin' ? (
+                    <div className="container mx-auto">
+                        <AdminDashboard />
+                    </div>
                 ) : (
                     <ForSale />
                 )}

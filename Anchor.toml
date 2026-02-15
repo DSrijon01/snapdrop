@@ -1,20 +1,23 @@
-
 [toolchain]
 anchor_version = "0.32.1"
 
 [features]
-seeds = false
+resolution = true
 skip-lint = false
 
+[programs.devnet]
+launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"
+
 [programs.localnet]
-street_sync = "wTiiJAuiwtsMsn9pznUymBLyYj2Mt6pFDRC4XLgsEWu"
+street_sync = "3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY"
+launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "Devnet"
+cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"
+test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.ts"

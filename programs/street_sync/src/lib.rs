@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer, CloseAccount};
 
-declare_id!("wTiiJAuiwtsMsn9pznUymBLyYj2Mt6pFDRC4XLgsEWu");
+declare_id!("3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY");
 
 #[program]
 pub mod street_sync {

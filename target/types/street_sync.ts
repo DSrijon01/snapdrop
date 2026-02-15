@@ -5,7 +5,7 @@
  * IDL can be found at `target/idl/street_sync.json`.
  */
 export type StreetSync = {
-  "address": "wTiiJAuiwtsMsn9pznUymBLyYj2Mt6pFDRC4XLgsEWu",
+  "address": "3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY",
   "metadata": {
     "name": "streetSync",
     "version": "0.1.0",
@@ -113,26 +113,22 @@ export type StreetSync = {
       "args": []
     },
     {
-      "name": "delistItem",
+      "name": "cancelListing",
       "discriminator": [
-        243,
-        224,
-        175,
-        39,
-        170,
-        10,
-        179,
-        114
+        41,
+        183,
+        50,
+        232,
+        230,
+        233,
+        157,
+        70
       ],
       "accounts": [
         {
           "name": "seller",
           "writable": true,
           "signer": true
-        },
-        {
-          "name": "treasury",
-          "writable": true
         },
         {
           "name": "mint"
