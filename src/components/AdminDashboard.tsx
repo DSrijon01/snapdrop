@@ -5,6 +5,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync,
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import idl from '../idl/launchpad.json';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
+import { TokenGenerator } from './TokenGenerator';
 
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
@@ -22,6 +23,7 @@ export const AdminDashboard: FC = () => {
     const anchorWallet = useAnchorWallet();
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -148,17 +150,45 @@ export const AdminDashboard: FC = () => {
     return (
         <div className="p-6">
             <h2 className="text-3xl font-bold mb-6 text-foreground font-display uppercase italic">Admin Dashboard</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {loading ? (
-                   <p>Loading your tokens...</p>
-                ) : tokens.length === 0 ? (
-                   <p>No tokens found in this wallet.</p>
-                ) : (
-                    tokens.map((token) => (
-                        <TokenCard key={token.mint.toBase58()} token={token} onList={() => handleListToken(token)} />
-                    ))
-                )}
+            
+            <div className="flex gap-4 mb-8">
+                <button 
+                    onClick={() => setActiveTab('tokens')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'tokens' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    Treasury Tokens
+                </button>
+                <button 
+                    onClick={() => setActiveTab('generator')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'generator' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    Token Generator
+                </button>
             </div>
+
+            {activeTab === 'tokens' ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {loading ? (
+                       <p>Loading your tokens...</p>
+                    ) : tokens.length === 0 ? (
+                       <p>No tokens found in this wallet.</p>
+                    ) : (
+                        tokens.map((token) => (
+                            <TokenCard key={token.mint.toBase58()} token={token} onList={() => handleListToken(token)} />
+                        ))
+                    )}
+                </div>
+            ) : (
+                <TokenGenerator onListNow={handleListToken} />
+            )}
         </div>
     );
 };
