@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config, { webpack, isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -24,25 +24,34 @@ const nextConfig: NextConfig = {
         child_process: false,
         readline: false,
         events: false,
-        fs_promise: false,
+        'fs/promises': false,
         assert: false,
       };
+      
+      config.plugins.push(
+        new webpack.NormalModuleReplacementPlugin(
+          /^node:/,
+          (resource: any) => {
+            resource.request = resource.request.replace(/^node:/, '');
+          }
+        )
+      );
+
       config.resolve.alias = {
         ...config.resolve.alias,
         '@irys/upload': false,
         '@irys/upload-solana': false,
         'stream/promises': false,
-        'node:path': false,
-        'node:fs': false,
-        'node:crypto': false,
-        'node:stream': false,
-        'node:stream/promises': false,
-        'node:os': false,
-        'node:tty': false,
-        'node:child_process': false,
-        'node:readline': false,
-        'node:events': false,
-        'node:assert': false,
+        readline: false,
+        fs: false,
+        crypto: false,
+        os: false,
+        path: false,
+        stream: false,
+        tty: false,
+        child_process: false,
+        events: false,
+        assert: false,
       };
     }
     return config;
