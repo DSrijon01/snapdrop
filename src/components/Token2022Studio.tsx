@@ -269,7 +269,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializeMetadataPointerInstruction(
                         mint,
-                        GLOBAL_WALLET, // update authority
+                        wallet.publicKey, // update authority
                         mint, // metadata address (itself)
                         TOKEN_2022_PROGRAM_ID
                     )
@@ -281,8 +281,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializeTransferFeeConfigInstruction(
                         mint,
-                        GLOBAL_WALLET, // transfer fee config authority
-                        GLOBAL_WALLET, // withdraw withheld authority
+                        wallet.publicKey, // transfer fee config authority
+                        GLOBAL_WALLET, // withdraw withheld authority (Can remain Global Wallet as it doesn't need to sign here)
                         transferFeeBasisPoints,
                         BigInt(transferFeeMaxAmount) * BigInt(Math.pow(10, decimals)),
                         TOKEN_2022_PROGRAM_ID
@@ -295,7 +295,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializePermanentDelegateInstruction(
                         mint,
-                        GLOBAL_WALLET,
+                        wallet.publicKey, // Permanent delegate authority
                         TOKEN_2022_PROGRAM_ID
                     )
                 );
@@ -306,7 +306,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializeMintCloseAuthorityInstruction(
                         mint,
-                        GLOBAL_WALLET,
+                        wallet.publicKey, // Close authority
                         TOKEN_2022_PROGRAM_ID
                     )
                 );
@@ -329,7 +329,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializeInterestBearingMintInstruction(
                         mint,
-                        GLOBAL_WALLET, // rate authority
+                        wallet.publicKey, // rate authority
                         interestRate,
                         TOKEN_2022_PROGRAM_ID
                     )
@@ -351,7 +351,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializePausableConfigInstruction(
                         mint,
-                        GLOBAL_WALLET, // pausable config authority
+                        wallet.publicKey, // pausable config authority
                         TOKEN_2022_PROGRAM_ID
                     )
                 );
@@ -364,7 +364,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                     transaction.add(
                         createInitializeTransferHookInstruction(
                             mint,
-                            GLOBAL_WALLET,
+                            wallet.publicKey, // Hook authority
                             hookProgram,
                             TOKEN_2022_PROGRAM_ID
                         )
@@ -379,7 +379,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 transaction.add(
                     createInitializeGroupPointerInstruction(
                         mint,
-                        GLOBAL_WALLET,
+                        wallet.publicKey, // Update authority
                         mint, // Group data lives on this mint
                         TOKEN_2022_PROGRAM_ID
                     )
@@ -390,8 +390,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                         programId: TOKEN_2022_PROGRAM_ID,
                         mint: mint,
                         group: mint,
-                        mintAuthority: GLOBAL_WALLET,
-                        updateAuthority: GLOBAL_WALLET,
+                        mintAuthority: wallet.publicKey, // Authority that can mint into this group
+                        updateAuthority: wallet.publicKey,
                         maxSize: BigInt(0), // 0 = undefined/uncapped max size in standard usage
                     })
                 );
@@ -404,7 +404,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                     transaction.add(
                         createInitializeGroupMemberPointerInstruction(
                             mint,
-                            GLOBAL_WALLET,
+                            wallet.publicKey, // update authority
                             mint,
                             TOKEN_2022_PROGRAM_ID
                         )
@@ -415,8 +415,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                             member: mint,
                             memberMint: mint,
                             group: parentGroup,
-                            groupUpdateAuthority: GLOBAL_WALLET, // Assumes global wallet owns the group, typical for Admin DB
-                            memberMintAuthority: GLOBAL_WALLET,
+                            groupUpdateAuthority: wallet.publicKey, // Requires parent group update authority to sign (must match actual logic of group)
+                            memberMintAuthority: wallet.publicKey,
                         })
                     );
                 } catch (e) {
@@ -429,8 +429,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 createInitializeMintInstruction(
                     mint,
                     decimals,
-                    GLOBAL_WALLET, // mint authority
-                    enableMintCloseAuthority ? GLOBAL_WALLET : null, // freeze authority (can be same if needed)
+                    wallet.publicKey, // mint authority
+                    enableMintCloseAuthority ? wallet.publicKey : null, // freeze authority (can be same if needed)
                     TOKEN_2022_PROGRAM_ID
                 )
             );
@@ -442,9 +442,9 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                         {
                             programId: TOKEN_2022_PROGRAM_ID,
                             metadata: mint,
-                            updateAuthority: GLOBAL_WALLET,
+                            updateAuthority: wallet.publicKey,
                             mint: mint,
-                            mintAuthority: GLOBAL_WALLET,
+                            mintAuthority: wallet.publicKey,
                             name: name,
                             symbol: symbol,
                             uri: metadataUri,
@@ -475,7 +475,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 createMintToInstruction(
                     mint,
                     globalWalletAta,
-                    GLOBAL_WALLET, // mint authority
+                    wallet.publicKey, // mint authority providing the execution
                     BigInt(totalSupply) * BigInt(Math.pow(10, decimals)),
                     [], // multisig
                     TOKEN_2022_PROGRAM_ID
@@ -495,6 +495,30 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             // To simplify in the builder for now, we will note them as required post-creation configuration steps
             // which would invoke toggle-like instructions: `createEnableRequiredMemoTransfersInstruction`, `createEnableCpiGuardInstruction`.
             
+            setStatus('Simulating transaction...');
+            
+            // Set fee payer and recent blockhash for simulation
+            transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+            transaction.feePayer = wallet.publicKey;
+            
+            // Partial sign with mint keypair for accurate simulation
+            transaction.partialSign(mintKeypair);
+
+            try {
+                const simulation = await connection.simulateTransaction(transaction);
+                if (simulation.value.err) {
+                    console.error("Simulation failed:", simulation.value.err);
+                    console.error("Simulation logs:", simulation.value.logs);
+                    throw new Error(`Simulation failed: ${JSON.stringify(simulation.value.err)}. See console for exact program logs.`);
+                }
+            } catch (simError: any) {
+                console.warn("Simulation check error (might be network):", simError);
+                // Proceed to send nonetheless, or throw based on preference
+                if (simError.message.includes('Simulation failed:')) {
+                    throw simError; 
+                }
+            }
+
             setStatus('Sending Token-2022 Creation Transaction...');
             
             const signature = await wallet.sendTransaction(transaction, connection, {
