@@ -6,7 +6,7 @@ import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import idl from '../idl/launchpad.json';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { TokenGenerator } from './TokenGenerator';
-
+import { Token2022Studio } from './Token2022Studio';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -23,7 +23,7 @@ export const AdminDashboard: FC = () => {
     const anchorWallet = useAnchorWallet();
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -172,6 +172,16 @@ export const AdminDashboard: FC = () => {
                 >
                     Token Generator
                 </button>
+                <button 
+                    onClick={() => setActiveTab('token2022')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'token2022' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    Token-2022 Studio
+                </button>
             </div>
 
             {activeTab === 'tokens' ? (
@@ -186,8 +196,10 @@ export const AdminDashboard: FC = () => {
                         ))
                     )}
                 </div>
-            ) : (
+            ) : activeTab === 'generator' ? (
                 <TokenGenerator onListNow={handleListToken} />
+            ) : (
+                <Token2022Studio onListNow={handleListToken} />
             )}
         </div>
     );
