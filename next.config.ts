@@ -9,13 +9,10 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   webpack: (config, { webpack, isServer }) => {
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
+      // Properly resolve both standard and `node:` prefixed core modules to false
+      const fallbackRules = {
         fs: false,
         path: false,
         crypto: false,
@@ -27,35 +24,40 @@ const nextConfig: NextConfig = {
         child_process: false,
         readline: false,
         events: false,
-        'fs/promises': false,
         assert: false,
+        'fs/promises': false,
+        'node:fs': false,
+        'node:path': false,
+        'node:crypto': false,
+        'node:stream': false,
+        'node:stream/promises': false,
+        'node:os': false,
+        'node:zlib': false,
+        'node:tty': false,
+        'node:child_process': false,
+        'node:readline': false,
+        'node:events': false,
+        'node:assert': false,
+        'node:fs/promises': false,
       };
-      
-      config.plugins.push(
-        new webpack.NormalModuleReplacementPlugin(
-          /^node:/,
-          (resource: any) => {
-            resource.request = resource.request.replace(/^node:/, '');
-          }
-        )
-      );
+
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        ...fallbackRules,
+      };
 
       config.resolve.alias = {
         ...config.resolve.alias,
         '@irys/upload': false,
         '@irys/upload-solana': false,
-        'stream/promises': false,
-        readline: false,
-        fs: false,
-        crypto: false,
-        os: false,
-        path: false,
-        stream: false,
-        tty: false,
-        child_process: false,
-        events: false,
-        assert: false,
+        ...fallbackRules,
       };
+
+      // Ensure webpack ignores `node:` completely
+      config.module.rules.push({
+        test: /^node:/,
+        use: 'null-loader',
+      });
     }
     return config;
   },
