@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, ComputeBudgetProgram } from '@solana/web3.js';
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint } from '@solana/spl-token';
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, ExtensionType, getExtensionTypes } from '@solana/spl-token';
 import idl from '../idl/launchpad.json';
 
 const PROGRAM_ID = new PublicKey("5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV");
@@ -18,6 +18,8 @@ export type BondingCurveAccount = {
         realTokenReserves: BN;
         bump: number;
     };
+    isToken2022?: boolean;
+    activeExtensions?: ExtensionType[];
 };
 
 export const useLaunchpad = () => {
@@ -63,8 +65,37 @@ export const useLaunchpad = () => {
             console.log("Fetching bonding curves...");
             // @ts-ignore
             const accounts = await program.account.bondingCurve.all();
-            console.log("Fetched curves:", accounts);
-            setCurves(accounts);
+            
+            // Fetch mint accounts to determine program and extensions
+            const mintPubkeys = accounts.map((acc: any) => acc.account.mint);
+            const mintInfos = await connection.getMultipleAccountsInfo(mintPubkeys);
+
+            const enrichedAccounts = accounts.map((acc: any, index: number) => {
+                const mintInfo = mintInfos[index];
+                let isToken2022 = false;
+                let activeExtensions: ExtensionType[] = [];
+
+                if (mintInfo) {
+                    isToken2022 = mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+                    if (isToken2022) {
+                        try {
+                            // Extract extension types from mint data
+                            activeExtensions = getExtensionTypes(mintInfo.data);
+                        } catch (e) {
+                            console.error("Error parsing extensions for mint:", acc.account.mint.toBase58(), e);
+                        }
+                    }
+                }
+
+                return {
+                    ...acc,
+                    isToken2022,
+                    activeExtensions
+                };
+            });
+
+            console.log("Fetched and enriched curves:", enrichedAccounts);
+            setCurves(enrichedAccounts);
         } catch (error) {
             console.error("Error fetching curves:", error);
         } finally {

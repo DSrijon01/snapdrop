@@ -6,6 +6,8 @@ import { useLaunchpad, BondingCurveAccount } from "../hooks/useLaunchpad";
 import { useTokenMetadata } from "../hooks/useTokenMetadata";
 import { CompanyDetailModal } from "./CompanyDetailModal";
 import { BN } from "@coral-xyz/anchor";
+import { TokenBadge } from "./TokenBadge";
+import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
 const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onClick: () => void }) => {
@@ -25,32 +27,43 @@ const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onCli
     // BN div is integer division. We need float.
     const price = Number(curve.account.virtualSolReserves) / Number(curve.account.virtualTokenReserves);
 
+    // Prefer curve properties since they are fetched directly from mint account in Launchpad
+    const isToken2022 = curve.isToken2022 || metadata?.isToken2022;
+
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer"
+            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col"
             onClick={onClick}
         >
-            <div className="aspect-square w-full bg-muted relative overflow-hidden">
+            <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
                     <img src={metadata.image} alt={metadata.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">Loading...</div>
                 )}
                 
-                {metadata?.isToken2022 && (
-                     <div className="absolute top-3 left-3 z-10 bg-yellow-500/90 text-black font-bold px-2 py-1 rounded-md text-[10px] shadow-lg">
-                         TOKEN-2022
-                     </div>
-                )}
+                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                    {isToken2022 ? (
+                        <TokenBadge type="TOKEN_2022" />
+                    ) : (
+                        <TokenBadge type="SPL" />
+                    )}
+                </div>
             </div>
 
-            <div className="p-4">
+            <div className="p-4 flex flex-col flex-1">
                 <h3 className="font-bold text-foreground text-lg font-display uppercase truncate">{metadata?.name || "Unknown"}</h3>
-                <p className="text-xs font-mono text-muted-foreground mb-4">{metadata?.symbol || "..."}</p>
+                <p className="text-xs font-mono text-muted-foreground mb-3">{metadata?.symbol || "..."}</p>
                 
-                <div className="flex justify-between items-end">
+                <div className="flex flex-wrap gap-2 mb-4">
+                    {curve.activeExtensions?.map((ext) => (
+                        <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
+                    ))}
+                </div>
+                
+                <div className="flex justify-between items-end mt-auto">
                     <div>
                         <div className="text-[10px] text-muted-foreground uppercase">Price</div>
                         <div className="font-bold text-lg">{price.toFixed(6)} SOL</div>
