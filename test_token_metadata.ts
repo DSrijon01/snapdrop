@@ -23,12 +23,12 @@ const metaDataWithAuth = {
 
 try {
     console.log("Without Auth Length:", pack(metaDataWithoutAuth as any).length);
-} catch (e) {
+} catch (e: any) {
     console.log("Without Auth failed:", e.message);
 }
 
 try {
     console.log("With Auth Length:", pack(metaDataWithAuth).length);
-} catch (e) {
+} catch (e: any) {
     console.log("With Auth failed:", e.message);
 }
