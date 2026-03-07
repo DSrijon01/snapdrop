@@ -6,7 +6,8 @@ import { PublicKey, SystemProgram, Transaction, Keypair, Connection } from '@sol
 import { 
     TOKEN_2022_PROGRAM_ID, 
     ExtensionType, 
-    getMintLen, 
+    getTypeLen,
+    getMintLen,
     createInitializeMintInstruction,
     createInitializeTransferFeeConfigInstruction,
     createInitializeNonTransferableMintInstruction,
@@ -224,13 +225,13 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             if (enableMemoOnTransfer) accountExtensions.push(ExtensionType.MemoTransfer);
             if (enableCpiGuard) accountExtensions.push(ExtensionType.CpiGuard);
 
-            // Calculate exact space needed for Mint account + its extensions
+            // Initialize exact initial space needed for Mint account + declared extensions
             const mintLen = getMintLen(activeExtensions);
 
-            // Important: TokenMetadata is NOT part of getMintLen(). 
-            // We have to add its space if we are injecting the actual metadata natively post-mint-init.
-            let metadataSpace = 0;
+            // TokenMetadata is NOT part of getMintLen(). 
+            // We have to add its space exclusively for lamports, so realloc succeeds later.
             const metaData = {
+                updateAuthority: wallet.publicKey,
                 mint: mint,
                 name: name,
                 symbol: symbol,
@@ -238,14 +239,16 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 additionalMetadata: [] // Can add custom fields here later
             };
 
+            let finalAccountSize = mintLen;
+
             if (enableTokenMetadata) {
                 // TokenMetadata Extension takes dynamic space based on data length
-                // pack() packs it into a buffer, we take length, plus length/type prefixes
-                metadataSpace = TYPE_SIZE + LENGTH_SIZE + pack(metaData).length; 
+                const exactMetadataSpace = TYPE_SIZE + LENGTH_SIZE + pack(metaData).length;
+                finalAccountSize += exactMetadataSpace + 4; // Add slight buffer for realloc safety
             }
 
-            const totalAccountSize = mintLen + metadataSpace;
-            const lamports = await connection.getMinimumBalanceForRentExemption(totalAccountSize);
+            // Fund rent for the FINAL size, but strictly create account with INITIAL size
+            const lamports = await connection.getMinimumBalanceForRentExemption(finalAccountSize);
 
             const transaction = new Transaction();
 
@@ -254,8 +257,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 SystemProgram.createAccount({
                     fromPubkey: wallet.publicKey,
                     newAccountPubkey: mint,
-                    space: totalAccountSize,
-                    lamports,
+                    space: mintLen, // MUST be exact initial size for InitializeMint
+                    lamports, // MUST be final size for TokenMetadata realloc
                     programId: TOKEN_2022_PROGRAM_ID,
                 })
             );
