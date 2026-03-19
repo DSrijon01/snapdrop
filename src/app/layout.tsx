@@ -3,6 +3,8 @@ import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { DevnetBanner } from "@/components/DevnetBanner";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { Sidebar } from "@/components/Sidebar";
+import { WalletContextProvider } from "@/components/WalletContextProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,8 +39,15 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
       >
         <ThemeProvider defaultTheme="light">
-          <DevnetBanner />
-          {children}
+          <WalletContextProvider>
+            <DevnetBanner />
+            <div className="flex h-[100dvh] overflow-hidden">
+              <Sidebar />
+              <main className="flex-1 overflow-y-auto relative w-full">
+                {children}
+              </main>
+            </div>
+          </WalletContextProvider>
         </ThemeProvider>
       </body>
     </html>

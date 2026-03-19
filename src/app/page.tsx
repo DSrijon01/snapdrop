@@ -5,7 +5,6 @@ import { ClientWalletMultiButton as WalletMultiButton } from "@/components/Clien
 import { AnimatedBackground } from "@/components/AnimatedBackground";
 import { CandyMachineMint } from "@/components/CandyMachineMint";
 import { NFTGallery } from "@/components/NFTGallery";
-import { WalletContextProvider } from "@/components/WalletContextProvider";
 
 import { Marketplace } from "@/components/Marketplace";
 import { ForSale } from "@/components/ForSale";
@@ -14,6 +13,7 @@ import { Logo } from "@/components/Logo";
 import { MobileSyncModal } from "@/components/MobileSyncModal";
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 import { AdminDashboard } from "@/components/AdminDashboard";
@@ -203,9 +203,5 @@ function StreetSyncContent() {
 }
 
 export default function Home() {
-  return (
-    <WalletContextProvider>
-      <StreetSyncContent />
-    </WalletContextProvider>
-  );
+  return <StreetSyncContent />;
 }
