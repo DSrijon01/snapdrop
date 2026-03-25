@@ -30,6 +30,7 @@
     "arweave": "^1.15.7",
     "buffer": "^6.0.3",
     "crypto-browserify": "^3.12.1",
+    "date-fns": "^4.1.0",
     "events": "^3.3.0",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.577.0",
