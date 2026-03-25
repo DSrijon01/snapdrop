@@ -143,7 +143,7 @@ export const mockCryptoNews: NewsArticle[] = [
 ];
 
 export async function fetchNews() {
-  const API_KEY = process.env.NEXT_PUBLIC_NEWSDATA_API_KEY;
+  const API_KEY = process.env.NEXT_PUBLIC_NEWSDATA_API_KEY || "pub_67f62ba79a9445f4896e83970c7b1eb1";
 
   if (!API_KEY) {
     console.warn("No NewsData API Key found. Using rich mock data fallback.");
