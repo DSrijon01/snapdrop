@@ -912,6 +912,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "e_plays"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
 name = "ed25519"
 version = "1.5.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

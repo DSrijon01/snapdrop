@@ -7,6 +7,7 @@ import idl from '../idl/launchpad.json';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { TokenGenerator } from './TokenGenerator';
 import { Token2022Studio } from './Token2022Studio';
+import { CreateMarketEvent } from './CreateMarketEvent';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -23,7 +24,7 @@ export const AdminDashboard: FC = () => {
     const anchorWallet = useAnchorWallet();
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'eplays'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -182,6 +183,16 @@ export const AdminDashboard: FC = () => {
                 >
                     Token-2022 Studio
                 </button>
+                <button 
+                    onClick={() => setActiveTab('eplays')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'eplays' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    E-Plays Market
+                </button>
             </div>
 
             {activeTab === 'tokens' ? (
@@ -198,8 +209,10 @@ export const AdminDashboard: FC = () => {
                 </div>
             ) : activeTab === 'generator' ? (
                 <TokenGenerator onListNow={handleListToken} />
-            ) : (
+            ) : activeTab === 'token2022' ? (
                 <Token2022Studio onListNow={handleListToken} />
+            ) : (
+                <CreateMarketEvent />
             )}
         </div>
     );

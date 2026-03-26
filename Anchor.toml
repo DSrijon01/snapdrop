@@ -6,11 +6,12 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
+e_plays = "77vsiKoC6gxYZwbds54Qgqah1du7oDFYPEW84ykAQ7Y4"
 launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"
 
 [programs.localnet]
-street_sync = "3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY"
 launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"
+street_sync = "3obPCCswxLT51VpKhY8KgG83geqv4HFPe2oBAEZYDbYY"
 
 [registry]
 url = "https://api.apr.dev"
