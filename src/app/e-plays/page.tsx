@@ -68,9 +68,9 @@ export default function EPlaysPage() {
         const provider = new AnchorProvider(connection, (window as any).solana || dummyWallet, { preflightCommitment: 'confirmed' });
         const program = new Program(idl as Idl, provider);
 
-        const marketAccounts = await program.account.marketState.all();
+        const marketAccounts = await (program.account as any).marketState.all();
         
-        const mappedMarkets: Market[] = marketAccounts.map((account) => {
+        const mappedMarkets: Market[] = marketAccounts.map((account: any) => {
           const accData = account.account as any;
           const totalYes = accData.totalYesShares.toNumber();
           const totalNo = accData.totalNoShares.toNumber();
@@ -170,7 +170,7 @@ export default function EPlaysPage() {
         );
 
         // 5. Append the buy_shares instruction
-        const buyIx = await program.methods
+        const buyIx = await (program.methods as any)
             .buyShares(formattedAmount, isYes)
             .accounts({
                 buyer: publicKey,

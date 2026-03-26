@@ -84,7 +84,7 @@ export const CreateMarketEvent: FC = () => {
             );
 
             // RPC Transaction Calls Batched
-            const ix1 = await program.methods.initMarket(title, new BN(expiryTimestamp))
+            const ix1 = await (program.methods as any).initMarket(title, new BN(expiryTimestamp))
                 .accounts({
                     admin: publicKey,
                     marketState: marketState,
@@ -92,7 +92,7 @@ export const CreateMarketEvent: FC = () => {
                 })
                 .instruction();
 
-            const ix2 = await program.methods.initYesMint(title)
+            const ix2 = await (program.methods as any).initYesMint(title)
                 .accounts({
                     admin: publicKey,
                     marketState: marketState,
@@ -102,7 +102,7 @@ export const CreateMarketEvent: FC = () => {
                 })
                 .instruction();
 
-            const ix3 = await program.methods.initNoMint(title)
+            const ix3 = await (program.methods as any).initNoMint(title)
                 .accounts({
                     admin: publicKey,
                     marketState: marketState,
@@ -112,7 +112,7 @@ export const CreateMarketEvent: FC = () => {
                 })
                 .instruction();
 
-            const ix4 = await program.methods.initVault(title)
+            const ix4 = await (program.methods as any).initVault(title)
                 .accounts({
                     admin: publicKey,
                     marketState: marketState,
