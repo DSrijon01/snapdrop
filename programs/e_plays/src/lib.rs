@@ -31,4 +31,12 @@ pub mod e_plays {
     pub fn buy_shares(ctx: Context<BuyShares>, amount_in: u64, is_yes: bool) -> Result<()> {
         handle_buy_shares(ctx, amount_in, is_yes)
     }
+
+    pub fn resolve_market(ctx: Context<ResolveMarket>, is_yes: bool) -> Result<()> {
+        handle_resolve_market(ctx, is_yes)
+    }
+
+    pub fn claim_winnings(ctx: Context<ClaimWinnings>) -> Result<()> {
+        handle_claim_winnings(ctx)
+    }
 }

@@ -12,4 +12,14 @@ pub enum MarketError {
     MarketResolved,
     #[msg("Invalid YES or NO mint provided.")]
     InvalidMint,
+    #[msg("Unauthorized: Only the admin can resolve this market.")]
+    UnauthorizedAdmin,
+    #[msg("Market hasn't expired yet.")]
+    MarketNotExpiredYet,
+    #[msg("Market hasn't been resolved yet.")]
+    MarketNotResolvedYet,
+    #[msg("Invalid Mint: This token did not win the market!")]
+    InvalidLosingMint,
+    #[msg("No tokens available to claim.")]
+    NothingToClaim,
 }
