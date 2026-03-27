@@ -218,7 +218,15 @@ export default function EPlaysPage() {
         
     } catch (error: any) {
         console.error("Order failed:", error);
-        setTxStatus({ type: 'error', message: `Error processing transaction: ${error.message || "Unknown error"}` });
+        
+        let errorMsg = error.message || "Unknown error";
+        if (error.logs) {
+            console.error("Simulation Logs:", error.logs);
+            // Optionally append the last log to the UI message for rapid debugging
+            errorMsg = `${errorMsg}. Logs: ${error.logs[error.logs.length - 1]}`;
+        }
+
+        setTxStatus({ type: 'error', message: `Simulation Failed: ${errorMsg}` });
     } finally {
         setIsSubmitting(false);
     }
