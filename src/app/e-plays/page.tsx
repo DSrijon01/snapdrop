@@ -6,7 +6,7 @@ import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, RefreshCcw, Loader2 } 
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction, createSyncNativeInstruction, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import idl from '@/idl/e_plays.json';
 
 // === Types ===
@@ -159,7 +159,27 @@ export default function EPlaysPage() {
 
         const tx = new Transaction();
 
-        // 4. Inject Idempotent ATA creation incase they've never bought this token side
+        // We must wrap their Native SOL into WSOL dynamically
+        tx.add(
+            createAssociatedTokenAccountIdempotentInstruction(
+                publicKey,
+                buyerCollateral,
+                publicKey,
+                WSOL_MINT
+            )
+        );
+
+        tx.add(
+            SystemProgram.transfer({
+                fromPubkey: publicKey,
+                toPubkey: buyerCollateral,
+                lamports: Number(formattedAmount),
+            })
+        );
+        
+        tx.add(createSyncNativeInstruction(buyerCollateral));
+
+        // Inject Idempotent ATA creation incase they've never bought this token side
         tx.add(
             createAssociatedTokenAccountIdempotentInstruction(
                 publicKey,
