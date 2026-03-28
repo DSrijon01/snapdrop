@@ -104,6 +104,93 @@
       ]
     },
     {
+      "name": "claim_winnings",
+      "discriminator": [
+        161,
+        215,
+        24,
+        59,
+        14,
+        236,
+        242,
+        221
+      ],
+      "accounts": [
+        {
+          "name": "claimer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market_state.title",
+                "account": "MarketState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market_state"
+              }
+            ]
+          }
+        },
+        {
+          "name": "user_mint_account",
+          "writable": true
+        },
+        {
+          "name": "user_collateral",
+          "writable": true
+        },
+        {
+          "name": "mint",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "init_market",
       "discriminator": [
         33,
@@ -416,6 +503,60 @@
           "type": "string"
         }
       ]
+    },
+    {
+      "name": "resolve_market",
+      "discriminator": [
+        155,
+        23,
+        80,
+        173,
+        46,
+        74,
+        23,
+        239
+      ],
+      "accounts": [
+        {
+          "name": "admin",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "market_state",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  109,
+                  97,
+                  114,
+                  107,
+                  101,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "market_state.title",
+                "account": "MarketState"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "is_yes",
+          "type": "bool"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -458,6 +599,31 @@
       "code": 6004,
       "name": "InvalidMint",
       "msg": "Invalid YES or NO mint provided."
+    },
+    {
+      "code": 6005,
+      "name": "UnauthorizedAdmin",
+      "msg": "Unauthorized: Only the admin can resolve this market."
+    },
+    {
+      "code": 6006,
+      "name": "MarketNotExpiredYet",
+      "msg": "Market hasn't expired yet."
+    },
+    {
+      "code": 6007,
+      "name": "MarketNotResolvedYet",
+      "msg": "Market hasn't been resolved yet."
+    },
+    {
+      "code": 6008,
+      "name": "InvalidLosingMint",
+      "msg": "Invalid Mint: This token did not win the market!"
+    },
+    {
+      "code": 6009,
+      "name": "NothingToClaim",
+      "msg": "No tokens available to claim."
     }
   ],
   "types": [
