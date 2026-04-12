@@ -7,9 +7,11 @@ import { MarketSidebar } from '@/components/MarketSidebar';
 import { MarketDetails } from '@/components/MarketDetails';
 import { ArrowLeft } from 'lucide-react';
 
+const DEFAULT_FAVORITES = ['BTC', 'BNB', 'SOL', 'ETH', 'XRP'];
+
 export default function MarketDataPage() {
     // Persistent user preferences
-    const [favorites, setFavorites] = useLocalStorage<string[]>('market_favorites', ['BTC', 'BNB', 'SOL', 'ETH', 'XRP']);
+    const [favorites, setFavorites] = useLocalStorage<string[]>('market_favorites', DEFAULT_FAVORITES);
     const [fiat, setFiat] = useLocalStorage<string>('market_fiat', 'USD');
     
     // Session state
