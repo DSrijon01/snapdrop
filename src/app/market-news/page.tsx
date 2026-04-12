@@ -5,8 +5,6 @@ import { NewsArticle, fetchNews } from "@/lib/newsApi";
 import { TopHeadlinesTimeline } from "@/components/news/TopHeadlinesTimeline";
 import { NewsCard } from "@/components/news/NewsCard";
 import { ArticleDetailView } from "@/components/news/ArticleDetailView";
-import { GlobalHeader } from "@/components/GlobalHeader";
-import { WalletGate } from "@/components/WalletGate";
 import { Loader2 } from "lucide-react";
 
 export default function MarketNewsPage() {
@@ -47,13 +45,10 @@ export default function MarketNewsPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden bg-background">
-      <GlobalHeader />
-
-      <WalletGate>
-        {/* Local Page Header Area */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
-          <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight">
+    <div className="flex flex-col h-full overflow-hidden bg-background">
+      {/* Local Page Header Area */}
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
+        <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight">
           Market News
         </h2>
         <div className="flex items-center gap-2 text-xs font-mono tracking-widest text-muted-foreground uppercase">
@@ -115,7 +110,6 @@ export default function MarketNewsPage() {
           </div>
         </div>
       )}
-      </WalletGate>
     </div>
   );
 }

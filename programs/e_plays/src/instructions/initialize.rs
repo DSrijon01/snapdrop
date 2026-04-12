@@ -100,7 +100,12 @@ pub struct InitVault<'info> {
 
 pub fn handle_init_market(ctx: Context<InitMarket>, title: String, expiry_ts: i64) -> Result<()> {
     require!(title.len() <= 100, MarketError::TitleTooLong);
-    require!(expiry_ts > Clock::get()?.unix_timestamp, MarketError::InvalidExpiry);
+    if expiry_ts != 0 {
+        require!(
+            expiry_ts > Clock::get()?.unix_timestamp,
+            MarketError::InvalidExpiry
+        );
+    }
 
     let market_state = &mut ctx.accounts.market_state;
     market_state.admin = ctx.accounts.admin.key();

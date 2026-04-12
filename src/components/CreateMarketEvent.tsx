@@ -34,18 +34,17 @@ export const CreateMarketEvent: FC = () => {
             return;
         }
 
-        if (!expiryDate) {
-            setStatus({ type: 'error', message: "Please select an expiry date." });
-            return;
-        }
+        // Optional Expiry Date logic
+        let expiryTimestamp = 0;
 
-        // Convert HTML datetime-local to Unix Timestamp (seconds) as required
-        const expiryTimestamp = Math.floor(new Date(expiryDate).getTime() / 1000);
-        const currentTimestamp = Math.floor(Date.now() / 1000);
+        if (expiryDate) {
+            expiryTimestamp = Math.floor(new Date(expiryDate).getTime() / 1000);
+            const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        if (expiryTimestamp <= currentTimestamp) {
-            setStatus({ type: 'error', message: "Expiry date must be in the future." });
-            return;
+            if (expiryTimestamp <= currentTimestamp) {
+                setStatus({ type: 'error', message: "Expiry date must be in the future." });
+                return;
+            }
         }
 
         if (!anchorWallet || !publicKey) {
@@ -171,8 +170,9 @@ export const CreateMarketEvent: FC = () => {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
-                        <Calendar className="w-4 h-4" /> Expiry Date & Time
+                    <label className="block text-sm font-bold uppercase tracking-widest text-muted-foreground mb-2 flex flex-col gap-1">
+                        <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> Expiry Date & Time (Optional)</span>
+                        <span className="text-xs font-normal opacity-70 normal-case tracking-normal">Leave blank for indefinite/manual Admin resolution.</span>
                     </label>
                     <input 
                         type="datetime-local" 
@@ -184,7 +184,7 @@ export const CreateMarketEvent: FC = () => {
 
                 <button 
                     type="submit" 
-                    disabled={loading || !title || !expiryDate}
+                    disabled={loading || !title}
                     className="w-full py-4 mt-4 bg-primary text-primary-foreground font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-primary-hover shadow-[4px_4px_0px_0px_rgba(32,129,226,0.3)] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-border"
                 >
                     {loading ? (

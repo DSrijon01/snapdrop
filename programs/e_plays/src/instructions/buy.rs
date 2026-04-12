@@ -40,10 +40,12 @@ pub fn handle_buy_shares(ctx: Context<BuyShares>, amount_in: u64, is_yes: bool) 
 
     // Safety checks
     require!(!market_state.resolved, MarketError::MarketResolved);
-    require!(
-        Clock::get()?.unix_timestamp < market_state.expiry_ts,
-        MarketError::MarketExpired
-    );
+    if market_state.expiry_ts != 0 {
+        require!(
+            Clock::get()?.unix_timestamp < market_state.expiry_ts,
+            MarketError::MarketExpired
+        );
+    }
 
     // Validate the supplied mint matches their choice
     if is_yes {

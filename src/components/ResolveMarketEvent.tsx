@@ -152,11 +152,15 @@ export const ResolveMarketEvent: FC = () => {
                                         <span className="text-xs font-mono font-bold bg-muted px-2 py-1 text-muted-foreground rounded">
                                             {market.pubkey.toBase58().slice(0, 4)}...{market.pubkey.toBase58().slice(-4)}
                                         </span>
-                                        {!isExpired && (
+                                        {!isExpired && market.expiryTs !== 0 ? (
                                             <span className="flex items-center gap-1 text-[10px] font-bold text-yellow-500 bg-yellow-500/10 px-2 py-1 rounded-sm uppercase tracking-widest border border-yellow-500/20">
                                                 <AlertTriangle className="w-3 h-3" /> Ends in {Math.ceil((market.expiryTs - (Date.now() / 1000)) / 60)}m
                                             </span>
-                                        )}
+                                        ) : market.expiryTs === 0 ? (
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-sm uppercase tracking-widest border border-border">
+                                                Manual Expiry
+                                            </span>
+                                        ) : null}
                                     </div>
                                     <h3 className="text-lg font-bold leading-tight mb-4">{market.title}</h3>
                                     

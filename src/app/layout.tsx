@@ -4,6 +4,8 @@ import "./globals.css";
 import { DevnetBanner } from "@/components/DevnetBanner";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Sidebar } from "@/components/Sidebar";
+import { GlobalHeader } from "@/components/GlobalHeader";
+import { WalletGate } from "@/components/WalletGate";
 import { WalletContextProvider } from "@/components/WalletContextProvider";
 
 const geistSans = Geist({
@@ -41,11 +43,16 @@ export default function RootLayout({
         <ThemeProvider defaultTheme="light">
           <WalletContextProvider>
             <DevnetBanner />
-            <div className="flex h-[100dvh] overflow-hidden">
-              <Sidebar />
-              <main className="flex-1 overflow-y-auto relative w-full">
-                {children}
-              </main>
+            <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+              <GlobalHeader />
+              <div className="flex flex-1 overflow-hidden relative">
+                <Sidebar />
+                <main className="flex-1 overflow-y-auto relative w-full">
+                  <WalletGate>
+                    {children}
+                  </WalletGate>
+                </main>
+              </div>
             </div>
           </WalletContextProvider>
         </ThemeProvider>
@@ -53,3 +60,4 @@ export default function RootLayout({
     </html>
   );
 }
+

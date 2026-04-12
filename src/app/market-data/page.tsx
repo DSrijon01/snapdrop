@@ -16,16 +16,7 @@ export default function MarketDataPage() {
     const [selectedCoin, setSelectedCoin] = useState<string>('BTC');
 
     return (
-        <div className="flex flex-col h-screen overflow-hidden bg-background text-foreground font-sans">
-            {/* Minimal Header */}
-            <div className="h-14 border-b border-border bg-card/50 backdrop-blur-md flex items-center px-4 shrink-0 justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/" className="p-2 hover:bg-white/10 rounded-full transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-muted-foreground hover:text-foreground" />
-                    </Link>
-                    <h1 className="text-xl font-black font-display uppercase tracking-tight italic">Street Sync <span className="text-primary">Markets</span></h1>
-                </div>
-            </div>
+        <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">
 
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar (Pane 1) */}

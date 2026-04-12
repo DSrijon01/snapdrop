@@ -23,10 +23,12 @@ pub fn handle_resolve_market(ctx: Context<ResolveMarket>, is_yes: bool) -> Resul
 
     // Safety checks
     require!(!market_state.resolved, MarketError::MarketResolved);
-    require!(
-        Clock::get()?.unix_timestamp >= market_state.expiry_ts,
-        MarketError::MarketNotExpiredYet
-    );
+    if market_state.expiry_ts != 0 {
+        require!(
+            Clock::get()?.unix_timestamp >= market_state.expiry_ts,
+            MarketError::MarketNotExpiredYet
+        );
+    }
 
     // Resolve exactly as the Admin requested
     market_state.resolved = true;

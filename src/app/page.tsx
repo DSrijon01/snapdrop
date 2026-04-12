@@ -8,8 +8,6 @@ import { NFTGallery } from "@/components/NFTGallery";
 
 import { Marketplace } from "@/components/Marketplace";
 import { ForSale } from "@/components/ForSale";
-import { GlobalHeader } from "@/components/GlobalHeader";
-import { WalletGate } from "@/components/WalletGate";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
@@ -34,11 +32,8 @@ function StreetSyncContent() {
     <main className="min-h-screen relative flex flex-col bg-background text-foreground transition-colors duration-300">
       <AnimatedBackground refreshTrigger={bgRefreshTrigger} />
       
-      <GlobalHeader />
-      
-      <WalletGate>
         {/* OpenSea-style Tab Navigation (Only visible when connected) */}
-        <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[88px] z-40">
+        <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[0px] z-40">
             <div className="container mx-auto px-6 flex items-center gap-8 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('stream')}
@@ -131,7 +126,6 @@ function StreetSyncContent() {
                 )}
             </div>
         </div>
-      </WalletGate>
 
       <footer className="p-6 text-center text-xs text-muted-foreground z-10 relative border-t border-border bg-background">
         <p>© 2026 Street Sync. Built on Solana.</p>
