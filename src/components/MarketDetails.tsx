@@ -23,6 +23,9 @@ const TIMEFRAMES = [
     { label: '6M', interval: '1d', limit: 180 },
     { label: 'YTD', interval: '1d', limit: 0 }, // dynamically calculate
     { label: '1Y', interval: '1d', limit: 365 },
+    { label: '2Y', interval: '1d', limit: 730 },
+    { label: '5Y', interval: '1w', limit: 260 },
+    { label: '10Y', interval: '1w', limit: 520 },
     { label: 'ALL', interval: '1w', limit: 1000 },
 ];
 
@@ -158,14 +161,14 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="h-[40vh] min-h-[300px] w-full mb-10 relative">
+            <div className="flex-1 w-full min-h-[400px] mb-10 relative">
                 {isLoadingChart && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10">
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
                         <div className="text-muted-foreground font-bold animate-pulse">Loading Chart...</div>
                     </div>
                 )}
                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                         <XAxis 
                             dataKey="date" 
                             hide 
@@ -211,8 +214,10 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
                             <span className="text-lg font-mono font-medium">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.volume))}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">Mkt Cap</span>
-                            <span className="text-lg font-mono font-medium text-muted-foreground">Requires circulating supply</span>
+                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">24h Quote Vol</span>
+                            <span className="text-lg font-mono font-medium">
+                                {new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.quoteVolume))} {fiat}
+                            </span>
                         </div>
                     </div>
                 ) : (

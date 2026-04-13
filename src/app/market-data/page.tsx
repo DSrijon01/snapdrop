@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MarketSidebar } from '@/components/MarketSidebar';
@@ -16,6 +16,15 @@ export default function MarketDataPage() {
     
     // Session state
     const [selectedCoin, setSelectedCoin] = useState<string>('BTC');
+    const [isMounted, setIsMounted] = useState(false);
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    if (!isMounted) {
+        return <div className="flex h-full w-full bg-background items-center justify-center text-muted-foreground animate-pulse">Loading Market Data...</div>;
+    }
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">
