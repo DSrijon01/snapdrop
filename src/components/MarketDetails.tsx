@@ -69,12 +69,18 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
                 const data = await res.json();
                 
                 if (Array.isArray(data)) {
+                    const tf = currentTimeframe.label;
+                    const showYear = ['1Y', '2Y', '5Y', '10Y', 'ALL'].includes(tf);
+                    const is1D = tf === '1D';
+
                     // Mapping to { date, price }
                     const mapped = data.map(candle => ({
                         date: new Date(candle[0]).toLocaleDateString(undefined, { 
-                            month: 'short', day: 'numeric', 
-                            hour: currentTimeframe.label === '1D' ? '2-digit' : undefined,
-                            minute: currentTimeframe.label === '1D' ? '2-digit' : undefined 
+                            month: 'short', 
+                            day: showYear && tf !== '1Y' ? undefined : 'numeric', 
+                            year: showYear ? 'numeric' : undefined,
+                            hour: is1D ? '2-digit' : undefined,
+                            minute: is1D ? '2-digit' : undefined 
                         }),
                         rawPrice: parseFloat(candle[4]) // Close price
                     }));
@@ -173,8 +179,8 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
                             dataKey="date" 
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
-                            minTickGap={50}
+                            tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                            minTickGap={65}
                             tickMargin={12}
                         />
                         <YAxis 
@@ -182,7 +188,7 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
                             orientation="right"
                             axisLine={false}
                             tickLine={false}
-                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
                             tickFormatter={(val) => {
                                 if (val >= 1000) {
                                     return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
