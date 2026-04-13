@@ -13,6 +13,7 @@ interface SidebarProps {
 
 export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelectedCoin, fiat, setFiat }: SidebarProps) => {
     const [tickers, setTickers] = useState<any[]>([]);
+    const [allTickers, setAllTickers] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -42,31 +43,40 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
         return () => clearInterval(interval);
     }, [favorites]);
 
-    // Async search for individual coins if user types
+    // Fetch global index of all available tokens natively
     useEffect(() => {
-        if (searchQuery.length < 2) {
+        const fetchGlobalTickers = async () => {
+            try {
+                const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    const filtered = data
+                        .filter(d => d.symbol.endsWith('USDT'))
+                        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
+                    setAllTickers(filtered);
+                }
+            } catch (e) {
+                console.error("Failed to fetch global tickers", e);
+            }
+        };
+        fetchGlobalTickers();
+    }, []);
+
+    // Local instantaneous search filtering against cached global list
+    useEffect(() => {
+        if (searchQuery.length < 1) {
             setSearchResults([]);
             return;
         }
-        const timer = setTimeout(async () => {
-            setIsSearching(true);
-            try {
-                const sym = searchQuery.toUpperCase() + 'USDT';
-                const res = await fetch(`https://api.binance.com/api/v3/ticker/24hr?symbol=${sym}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setSearchResults([data]);
-                } else {
-                    setSearchResults([]);
-                }
-            } catch (e) {
-                setSearchResults([]);
-            } finally {
-                setIsSearching(false);
-            }
-        }, 500);
-        return () => clearTimeout(timer);
-    }, [searchQuery]);
+        setIsSearching(true);
+        const query = searchQuery.toUpperCase();
+        const results = allTickers
+             .filter(t => t.symbol.includes(query))
+             .slice(0, 30); // show top 30 sorted matches maximum
+        
+        setSearchResults(results);
+        setIsSearching(false);
+    }, [searchQuery, allTickers]);
 
     const handleAddFavorite = (symbolRaw: string) => {
         const base = symbolRaw.replace('USDT', '');
@@ -162,7 +172,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                     </div>
                 )}
 
-                {/* Favorites List */}
+                {/* Favorites List (Watchlist) */}
                 <div className="py-2">
                     {tickers.map((coin: any) => {
                         const baseSymbol = coin.symbol.replace('USDT', '');
@@ -173,10 +183,10 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
 
                         return (
                             <div 
-                                key={baseSymbol}
+                                key={`fav-${baseSymbol}`}
                                 onClick={() => setSelectedCoin(baseSymbol)}
                                 className={`flex items-center justify-between px-4 py-3 cursor-pointer border-b border-border/20 transition-colors group
-                                    ${isSelected ? 'bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-white/5 border-l-4 border-l-transparent'}
+                                    ${isSelected ? 'bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-muted border-l-4 border-l-transparent'}
                                 `}
                             >
                                 {/* Left: Ticker & Name */}
@@ -184,7 +194,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                     <div className="flex items-center gap-2">
                                         <span className={`font-bold text-base ${isSelected ? 'text-primary' : 'text-foreground'}`}>{baseSymbol}</span>
                                     </div>
-                                    <span className="text-xs text-gray-500 truncate mt-0.5">{baseSymbol} Token</span>
+                                    <span className="text-xs text-muted-foreground truncate mt-0.5">{baseSymbol} Token</span>
                                 </div>
 
                                 {/* Middle: Sparkline */}
@@ -206,7 +216,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                 
                                 {/* Delete Hover Action */}
                                 <div className="absolute left-1 hidden group-hover:flex items-center">
-                                     <button onClick={(e) => handleRemoveFavorite(baseSymbol, e)} className="p-1 bg-red-500/80 rounded-full text-white scale-75 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <button onClick={(e) => handleRemoveFavorite(baseSymbol, e)} className="p-1 bg-destructive/80 rounded-full text-destructive-foreground scale-75 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <X className="w-3 h-3" />
                                      </button>
                                 </div>
@@ -214,6 +224,61 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                         )
                     })}
                 </div>
+
+                {/* Global Market List (Top 100) */}
+                {!searchQuery && allTickers.length > 0 && (
+                    <>
+                        <div className="px-4 py-2 mt-2 bg-muted/30 border-y border-border/50 sticky top-0 z-10 backdrop-blur-md">
+                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Top Market</span>
+                        </div>
+                        <div className="pb-10">
+                            {allTickers.slice(0, 100).map((coin: any) => {
+                                const baseSymbol = coin.symbol.replace('USDT', '');
+                                // Skip if already in favorites to avoid double-listing
+                                if (favorites.includes(baseSymbol)) return null;
+
+                                const isSelected = selectedCoin === baseSymbol;
+                                const priceChange = parseFloat(coin.priceChangePercent);
+                                const isPositive = priceChange >= 0;
+                                const lastPrice = parseFloat(coin.lastPrice);
+
+                                return (
+                                    <div 
+                                        key={`global-${baseSymbol}`}
+                                        onClick={() => setSelectedCoin(baseSymbol)}
+                                        className={`flex items-center justify-between px-4 py-3 cursor-pointer border-b border-border/10 transition-colors group
+                                            ${isSelected ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}
+                                        `}
+                                    >
+                                        <div className="flex flex-col flex-1 min-w-0">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`font-bold text-base ${isSelected ? 'text-primary' : 'text-foreground/80'}`}>{baseSymbol}</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex-1 flex justify-center px-2 opacity-50 block md:hidden lg:block">
+                                            {renderSparkline(isPositive)}
+                                        </div>
+                                        <div className="flex flex-col items-end gap-1 shrink-0">
+                                            <span className="text-sm font-bold text-foreground/80 font-mono">
+                                                {formatPrice(lastPrice, fiat)}
+                                            </span>
+                                            <div className={`px-2 py-0.5 rounded-md text-[11px] font-bold font-mono flex items-center gap-1
+                                                ${isPositive ? 'text-emerald-500' : 'text-red-500'}
+                                            `}>
+                                                {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
+                                            </div>
+                                        </div>
+                                        <div className="absolute left-2 hidden group-hover:flex items-center">
+                                            <button onClick={(e) => { e.stopPropagation(); handleAddFavorite(coin.symbol); }} className="p-1 bg-primary/20 rounded-md text-primary scale-75 opacity-0 group-hover:opacity-100 transition-opacity" title="Add to Watchlist">
+                                                <Plus className="w-4 h-4" />
+                                            </button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
+                )}
             </div>
             {/* Apple Stocks signature bottom gradient detail */}
             <div className="h-6 bg-gradient-to-t from-background to-transparent pointer-events-none mt-auto"></div>

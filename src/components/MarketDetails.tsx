@@ -161,13 +161,13 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="flex-1 w-full min-h-[400px] mb-10 relative">
+            <div className="h-[400px] md:h-[500px] w-full mb-10 shrink-0 relative">
                 {isLoadingChart && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
                         <div className="text-muted-foreground font-bold animate-pulse">Loading Chart...</div>
                     </div>
                 )}
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="99%" height="100%">
                     <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
                         <XAxis 
                             dataKey="date" 
