@@ -124,10 +124,10 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background dark:bg-black p-6 lg:p-10 animate-in fade-in slide-in-from-right-4">
+        <div className="flex flex-col min-h-full h-max bg-background dark:bg-black p-6 lg:p-10 animate-in fade-in slide-in-from-right-4">
             
             {/* Massive Header */}
-            <div className="mb-8">
+            <div className="mb-8 shrink-0">
                 <div className="flex items-center gap-3 mb-2">
                     <h1 className="text-4xl md:text-5xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
                     <span className="text-xl md:text-2xl text-muted-foreground font-mono">{selectedCoin} Token</span>
@@ -144,7 +144,7 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Timeframe Toggles */}
-            <div className="flex gap-1 md:gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex gap-1 md:gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide shrink-0">
                 {TIMEFRAMES.map((tf) => (
                     <button
                         key={tf.label}
@@ -193,7 +193,7 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Key Statistics Grid */}
-            <div className="mt-auto">
+            <div className="mt-auto pt-6 shrink-0">
                 <h3 className="text-lg font-bold font-display uppercase border-b border-border/50 pb-2 mb-4 text-primary">Key Statistics</h3>
                 {ticker ? (
                     <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
