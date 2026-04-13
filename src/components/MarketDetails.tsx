@@ -168,14 +168,29 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
                     </div>
                 )}
                 <ResponsiveContainer width="99%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 10 }}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
                         <XAxis 
                             dataKey="date" 
-                            hide 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            minTickGap={50}
+                            tickMargin={12}
                         />
                         <YAxis 
                             domain={['dataMin', 'dataMax']} 
-                            hide 
+                            orientation="right"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            tickFormatter={(val) => {
+                                if (val >= 1000) {
+                                    return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+                                }
+                                return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+                            }}
+                            tickMargin={12}
+                            width={50}
                         />
                         <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
                         <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
