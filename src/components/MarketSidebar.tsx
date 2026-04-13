@@ -185,7 +185,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                             <div 
                                 key={`fav-${baseSymbol}`}
                                 onClick={() => setSelectedCoin(baseSymbol)}
-                                className={`flex items-center justify-between px-4 py-3 cursor-pointer border-b border-border/20 transition-colors group
+                                className={`relative flex items-center justify-between pl-4 pr-12 py-3 cursor-pointer border-b border-border/20 transition-colors group
                                     ${isSelected ? 'bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-muted border-l-4 border-l-transparent'}
                                 `}
                             >
@@ -215,9 +215,9 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                 </div>
                                 
                                 {/* Delete Hover Action */}
-                                <div className="absolute left-1 hidden group-hover:flex items-center">
-                                     <button onClick={(e) => handleRemoveFavorite(baseSymbol, e)} className="p-1 bg-destructive/80 rounded-full text-destructive-foreground scale-75 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <X className="w-3 h-3" />
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                     <button onClick={(e) => handleRemoveFavorite(baseSymbol, e)} className="p-1.5 bg-destructive/80 hover:bg-destructive rounded-md text-destructive-foreground transition-colors shadow-sm">
+                                        <X className="w-3.5 h-3.5" />
                                      </button>
                                 </div>
                             </div>
@@ -246,7 +246,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                     <div 
                                         key={`global-${baseSymbol}`}
                                         onClick={() => setSelectedCoin(baseSymbol)}
-                                        className={`flex items-center justify-between px-4 py-3 cursor-pointer border-b border-border/10 transition-colors group
+                                        className={`relative flex items-center justify-between pl-4 pr-12 py-3 cursor-pointer border-b border-border/10 transition-colors group
                                             ${isSelected ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}
                                         `}
                                     >
@@ -268,9 +268,9 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                                 {isPositive ? '+' : ''}{priceChange.toFixed(2)}%
                                             </div>
                                         </div>
-                                        <div className="absolute left-2 hidden group-hover:flex items-center">
-                                            <button onClick={(e) => { e.stopPropagation(); handleAddFavorite(coin.symbol); }} className="p-1 bg-primary/20 rounded-md text-primary scale-75 opacity-0 group-hover:opacity-100 transition-opacity" title="Add to Watchlist">
-                                                <Plus className="w-4 h-4" />
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                            <button onClick={(e) => { e.stopPropagation(); handleAddFavorite(coin.symbol); }} className="p-1.5 bg-primary/20 hover:bg-primary rounded-md text-primary hover:text-primary-foreground transition-colors shadow-sm" title="Add to Watchlist">
+                                                <Plus className="w-3.5 h-3.5" />
                                             </button>
                                         </div>
                                     </div>
