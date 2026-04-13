@@ -130,32 +130,32 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
     };
 
     return (
-        <div className="flex flex-col min-h-full h-max bg-background dark:bg-black p-6 lg:p-10 animate-in fade-in slide-in-from-right-4">
+        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
             
             {/* Massive Header */}
-            <div className="mb-8 shrink-0">
-                <div className="flex items-center gap-3 mb-2">
-                    <h1 className="text-4xl md:text-5xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
-                    <span className="text-xl md:text-2xl text-muted-foreground font-mono">{selectedCoin} Token</span>
+            <div className="mb-4 shrink-0">
+                <div className="flex items-center gap-3 mb-1">
+                    <h1 className="text-3xl md:text-4xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
+                    <span className="text-lg md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
                 </div>
                 
-                <div className="flex flex-col mt-2">
-                    <span className="text-5xl md:text-7xl font-mono font-black tracking-tighter text-foreground">
+                <div className="flex flex-col mt-1">
+                    <span className="text-4xl md:text-5xl font-mono font-black tracking-tighter text-foreground">
                         {currentPrice}
                     </span>
-                    <span className={`text-xl md:text-2xl font-bold font-mono mt-1 ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <span className={`text-lg md:text-xl font-bold font-mono mt-0.5 ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
                         {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
                     </span>
                 </div>
             </div>
 
             {/* Timeframe Toggles */}
-            <div className="flex gap-1 md:gap-2 mb-6 overflow-x-auto pb-2 scrollbar-hide shrink-0">
+            <div className="flex gap-1 md:gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide shrink-0">
                 {TIMEFRAMES.map((tf) => (
                     <button
                         key={tf.label}
                         onClick={() => setCurrentTimeframe(tf)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-bold transition-colors shrink-0
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors shrink-0
                             ${currentTimeframe.label === tf.label 
                                 ? 'bg-[#333333] text-white dark:bg-white dark:text-black' 
                                 : 'bg-transparent text-muted-foreground hover:bg-[#222222] dark:hover:bg-white/10'
@@ -167,7 +167,7 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="h-[400px] md:h-[500px] w-full mb-10 shrink-0 relative">
+            <div className="flex-1 w-full min-h-[250px] max-h-[500px] mb-4 relative">
                 {isLoadingChart && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
                         <div className="text-muted-foreground font-bold animate-pulse">Loading Chart...</div>
@@ -214,29 +214,29 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Key Statistics Grid */}
-            <div className="mt-auto pt-6 shrink-0">
-                <h3 className="text-lg font-bold font-display uppercase border-b border-border/50 pb-2 mb-4 text-primary">Key Statistics</h3>
+            <div className="mt-auto pt-3 shrink-0">
+                <h3 className="text-[11px] font-bold font-display uppercase border-b border-border/50 pb-1.5 mb-3 text-primary">Key Statistics</h3>
                 {ticker ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">Open</span>
-                            <span className="text-lg font-mono font-medium">{formatPrice(parseFloat(ticker.openPrice), fiat)}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Open</span>
+                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.openPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">High</span>
-                            <span className="text-lg font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High</span>
+                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">Low</span>
-                            <span className="text-lg font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low</span>
+                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">Vol (24h)</span>
-                            <span className="text-lg font-mono font-medium">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.volume))}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Vol (24h)</span>
+                            <span className="text-base font-mono font-medium">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.volume))}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-xs text-muted-foreground uppercase font-bold mb-1">24h Quote Vol</span>
-                            <span className="text-lg font-mono font-medium">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">24h Quote Vol</span>
+                            <span className="text-base font-mono font-medium">
                                 {new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.quoteVolume))} {fiat}
                             </span>
                         </div>
