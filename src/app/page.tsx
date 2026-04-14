@@ -127,9 +127,6 @@ function StreetSyncContent() {
             </div>
         </div>
 
-      <footer className="p-6 text-center text-xs text-muted-foreground z-10 relative border-t border-border bg-background">
-        <p>© 2026 Street Sync. Built on Solana.</p>
-      </footer>
     </main>
   );
 }
