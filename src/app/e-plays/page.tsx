@@ -314,7 +314,7 @@ export default function EPlaysPage() {
                         </h3>
                         </div>
 
-                        <div className="flex gap-3 w-full mt-auto">
+                        <div className="flex flex-col sm:flex-row gap-3 w-full mt-auto">
                         <button
                             onClick={() => handleOpenDrawer(market, 'yes')}
                             className="flex-1 flex flex-col items-center justify-center py-3 bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500/20 transition-colors font-bold tracking-tight rounded-none"

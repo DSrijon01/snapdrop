@@ -27,10 +27,10 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Mobile Hamburger Button */}
+      {/* Mobile Hamburger Button (Floating Action Button) */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed top-4 right-4 z-[60] p-2 bg-background border border-border rounded-lg text-foreground hover:bg-muted transition-colors"
+        className="md:hidden fixed bottom-16 right-4 z-[60] p-3 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all focus:outline-none"
         aria-label="Toggle Navigation"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}

@@ -29,26 +29,26 @@ export default function MarketDataPage() {
     return (
         <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* Sidebar (Pane 1) */}
-                <div className="w-full md:w-[320px] lg:w-[350px] border-r border-border bg-card/10 flex flex-col shrink-0">
-                <MarketSidebar 
-                   favorites={favorites} 
-                   setFavorites={setFavorites}
-                   selectedCoin={selectedCoin}
-                   setSelectedCoin={setSelectedCoin}
-                   fiat={fiat}
-                   setFiat={setFiat}
-                />
-            </div>
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                {/* Sidebar (Pane 1 - Top on mobile, Left on Desktop) */}
+                <div className="w-full h-[40vh] md:h-auto md:w-[320px] lg:w-[350px] border-b md:border-b-0 md:border-r border-border bg-card/10 flex flex-col shrink-0 overflow-hidden">
+                    <MarketSidebar 
+                       favorites={favorites} 
+                       setFavorites={setFavorites}
+                       selectedCoin={selectedCoin}
+                       setSelectedCoin={setSelectedCoin}
+                       fiat={fiat}
+                       setFiat={setFiat}
+                    />
+                </div>
             
-            {/* Main Details (Pane 2) */}
-            <div className="flex-1 overflow-y-auto hidden md:block bg-background">
-                <MarketDetails 
-                   selectedCoin={selectedCoin}
-                   fiat={fiat}
-                />
-            </div>
+                {/* Main Details (Pane 2 - Bottom on mobile, Right on Desktop) */}
+                <div className="flex-1 overflow-y-auto bg-background min-h-[50vh] md:min-h-0">
+                    <MarketDetails 
+                       selectedCoin={selectedCoin}
+                       fiat={fiat}
+                    />
+                </div>
             </div>
         </div>
     );

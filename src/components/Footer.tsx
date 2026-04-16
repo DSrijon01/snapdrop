@@ -27,10 +27,10 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="w-full h-10 bg-background border-t border-border flex items-center justify-between px-4 sm:px-6 text-[11px] font-bold text-muted-foreground mt-auto shrink-0 z-50">
+    <footer className="w-full min-h-[40px] h-auto py-2 bg-background border-t border-border flex flex-wrap items-center justify-between gap-y-2 px-3 sm:px-6 text-[10px] sm:text-[11px] font-bold text-muted-foreground mt-auto shrink-0 z-50">
       
       {/* First Section: Links & Socials */}
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-3 sm:space-x-4 flex-wrap gap-y-1">
         <div className="flex items-center space-x-1 text-green-500 mr-2">
             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
             <span className="uppercase tracking-widest text-[9px]">Live</span>
@@ -73,7 +73,7 @@ export function Footer() {
       </div>
 
       {/* Third Section: Copyright */}
-      <div className="whitespace-nowrap flex items-center space-x-4">
+      <div className="whitespace-nowrap flex items-center space-x-4 w-full sm:w-auto justify-center sm:justify-end mt-1 sm:mt-0 text-[9px] sm:text-[11px]">
         <span>© 2026 Street Sync. Built on Solana.</span>
       </div>
 

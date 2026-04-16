@@ -292,7 +292,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     );
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4">
+        <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2 sm:p-4">
             {loading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="aspect-square bg-white/5 animate-pulse rounded-lg" />
@@ -456,7 +456,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                     
                                     {/* Action Buttons */}
                                     <div className="pt-4 flex flex-col gap-3">
-                                        <div className="flex gap-3">
+                                        <div className="flex flex-col sm:flex-row gap-3">
                                             <a 
                                                 href={`https://solscan.io/token/${selectedNft.mint || ''}?cluster=devnet`} 
                                                 target="_blank" 

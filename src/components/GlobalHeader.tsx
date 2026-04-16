@@ -44,20 +44,22 @@ export function GlobalHeader() {
         </div>
 
         {/* Right Section Actions & Wallet Connect */}
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 shrink-0">
             <button 
               onClick={() => setShowMobileSync(true)}
-              className="p-2 md:p-2.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-foreground border border-border"
+              className="p-1.5 md:p-2.5 rounded-lg bg-muted hover:bg-muted/80 transition-colors text-foreground border border-border shrink-0"
               aria-label="Mobile Sync"
               title="Sync to Mobile"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 md:w-5 md:h-5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-5 md:h-5">
                 <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
                 <path d="M12 18h.01"></path>
               </svg>
             </button>
-            <ThemeToggle />
-            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 transition-all !rounded-xl !font-bold !text-primary-foreground !px-3 md:!px-6 !text-sm md:!text-base !h-10 md:!h-12" />
+            <div className="scale-75 sm:scale-90 md:scale-100 origin-right transition-transform">
+               <ThemeToggle />
+            </div>
+            <WalletMultiButton className="!bg-primary hover:!bg-primary/90 transition-all !rounded-xl !font-bold !text-primary-foreground !px-2.5 sm:!px-3 md:!px-6 !text-[10px] sm:!text-sm md:!text-base !h-8 sm:!h-10 md:!h-12 whitespace-nowrap overflow-hidden text-ellipsis max-w-[120px] sm:max-w-none" />
         </div>
       </header>
     </>
