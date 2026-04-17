@@ -280,8 +280,6 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                     </>
                 )}
             </div>
-            {/* Apple Stocks signature bottom gradient detail */}
-            <div className="h-6 bg-gradient-to-t from-background to-transparent pointer-events-none mt-auto"></div>
         </div>
     );
 };
