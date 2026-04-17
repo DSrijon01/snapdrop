@@ -47,6 +47,8 @@ export default function MarketDataPage() {
                     <MarketDetails 
                        selectedCoin={selectedCoin}
                        fiat={fiat}
+                       favorites={favorites}
+                       setFavorites={setFavorites}
                     />
                 </div>
             </div>

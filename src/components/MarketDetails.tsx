@@ -13,7 +13,17 @@ import {
 interface DetailsProps {
     selectedCoin: string; // e.g. "BTC"
     fiat: string;         // e.g. "USD"
+    favorites?: string[];
+    setFavorites?: (favs: string[]) => void;
 }
+
+const CIRCULATING_SUPPLIES: Record<string, number> = {
+    'BTC': 19688000,
+    'ETH': 120000000,
+    'BNB': 149500000,
+    'SOL': 447000000,
+    'XRP': 55000000000
+};
 
 const TIMEFRAMES = [
     { label: '1D', interval: '5m', limit: 288 },
@@ -29,7 +39,7 @@ const TIMEFRAMES = [
     { label: 'ALL', interval: '1w', limit: 1000 },
 ];
 
-export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
+export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: DetailsProps) => {
     const { rates, formatPrice } = useExchangeRates();
     const [ticker, setTicker] = useState<any>(null);
     const [chartData, setChartData] = useState<any[]>([]);
@@ -130,23 +140,44 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
+        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-y-auto overflow-x-hidden">
             
             {/* Massive Header */}
-            <div className="mb-4 shrink-0">
-                <div className="flex items-center gap-3 mb-1">
-                    <h1 className="text-3xl md:text-4xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
-                    <span className="text-lg md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
+            <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                <div>
+                    <div className="flex items-center gap-3 mb-1">
+                        <h1 className="text-3xl md:text-4xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
+                        <span className="text-lg md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
+                    </div>
+                    
+                    <div className="flex flex-col mt-1">
+                        <span className="text-4xl md:text-5xl font-mono font-black tracking-tighter text-foreground">
+                            {currentPrice}
+                        </span>
+                        <span className={`text-lg md:text-xl font-bold font-mono mt-0.5 ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
+                        </span>
+                    </div>
                 </div>
-                
-                <div className="flex flex-col mt-1">
-                    <span className="text-4xl md:text-5xl font-mono font-black tracking-tighter text-foreground">
-                        {currentPrice}
-                    </span>
-                    <span className={`text-lg md:text-xl font-bold font-mono mt-0.5 ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
-                        {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
-                    </span>
-                </div>
+
+                {favorites && setFavorites && (
+                    <button 
+                        onClick={() => {
+                            if (favorites.includes(selectedCoin)) {
+                                setFavorites(favorites.filter(c => c !== selectedCoin));
+                            } else {
+                                setFavorites([...favorites, selectedCoin]);
+                            }
+                        }}
+                        className={`px-4 py-2 rounded-full font-bold text-sm transition self-start shrink-0 ${
+                            favorites.includes(selectedCoin) 
+                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                                : 'bg-[#1c1c1e] text-white hover:bg-[#2c2c2e]'
+                        }`}
+                    >
+                        {favorites.includes(selectedCoin) ? 'Remove Watchlist' : 'Add to Watchlist'}
+                    </button>
+                )}
             </div>
 
             {/* Timeframe Toggles */}
@@ -167,7 +198,7 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="flex-1 w-full min-h-[250px] max-h-[500px] mb-4 relative">
+            <div className="flex-1 w-full min-h-[160px] md:min-h-[250px] max-h-[500px] mb-4 relative">
                 {isLoadingChart && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
                         <div className="text-muted-foreground font-bold animate-pulse">Loading Chart...</div>
@@ -214,30 +245,29 @@ export const MarketDetails = ({ selectedCoin, fiat }: DetailsProps) => {
             </div>
 
             {/* Key Statistics Grid */}
-            <div className="mt-auto pt-3 shrink-0">
+            <div className="mt-auto pt-3 shrink-0 pb-4 md:pb-0">
                 <h3 className="text-[11px] font-bold font-display uppercase border-b border-border/50 pb-1.5 mb-3 text-primary">Key Statistics</h3>
                 {ticker ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Open</span>
-                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.openPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High</span>
-                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
                             <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Vol (24h)</span>
-                            <span className="text-base font-mono font-medium">{new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.volume))}</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
+                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">24h Quote Vol</span>
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Close</span>
+                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.lastPrice), fiat)}</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
                             <span className="text-base font-mono font-medium">
-                                {new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(parseFloat(ticker.quoteVolume))} {fiat}
+                                {CIRCULATING_SUPPLIES[selectedCoin] 
+                                    ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
+                                    : 'N/A'
+                                }
                             </span>
                         </div>
                     </div>
