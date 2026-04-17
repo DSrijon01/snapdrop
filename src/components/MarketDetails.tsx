@@ -140,21 +140,21 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     };
 
     return (
-        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
+        <div className="flex flex-col h-full bg-background p-2 md:p-6 lg:px-8 py-2 md:py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
             
             {/* Massive Header */}
-            <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div className="mb-2 md:mb-4 shrink-0 flex items-start justify-between gap-2">
                 <div>
-                    <div className="flex items-center gap-3 mb-1">
-                        <h1 className="text-3xl md:text-4xl font-black font-display text-primary uppercase">{selectedCoin}</h1>
-                        <span className="text-lg md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
+                    <div className="flex items-center gap-2 mb-0">
+                        <h1 className="text-2xl md:text-4xl font-black font-display text-primary uppercase leading-none">{selectedCoin}</h1>
+                        <span className="text-xs md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
                     </div>
                     
                     <div className="flex flex-col mt-1">
-                        <span className="text-4xl md:text-5xl font-mono font-black tracking-tighter text-foreground">
+                        <span className="text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
                             {currentPrice}
                         </span>
-                        <span className={`text-lg md:text-xl font-bold font-mono mt-0.5 ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
+                        <span className={`text-sm md:text-xl font-bold font-mono ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
                             {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
                         </span>
                     </div>
@@ -169,10 +169,10 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                                 setFavorites([...favorites, selectedCoin]);
                             }
                         }}
-                        className={`px-4 py-2 rounded-full font-bold text-sm transition self-start shrink-0 ${
+                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-sm transition self-start shrink-0 ${
                             favorites.includes(selectedCoin) 
                                 ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
-                                : 'bg-[#1c1c1e] text-white hover:bg-[#2c2c2e]'
+                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
                         }`}
                     >
                         {favorites.includes(selectedCoin) ? 'Remove Watchlist' : 'Add to Watchlist'}
@@ -181,15 +181,15 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
             </div>
 
             {/* Timeframe Toggles */}
-            <div className="flex gap-1 md:gap-2 mb-4 overflow-x-auto pb-1 scrollbar-hide shrink-0">
+            <div className="flex gap-1 md:gap-2 mb-2 md:mb-4 overflow-x-auto pb-1 scrollbar-hide shrink-0">
                 {TIMEFRAMES.map((tf) => (
                     <button
                         key={tf.label}
                         onClick={() => setCurrentTimeframe(tf)}
-                        className={`px-3 py-1 rounded-full text-xs font-bold transition-colors shrink-0
+                        className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold transition-colors shrink-0
                             ${currentTimeframe.label === tf.label 
-                                ? 'bg-[#333333] text-white dark:bg-white dark:text-black' 
-                                : 'bg-transparent text-muted-foreground hover:bg-[#222222] dark:hover:bg-white/10'
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-transparent text-muted-foreground hover:bg-muted'
                             }`}
                     >
                         {tf.label}
@@ -198,14 +198,14 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="flex-1 w-full min-h-[160px] md:min-h-[250px] max-h-[500px] mb-4 relative">
+            <div className="flex-1 w-full min-h-[100px] md:min-h-[250px] max-h-[500px] mb-2 md:mb-4 relative">
                 {isLoadingChart && (
                     <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
-                        <div className="text-muted-foreground font-bold animate-pulse">Loading Chart...</div>
+                        <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse">Loading Chart...</div>
                     </div>
                 )}
                 <ResponsiveContainer width="99%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 10, left: 0, bottom: 20 }}>
+                    <LineChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
                         <XAxis 
                             dataKey="date" 
                             axisLine={false}
@@ -245,20 +245,20 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
             </div>
 
             {/* Key Statistics Grid */}
-            <div className="mt-auto pt-2 shrink-0 pb-2 md:pb-0">
+            <div className="mt-auto shrink-0 pb-1 md:pb-0">
                 {ticker ? (
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1 md:gap-2 border-t border-border/50 pt-2 md:pt-3">
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
-                            <span className="text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
-                            <span className="text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
-                            <span className="text-sm font-mono font-medium">
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">
                                 {CIRCULATING_SUPPLIES[selectedCoin] 
                                     ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
                                     : 'N/A'

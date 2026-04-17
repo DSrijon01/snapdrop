@@ -31,7 +31,7 @@ export default function MarketDataPage() {
 
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                 {/* Sidebar (Pane 1 - Top on mobile, Left on Desktop) */}
-                <div className="w-full h-[40vh] md:h-auto md:w-[320px] lg:w-[350px] border-b md:border-b-0 md:border-r border-border bg-card/10 flex flex-col shrink-0 overflow-hidden">
+                <div className="w-full h-[35vh] md:h-auto md:w-[320px] lg:w-[350px] border-b md:border-b-0 md:border-r border-border bg-card/10 flex flex-col shrink-0 overflow-hidden">
                     <MarketSidebar 
                        favorites={favorites} 
                        setFavorites={setFavorites}
