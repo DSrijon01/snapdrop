@@ -19,8 +19,16 @@ export const ClientWalletMultiButton = (props: any) => {
     const installedWallets = wallets.filter((w) => w.readyState === WalletReadyState.Installed);
 
     if (installedWallets.length === 0) {
-      // No wallet installed -> Redirect to Phantom
-      window.open("https://phantom.app/", "_blank");
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        const url = encodeURIComponent(window.location.href);
+        const ref = encodeURIComponent(window.location.origin);
+        window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+      } else {
+        // No wallet installed -> Redirect to Phantom
+        window.open("https://phantom.app/", "_blank");
+      }
     } else {
       // Wallet installed -> Open Modal
       setVisible(true);
