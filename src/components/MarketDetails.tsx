@@ -140,7 +140,7 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     };
 
     return (
-        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-y-auto overflow-x-hidden">
+        <div className="flex flex-col h-full bg-background dark:bg-black p-4 md:p-6 lg:px-8 py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
             
             {/* Massive Header */}
             <div className="mb-4 shrink-0 flex flex-col md:flex-row md:items-start justify-between gap-4">
@@ -245,25 +245,20 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
             </div>
 
             {/* Key Statistics Grid */}
-            <div className="mt-auto pt-3 shrink-0 pb-4 md:pb-0">
-                <h3 className="text-[11px] font-bold font-display uppercase border-b border-border/50 pb-1.5 mb-3 text-primary">Key Statistics</h3>
+            <div className="mt-auto pt-2 shrink-0 pb-2 md:pb-0">
                 {ticker ? (
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="grid grid-cols-3 gap-2">
                         <div className="flex flex-col">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
-                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
+                            <span className="text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
-                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Close</span>
-                            <span className="text-base font-mono font-medium">{formatPrice(parseFloat(ticker.lastPrice), fiat)}</span>
+                            <span className="text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
                         </div>
                         <div className="flex flex-col">
                             <span className="text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
-                            <span className="text-base font-mono font-medium">
+                            <span className="text-sm font-mono font-medium">
                                 {CIRCULATING_SUPPLIES[selectedCoin] 
                                     ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
                                     : 'N/A'
