@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useExchangeRates } from '../hooks/useExchangeRates';
 import { 
     ResponsiveContainer, 
@@ -45,6 +46,7 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     const [chartData, setChartData] = useState<any[]>([]);
     const [currentTimeframe, setCurrentTimeframe] = useState(TIMEFRAMES[0]);
     const [isLoadingChart, setIsLoadingChart] = useState(false);
+    const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
     // Fetch live Ticker stats
     useEffect(() => {
@@ -180,6 +182,39 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                 )}
             </div>
 
+            {/* Key Quote Data Accordion */}
+            <div className="mb-2 shrink-0">
+                <button 
+                    onClick={() => setIsStatsExpanded(!isStatsExpanded)}
+                    className="w-full flex items-center justify-between py-2 border-y border-border/50 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider">Key Quote Data</span>
+                    {isStatsExpanded ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />}
+                </button>
+                
+                {isStatsExpanded && ticker && (
+                    <div className="grid grid-cols-3 gap-1 md:gap-2 pt-2 pb-2">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
+                            <span className="text-xs md:text-sm font-mono font-medium">
+                                {CIRCULATING_SUPPLIES[selectedCoin] 
+                                    ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
+                                    : 'N/A'
+                                }
+                            </span>
+                        </div>
+                    </div>
+                )}
+            </div>
+
             {/* Timeframe Toggles */}
             <div className="flex gap-1 md:gap-2 mb-2 md:mb-4 overflow-x-auto pb-1 scrollbar-hide shrink-0">
                 {TIMEFRAMES.map((tf) => (
@@ -244,32 +279,6 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                 </ResponsiveContainer>
             </div>
 
-            {/* Key Statistics Grid */}
-            <div className="mt-auto shrink-0 pb-1 md:pb-0">
-                {ticker ? (
-                    <div className="grid grid-cols-3 gap-1 md:gap-2 border-t border-border/50 pt-2 md:pt-3">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">
-                                {CIRCULATING_SUPPLIES[selectedCoin] 
-                                    ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
-                                    : 'N/A'
-                                }
-                            </span>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-muted-foreground animate-pulse">Loading statistics...</div>
-                )}
-            </div>
         </div>
     );
 };
