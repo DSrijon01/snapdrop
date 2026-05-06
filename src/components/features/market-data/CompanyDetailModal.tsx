@@ -1,7 +1,7 @@
 import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BondingCurveAccount, useLaunchpad } from "../hooks/useLaunchpad";
-import { useTokenMetadata } from "../hooks/useTokenMetadata";
+import { BondingCurveAccount, useLaunchpad } from "../../../hooks/useLaunchpad";
+import { useTokenMetadata } from "../../../hooks/useTokenMetadata";
 import { BN } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 

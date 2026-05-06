@@ -2,7 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect, useRef } from "react";
-import { ClientWalletMultiButton as WalletMultiButton } from "@/components/ClientWalletMultiButton";
+import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
   const { connected } = useWallet();

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { NewsArticle, fetchNews } from "@/lib/newsApi";
-import { TopHeadlinesTimeline } from "@/components/news/TopHeadlinesTimeline";
-import { NewsCard } from "@/components/news/NewsCard";
-import { ArticleDetailView } from "@/components/news/ArticleDetailView";
+import { TopHeadlinesTimeline } from "@/components/features/market-news/TopHeadlinesTimeline";
+import { NewsCard } from "@/components/features/market-news/NewsCard";
+import { ArticleDetailView } from "@/components/features/market-news/ArticleDetailView";
 import { Loader2 } from "lucide-react";
 
 export default function MarketNewsPage() {

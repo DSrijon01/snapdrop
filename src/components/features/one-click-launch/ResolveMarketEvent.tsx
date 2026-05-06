@@ -2,7 +2,7 @@ import { FC, useState, useEffect } from 'react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
-import idl from '../idl/e_plays.json';
+import idl from '../../../idl/e_plays.json';
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 type MarketStateData = {

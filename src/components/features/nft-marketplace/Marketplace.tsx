@@ -2,11 +2,11 @@
 
 import { FC, useState } from "react";
 import { motion } from "framer-motion";
-import { useLaunchpad, BondingCurveAccount } from "../hooks/useLaunchpad";
-import { useTokenMetadata } from "../hooks/useTokenMetadata";
-import { CompanyDetailModal } from "./CompanyDetailModal";
+import { useLaunchpad, BondingCurveAccount } from "../../../hooks/useLaunchpad";
+import { useTokenMetadata } from "../../../hooks/useTokenMetadata";
+import { CompanyDetailModal } from "../market-data/CompanyDetailModal";
 import { BN } from "@coral-xyz/anchor";
-import { TokenBadge } from "./TokenBadge";
+import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
@@ -58,7 +58,7 @@ const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onCli
                 <p className="text-xs font-mono text-muted-foreground mb-3">{metadata?.symbol || "..."}</p>
                 
                 <div className="flex flex-wrap gap-2 mb-4">
-                    {curve.activeExtensions?.map((ext) => (
+                    {curve.activeExtensions?.map((ext: any) => (
                         <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
                     ))}
                 </div>
@@ -119,7 +119,7 @@ export const Marketplace: FC<MarketplaceProps> = () => {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {curves.map((curve) => (
+                    {curves.map((curve: any) => (
                         <MarketplaceItem 
                             key={curve.publicKey.toString()} 
                             curve={curve} 

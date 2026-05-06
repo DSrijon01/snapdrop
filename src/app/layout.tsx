@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { DevnetBanner } from "@/components/DevnetBanner";
-import { ThemeProvider } from "@/components/ThemeProvider";
-import { Sidebar } from "@/components/Sidebar";
-import { GlobalHeader } from "@/components/GlobalHeader";
-import { Footer } from "@/components/Footer";
-import { WalletGate } from "@/components/WalletGate";
-import { WalletContextProvider } from "@/components/WalletContextProvider";
+import { DevnetBanner } from "@/components/global/wallet/DevnetBanner";
+import { ThemeProvider } from "@/components/global/theme-logo/ThemeProvider";
+import { Sidebar } from "@/components/global/layout/Sidebar";
+import { GlobalHeader } from "@/components/global/layout/GlobalHeader";
+import { Footer } from "@/components/global/layout/Footer";
+import { WalletGate } from "@/components/global/wallet/WalletGate";
+import { WalletContextProvider } from "@/components/global/wallet/WalletContextProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

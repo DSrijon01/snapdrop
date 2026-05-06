@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import { useExchangeRates } from '../hooks/useExchangeRates';
+import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { 
     ResponsiveContainer, 
     LineChart, 

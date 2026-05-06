@@ -3,7 +3,7 @@ import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapte
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import idl from '../idl/e_plays.json';
+import idl from '../../../idl/e_plays.json';
 import { Text, Calendar, Loader2 } from 'lucide-react';
 
 export const CreateMarketEvent: FC = () => {

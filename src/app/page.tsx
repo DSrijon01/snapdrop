@@ -1,19 +1,19 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ClientWalletMultiButton as WalletMultiButton } from "@/components/ClientWalletMultiButton";
-import { AnimatedBackground } from "@/components/AnimatedBackground";
-import { CandyMachineMint } from "@/components/CandyMachineMint";
-import { NFTGallery } from "@/components/NFTGallery";
+import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
+import { AnimatedBackground } from "@/components/global/theme-logo/AnimatedBackground";
+import { CandyMachineMint } from "@/components/miscellaneous/CandyMachineMint";
+import { NFTGallery } from "@/components/features/nft-marketplace/NFTGallery";
 
-import { Marketplace } from "@/components/Marketplace";
-import { ForSale } from "@/components/ForSale";
+import { Marketplace } from "@/components/features/nft-marketplace/Marketplace";
+import { ForSale } from "@/components/features/nft-marketplace/ForSale";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
 
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
-import { AdminDashboard } from "@/components/AdminDashboard";
+import { AdminDashboard } from "@/components/features/one-click-launch/AdminDashboard";
 
 function StreetSyncContent() {
   const { connected, publicKey } = useWallet();

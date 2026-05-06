@@ -1,10 +1,10 @@
 "use client";
 
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ClientWalletMultiButton as WalletMultiButton } from "@/components/ClientWalletMultiButton";
-import { ThemeToggle } from "@/components/ThemeToggle"; 
-import { Logo } from "@/components/Logo";
-import { MobileSyncModal } from "@/components/MobileSyncModal";
+import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
+import { ThemeToggle } from "@/components/global/theme-logo/ThemeToggle"; 
+import { Logo } from "@/components/global/theme-logo/Logo";
+import { MobileSyncModal } from "@/components/features/market-data/MobileSyncModal";
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";

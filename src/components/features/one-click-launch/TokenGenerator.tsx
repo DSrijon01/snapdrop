@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
-import { umi } from '../utils/umi';
+import { umi } from '../../../utils/umi';
 import { createGenericFile, generateSigner, percentAmount } from '@metaplex-foundation/umi';
 import { createAndMint, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';

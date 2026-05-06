@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { MarketSidebar } from '@/components/MarketSidebar';
-import { MarketDetails } from '@/components/MarketDetails';
+import { MarketSidebar } from '@/components/features/market-data/MarketSidebar';
+import { MarketDetails } from '@/components/features/market-data/MarketDetails';
 import { ArrowLeft } from 'lucide-react';
 
 const DEFAULT_FAVORITES = ['BTC', 'BNB', 'SOL', 'ETH', 'XRP'];

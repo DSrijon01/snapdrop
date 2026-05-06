@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronDown, TrendingUp, TrendingDown, Plus, X } from 'lucide-react';
-import { useExchangeRates } from '../hooks/useExchangeRates';
+import { useExchangeRates } from '../../../hooks/useExchangeRates';
 
 interface SidebarProps {
     favorites: string[];

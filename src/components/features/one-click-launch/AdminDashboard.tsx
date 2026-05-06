@@ -3,7 +3,7 @@ import { PublicKey, SystemProgram } from '@solana/web3.js';
 import { FC, useEffect, useState, useMemo } from 'react';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
-import idl from '../idl/launchpad.json';
+import idl from '../../../idl/launchpad.json';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { TokenGenerator } from './TokenGenerator';
 import { Token2022Studio } from './Token2022Studio';

@@ -30,7 +30,7 @@ import {
     LENGTH_SIZE
 } from '@solana/spl-token';
 import { createInitializeInstruction as createInitTokenMetadataInstruction, pack } from '@solana/spl-token-metadata';
-import { umi } from '../utils/umi';
+import { umi } from '../../../utils/umi';
 import { createGenericFile } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';

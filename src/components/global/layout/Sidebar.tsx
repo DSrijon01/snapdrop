@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X } from "lucide-react";
-import { UserAvatar } from "@/components/UserAvatar";
+import { UserAvatar } from "@/components/global/layout/UserAvatar";
 
 const NAV_ITEMS = [
   { label: "Market Data", href: "/market-data", icon: LineChart },
