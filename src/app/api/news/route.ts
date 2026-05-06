@@ -16,19 +16,25 @@ export async function GET() {
   }
 
   try {
-    // timeframe=24 strictly enforces a 24-hour retention window for fresh news
-    const url = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology,cryptocurrency&timeframe=24`;
-    const res = await fetch(url, { next: { revalidate: 3600 } });
+    const urlGeneral = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology`;
+    const urlCrypto = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&q=crypto`;
     
-    if (!res.ok) {
-      throw new Error(`API error: ${res.status}`);
+    const [resGeneral, resCrypto] = await Promise.all([
+      fetch(urlGeneral, { next: { revalidate: 3600 } }),
+      fetch(urlCrypto, { next: { revalidate: 3600 } })
+    ]);
+    
+    if (!resGeneral.ok || !resCrypto.ok) {
+      throw new Error(`API error: General(${resGeneral.status}), Crypto(${resCrypto.status})`);
     }
 
-    const data = await res.json();
-    const results = data.results || [];
+    const dataGeneral = await resGeneral.json();
+    const dataCrypto = await resCrypto.json();
     
-    // Map NewsData.io standard to our UI interface
-    const mapped: NewsArticle[] = results.map((item: any) => ({
+    const resultsGeneral = dataGeneral.results || [];
+    const resultsCrypto = dataCrypto.results || [];
+    
+    const mapItems = (items: any[]) => items.map((item: any) => ({
       article_id: item.article_id || Math.random().toString(),
       title: item.title,
       link: item.link || "#",
@@ -37,15 +43,18 @@ export async function GET() {
       image_url: item.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800',
       description: item.description || item.title,
       content: item.content || item.description || "Content unavailable",
-      sentiment: item.sentiment || (Math.random() > 0.5 ? 'Positive' : 'Negative'), // Fallback sentiment if free tier
+      sentiment: item.sentiment || (Math.random() > 0.5 ? 'Positive' : 'Negative'),
       sentiment_score: item.sentiment_stats?.positive ? (item.sentiment_stats.positive - item.sentiment_stats.negative) : (Math.random() * 2 - 1),
       tags: item.keywords || ['Market News']
     }));
 
+    const mappedGeneral = mapItems(resultsGeneral);
+    const mappedCrypto = mapItems(resultsCrypto);
+
     return NextResponse.json({
-      headlines: mapped.slice(0, 5),
-      global: mapped.slice(5, 15),
-      crypto: mapped.slice(15, 25)
+      headlines: mappedGeneral.slice(0, 5),
+      global: mappedGeneral.slice(5, 15),
+      crypto: mappedCrypto.slice(0, 10)
     });
 
   } catch (err: any) {

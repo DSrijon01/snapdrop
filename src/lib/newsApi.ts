@@ -155,25 +155,35 @@ export async function fetchNews() {
   }
 
   try {
-    // Removed `timeframe` parameter since it's restricted to paid tiers.
-    const url = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology,cryptocurrency`;
-    const res = await fetch(url);
+    const urlGeneral = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology`;
+    const urlCrypto = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&q=crypto`;
     
-    if (!res.ok) {
-      throw new Error(`External API error: ${res.status}`);
+    const [resGeneral, resCrypto] = await Promise.all([
+      fetch(urlGeneral),
+      fetch(urlCrypto)
+    ]);
+    
+    if (!resGeneral.ok || !resCrypto.ok) {
+      throw new Error(`External API error: General(${resGeneral.status}), Crypto(${resCrypto.status})`);
     }
 
-    const data = await res.json();
-    let results = data.results || [];
+    const dataGeneral = await resGeneral.json();
+    const dataCrypto = await resCrypto.json();
+    
+    let resultsGeneral = dataGeneral.results || [];
+    let resultsCrypto = dataCrypto.results || [];
     
     // Manually enforce 24-hour retention since API blocks timeframe parameter
     const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-    results = results.filter((item: any) => {
+    const filterRecent = (item: any) => {
        const pubDate = new Date(item.pubDate).getTime();
        return pubDate > twentyFourHoursAgo;
-    });
+    };
     
-    const mapped: NewsArticle[] = results.map((item: any) => {
+    resultsGeneral = resultsGeneral.filter(filterRecent);
+    resultsCrypto = resultsCrypto.filter(filterRecent);
+    
+    const mapItems = (items: any[]) => items.map((item: any) => {
       const isContentRestricted = item.content === "ONLY AVAILABLE IN PAID PLANS";
       const validContent = isContentRestricted ? item.description : (item.content || item.description);
       
@@ -194,9 +204,12 @@ export async function fetchNews() {
       };
     });
 
-    const finalHeadlines = mapped.slice(0, 5);
-    const finalGlobal = mapped.slice(5, 15);
-    const finalCrypto = mapped.slice(15, 25);
+    const mappedGeneral = mapItems(resultsGeneral);
+    const mappedCrypto = mapItems(resultsCrypto);
+
+    const finalHeadlines = mappedGeneral.slice(0, 5);
+    const finalGlobal = mappedGeneral.slice(5, 15);
+    const finalCrypto = mappedCrypto.slice(0, 10);
 
     // Fall back to robust mocks for any specific segment if the live API didn't return enough 24h recent volume
     return {
