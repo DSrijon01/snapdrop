@@ -155,8 +155,9 @@ export async function fetchNews() {
   }
 
   try {
-    const urlGeneral = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology`;
-    const urlCrypto = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&q=crypto`;
+    const cacheBuster = Date.now();
+    const urlGeneral = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology&cb=${cacheBuster}`;
+    const urlCrypto = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&q=crypto&cb=${cacheBuster}`;
     
     const [resGeneral, resCrypto] = await Promise.all([
       fetch(urlGeneral),
