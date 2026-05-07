@@ -80,6 +80,22 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Trade Button */}
+        <div className="p-3 mt-auto border-t border-border shrink-0 bg-background/50 backdrop-blur-md">
+          <Link
+            href="/trade"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-center w-full h-12 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-primary-foreground rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(var(--primary),0.1)] hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] overflow-hidden relative group/btn"
+          >
+            <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden font-display font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300">
+              Trade!
+            </span>
+            <span className="hidden md:flex items-center justify-center md:group-hover:hidden font-display font-black text-xl w-full h-full">
+              T!
+            </span>
+          </Link>
+        </div>
       </aside>
     </>
   );

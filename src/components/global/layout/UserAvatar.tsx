@@ -1,9 +1,31 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { useEffect, useState } from "react";
 
 export function UserAvatar() {
   const { publicKey } = useWallet();
+  const { connection } = useConnection();
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!publicKey) return;
+    
+    // Initial fetch
+    connection.getBalance(publicKey).then((lamports) => {
+      setBalance(lamports / LAMPORTS_PER_SOL);
+    }).catch(console.error);
+    
+    // Subscribe to changes
+    const id = connection.onAccountChange(publicKey, (acc) => {
+      setBalance(acc.lamports / LAMPORTS_PER_SOL);
+    });
+    
+    return () => {
+      connection.removeAccountChangeListener(id);
+    };
+  }, [publicKey, connection]);
   
   // Use the public key as the seed. If not connected, it won't render anyway due to Sidebar logic, but provide a fallback.
   const seed = publicKey ? publicKey.toString() : "guest";
@@ -29,7 +51,7 @@ export function UserAvatar() {
           <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse drop-shadow-[0_0_5px_rgba(34,197,94,0.8)] shrink-0" />
         </div>
         <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono">
-          Online
+          {balance !== null ? `${balance.toFixed(4)} SOL` : "Loading..."}
         </span>
       </div>
     </div>
