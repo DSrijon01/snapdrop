@@ -5,16 +5,16 @@ import { formatDistanceToNow } from "date-fns";
 
 export function TopHeadlinesTimeline({ articles, onArticleClick }: { articles: NewsArticle[], onArticleClick: (article: NewsArticle) => void }) {
   return (
-    <div className="h-full w-full overflow-y-auto scrollbar-hide flex flex-col p-6 border-b border-border/40 bg-background/50 backdrop-blur-sm relative">
-      <div className="sticky top-0 z-10 flex items-center mb-6 pb-2 border-b border-border/10 bg-background/95 backdrop-blur-md">
+    <div className="h-full w-full overflow-y-auto scrollbar-hide flex flex-col border-b border-border/40 bg-background/50 backdrop-blur-sm relative">
+      <div className="sticky top-0 z-20 flex items-center pt-6 px-6 pb-4 mb-4 border-b border-border/10 bg-background/95 backdrop-blur-md">
         <h2 className="text-xl font-bold uppercase tracking-wider text-foreground m-0 flex items-center">
           <span className="w-2 h-2 rounded-full bg-primary mr-3 animate-pulse shadow-[0_0_8px_var(--color-primary)]"></span>
           Live Headlines
         </h2>
       </div>
 
-      <div className="relative pl-6 space-y-8 pb-12">
-        <div className="absolute top-2 bottom-0 left-[11px] w-[2px] bg-gradient-to-b from-border/80 to-transparent"></div>
+      <div className="relative pl-6 px-6 space-y-8 pb-12">
+        <div className="absolute top-0 bottom-0 left-[11px] w-[2px] bg-gradient-to-b from-border/80 to-transparent"></div>
         
         {articles.map((article, idx) => {
           const formattedTime = formatDistanceToNow(new Date(article.pubDate), { addSuffix: true });

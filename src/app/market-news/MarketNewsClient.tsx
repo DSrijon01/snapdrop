@@ -48,9 +48,9 @@ export function MarketNewsClient({ initialData }: MarketNewsClientProps) {
           </div>
 
           {/* Bottom Half: Split Columns */}
-          <div className="flex flex-row flex-1 relative">
+          <div className="flex flex-col md:flex-row flex-1 relative">
             {/* Global News Column */}
-            <div className="w-1/2 border-r border-border/40 bg-muted/5 relative pb-8">
+            <div className="w-full md:w-1/2 border-b md:border-b-0 md:border-r border-border/40 bg-muted/5 relative pb-8">
               <div className="px-6 py-3 border-b border-border/20 sticky top-0 bg-background/95 z-20 backdrop-blur-md shadow-sm">
                 <h3 className="font-bold text-sm tracking-widest uppercase font-mono text-foreground/80 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -65,7 +65,7 @@ export function MarketNewsClient({ initialData }: MarketNewsClientProps) {
             </div>
 
             {/* Crypto News Column */}
-            <div className="w-1/2 bg-muted/5 relative pb-8">
+            <div className="w-full md:w-1/2 bg-muted/5 relative pb-8">
               <div className="px-6 py-3 border-b border-border/20 sticky top-0 bg-background/95 z-20 backdrop-blur-md shadow-sm">
                 <h3 className="font-bold text-sm tracking-widest uppercase font-mono text-foreground/80 flex items-center gap-2">
                   <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
