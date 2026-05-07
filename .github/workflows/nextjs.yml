@@ -12,6 +12,13 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+  # Runs every hour at the top of the hour to fetch fresh market news.
+  # If you upgrade to a paid NewsData API tier in the future, you can increase
+  # the frequency here (e.g. '*/15 * * * *' for every 15 minutes).
+  schedule:
+    - cron: '0 * * * *'
+
+
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
