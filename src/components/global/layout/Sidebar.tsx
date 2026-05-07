@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X } from "lucide-react";
+import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket } from "lucide-react";
 import { UserAvatar } from "@/components/global/layout/UserAvatar";
 
 const NAV_ITEMS = [
@@ -86,13 +86,11 @@ export function Sidebar() {
           <Link
             href="/trade"
             onClick={() => setIsOpen(false)}
-            className="flex items-center justify-center w-full h-12 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-primary-foreground rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(var(--primary),0.1)] hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] overflow-hidden relative group/btn"
+            className="flex items-center gap-3 justify-center md:justify-start px-4 py-3 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-primary-foreground rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(var(--primary),0.1)] hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] group/btn"
           >
+            <Rocket size={20} className="shrink-0 transition-transform group-hover/btn:-translate-y-1 group-hover/btn:scale-110" />
             <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden font-display font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300">
               Trade!
-            </span>
-            <span className="hidden md:flex items-center justify-center md:group-hover:hidden font-display font-black text-xl w-full h-full">
-              T!
             </span>
           </Link>
         </div>
