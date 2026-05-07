@@ -1,32 +1,33 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { JupiterSwapTerminal } from "@/components/web3/JupiterSwapTerminal";
 
 export default function TradePage() {
     return (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-card border border-border rounded-3xl p-12 max-w-lg shadow-2xl relative overflow-hidden"
-            >
-                <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl"></div>
-                <div className="absolute -bottom-20 -left-20 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl"></div>
+        <div className="flex flex-col items-center min-h-[80vh] px-4 py-8 relative">
+            {/* Background Glows */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div className="w-full max-w-4xl flex flex-col gap-6 items-center relative z-10">
+                <motion.div 
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-center mb-4 mt-8"
+                >
+                    <h1 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight">
+                        Street Sync <span className="text-primary">Trade</span>
+                    </h1>
+                    <p className="text-muted-foreground text-xs md:text-sm mt-3 max-w-xl mx-auto uppercase tracking-widest font-mono border border-border bg-muted/50 py-2 px-4 rounded-full shadow-inner">
+                        Powered by Jupiter Routing
+                    </p>
+                </motion.div>
                 
-                <h1 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight mb-4 relative z-10">
-                    Trading <span className="text-primary">Coming Soon</span>
-                </h1>
-                <p className="text-muted-foreground text-lg mb-8 relative z-10">
-                    We're building the ultimate high-speed trading experience. Stay tuned for advanced charting, one-click execution, and instant liquidity.
-                </p>
-                
-                <div className="flex justify-center relative z-10">
-                    <span className="relative flex h-4 w-4">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-4 w-4 bg-primary"></span>
-                    </span>
+                <div className="w-full flex justify-center">
+                    <JupiterSwapTerminal />
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 }

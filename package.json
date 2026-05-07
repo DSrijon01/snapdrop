@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "^0.32.1",
+    "@jup-ag/terminal": "^4.5.7",
     "@metaplex-foundation/mpl-candy-machine": "^6.1.0",
     "@metaplex-foundation/mpl-token-metadata": "^3.4.0",
     "@metaplex-foundation/mpl-toolbox": "^0.10.0",
