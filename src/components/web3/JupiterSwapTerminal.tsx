@@ -25,6 +25,7 @@ export const JupiterSwapTerminal = () => {
         init({
           displayMode: "integrated",
           integratedTargetId: "jupiter-terminal-app",
+          // @ts-ignore - 'endpoint' is valid at runtime but missing from @jup-ag/terminal type definitions
           endpoint: "https://api.mainnet-beta.solana.com", // CRITICAL: Mainnet for MVP
           strictTokenList: false,
           formProps: {
