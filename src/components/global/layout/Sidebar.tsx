@@ -46,7 +46,7 @@ export function Sidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`group fixed md:sticky top-0 left-0 z-50 h-[100dvh] w-64 md:w-20 md:hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out md:translate-x-0 flex flex-col overflow-hidden ${
+        className={`group fixed md:sticky top-0 left-0 z-50 h-full w-64 md:w-20 md:hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out md:translate-x-0 flex flex-col overflow-hidden ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
