@@ -14,7 +14,6 @@ const NAV_ITEMS = [
   { label: "Openclaw T cal", href: "/openclaw", icon: Bot },
   { label: "SNBL", href: "/snbl", icon: PiggyBank },
   { label: "Sessions", href: "/sessions", icon: Activity },
-  { label: "Trade", href: "/trade", icon: Rocket },
 ];
 
 export function Sidebar() {
@@ -86,6 +85,20 @@ export function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Trade Button */}
+        <div className="p-3 mt-auto border-t border-border shrink-0 bg-background/50 backdrop-blur-md">
+          <Link
+            href="/trade"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center gap-3 justify-center md:justify-start px-4 py-3 bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary text-primary hover:text-primary-foreground rounded-xl transition-all duration-300 shadow-[0_0_15px_rgba(var(--primary),0.1)] hover:shadow-[0_0_20px_rgba(var(--primary),0.4)] group/btn"
+          >
+            <Rocket size={20} className="shrink-0 transition-transform group-hover/btn:-translate-y-1 group-hover/btn:scale-110" />
+            <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden font-display font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300">
+              Trade!
+            </span>
+          </Link>
+        </div>
       </aside>
     </>
   );
