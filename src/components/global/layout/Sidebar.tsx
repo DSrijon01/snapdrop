@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
@@ -20,6 +20,11 @@ export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { connected } = useWallet();
+
+  // Auto-close sidebar on mobile when navigating to a new route
+  useEffect(() => {
+    setIsOpen(false);
+  }, [pathname]);
 
   const toggleSidebar = () => setIsOpen(!isOpen);
 

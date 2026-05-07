@@ -1,52 +1,50 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
-
-declare global {
-  interface Window {
-    Jupiter: any;
-  }
-}
+// import { useWallet } from "@solana/wallet-adapter-react"; // Removed to avoid adapter version mismatch crashes
 
 export const JupiterSwapTerminal = () => {
   const [isLoaded, setIsLoaded] = useState(false);
-  const { wallet } = useWallet();
 
   useEffect(() => {
-    // Prevent duplicate script injections
-    if (document.getElementById("jupiter-terminal-script")) {
-      setIsLoaded(true);
-      return;
-    }
+    let mounted = true;
 
-    const script = document.createElement("script");
-    script.id = "jupiter-terminal-script";
-    script.src = "https://terminal.jup.ag/main-v3.js";
-    script.async = true;
-    script.onload = () => setIsLoaded(true);
-    document.head.appendChild(script);
+    const loadJupiter = async () => {
+      try {
+        // Dynamically import to ensure it only runs on the client
+        const { init } = await import('@jup-ag/terminal');
+        
+        if (!mounted) return;
 
-    // Note: We don't remove the script on unmount because Jupiter adds 
-    // global styles and logic that shouldn't be torn down abruptly.
+        // Ensure the DOM element is ready before init
+        const target = document.getElementById("jupiter-terminal-app");
+        if (target) {
+            target.innerHTML = ''; // Clear any existing instance
+        }
+
+        init({
+          displayMode: "integrated",
+          integratedTargetId: "jupiter-terminal-app",
+          endpoint: "https://api.mainnet-beta.solana.com", // CRITICAL: Mainnet for MVP
+          strictTokenList: false,
+          formProps: {
+            initialInputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
+            initialOutputMint: "So11111111111111111111111111111111111111112", // SOL
+          },
+        });
+        
+        setIsLoaded(true);
+      } catch (err) {
+        console.error("Failed to load Jupiter Terminal:", err);
+      }
+    };
+
+    loadJupiter();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
-
-  useEffect(() => {
-    if (isLoaded && window.Jupiter) {
-      window.Jupiter.init({
-        displayMode: "integrated",
-        integratedTargetId: "jupiter-terminal-app",
-        endpoint: "https://api.mainnet-beta.solana.com", // CRITICAL: Mainnet for MVP
-        strictTokenList: false,
-        formProps: {
-          initialInputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
-          initialOutputMint: "So11111111111111111111111111111111111111112", // SOL
-        },
-        // Optionally pass the user's connected wallet adapter
-        passThroughWallet: wallet ? wallet.adapter : undefined,
-      });
-    }
-  }, [isLoaded, wallet]);
 
   return (
     <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
@@ -66,17 +64,17 @@ export const JupiterSwapTerminal = () => {
       </div>
 
       {/* Terminal Container */}
-      <div className="relative z-10 bg-[#1c1c1e] rounded-2xl p-2 shadow-2xl border border-[#2c2c2e]">
+      <div className="relative z-10 bg-[#1c1c1e] rounded-2xl p-2 shadow-2xl border border-[#2c2c2e] min-h-[500px]">
+        {!isLoaded && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#131313] z-50 rounded-xl">
+            <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mb-4"></div>
+            <p className="text-muted-foreground font-mono text-[10px] tracking-[0.2em] uppercase">Syncing Protocol...</p>
+          </div>
+        )}
         <div 
           id="jupiter-terminal-app" 
-          className="relative w-full overflow-hidden min-h-[400px] rounded-xl flex items-center justify-center bg-black"
+          className="relative w-full h-full min-h-[500px] overflow-hidden rounded-xl bg-transparent"
         >
-          {!isLoaded && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#131313]">
-              <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin mb-4"></div>
-              <p className="text-muted-foreground font-mono text-[10px] tracking-[0.2em] uppercase">Syncing Protocol...</p>
-            </div>
-          )}
         </div>
       </div>
     </div>
