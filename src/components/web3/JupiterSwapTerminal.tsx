@@ -13,25 +13,25 @@ export const JupiterSwapTerminal = () => {
     <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-8 duration-700">
       
       {/* Devnet Warning Banner */}
-      <div className="bg-amber-500/10 border border-amber-500/50 rounded-t-2xl p-4 mb-[-15px] relative z-0 flex items-start gap-3 pt-5 pb-8 shadow-[0_0_30px_rgba(245,158,11,0.1)]">
+      <div className="bg-amber-500/10 border border-amber-500/30 rounded-t-3xl p-4 mb-[-20px] relative z-0 flex items-start gap-3 pt-5 pb-8 shadow-sm">
         <div className="shrink-0 pt-0.5">
           <svg className="w-5 h-5 text-amber-500 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div>
-          <h4 className="text-amber-500 font-bold text-xs uppercase tracking-widest mb-1">MVP Preview Mode</h4>
-          <p className="text-amber-500/80 text-[10px] leading-relaxed uppercase tracking-wide">
-            Swap routing is currently simulating via Solana Mainnet. Do not execute live trades during Devnet testing.
+          <h4 className="text-amber-600 dark:text-amber-500 font-semibold text-xs tracking-wide mb-0.5">MVP Preview Mode</h4>
+          <p className="text-amber-600/80 dark:text-amber-500/80 text-[11px] leading-relaxed">
+            Swap routing is currently simulating via Solana Mainnet.
           </p>
         </div>
       </div>
 
-      {/* Terminal Container */}
-      <div className="relative z-10 bg-[#1c1c1e] rounded-2xl p-2 shadow-2xl border border-[#2c2c2e] min-h-[500px]">
+      {/* Terminal Container (Uniswap-style Card) */}
+      <div className="relative z-10 bg-white dark:bg-[#131313] rounded-[24px] p-2 sm:p-3 shadow-[0_8px_32px_rgba(0,0,0,0.08)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] border border-gray-200 dark:border-gray-800 min-h-[460px]">
         <div 
           id="jupiter-terminal-app" 
-          className="relative w-full h-full min-h-[500px] overflow-hidden rounded-xl bg-transparent"
+          className="relative w-full h-full min-h-[460px] overflow-hidden rounded-[16px] bg-transparent"
         >
         </div>
       </div>
@@ -44,8 +44,7 @@ export const JupiterSwapTerminal = () => {
             window.Jupiter.init({
               displayMode: "integrated",
               integratedTargetId: "jupiter-terminal-app",
-              // @ts-ignore
-              endpoint: "https://api.mainnet-beta.solana.com", // CRITICAL: Mainnet for MVP
+              // REMOVED 'endpoint': Jupiter will now automatically fallback to its highly-optimized internal Triton RPCs, fixing the 429 errors!
               strictTokenList: false,
               formProps: {
                 initialInputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
