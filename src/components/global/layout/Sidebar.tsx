@@ -35,7 +35,7 @@ export function Sidebar() {
       {/* Mobile Hamburger Button (Floating Action Button) */}
       <button
         onClick={toggleSidebar}
-        className="md:hidden fixed bottom-16 right-4 z-[60] p-3 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all focus:outline-none"
+        className="md:hidden fixed bottom-6 left-4 z-[60] p-3 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all focus:outline-none"
         aria-label="Toggle Navigation"
       >
         {isOpen ? <X size={24} /> : <Menu size={24} />}
@@ -51,8 +51,8 @@ export function Sidebar() {
 
       {/* Sidebar Container */}
       <aside
-        className={`group fixed md:sticky top-0 left-0 z-50 h-[100dvh] md:h-full w-64 md:w-20 md:hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out md:translate-x-0 flex flex-col overflow-hidden ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`group fixed md:sticky top-0 z-50 h-[100dvh] md:h-full w-64 md:w-20 md:hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${
+          isOpen ? "left-0" : "-left-64 md:left-0"
         }`}
       >
         {/* User Avatar Area (Highest Element) */}
