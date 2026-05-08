@@ -44,7 +44,8 @@ export const JupiterSwapTerminal = () => {
             window.Jupiter.init({
               displayMode: "integrated",
               integratedTargetId: "jupiter-terminal-app",
-              // REMOVED 'endpoint': Jupiter will now automatically fallback to its highly-optimized internal Triton RPCs, fixing the 429 errors!
+              // @ts-ignore - Required for terminal initialization
+              endpoint: "https://api.mainnet-beta.solana.com",
               strictTokenList: false,
               formProps: {
                 initialInputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", // USDC
