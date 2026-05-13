@@ -8,6 +8,7 @@ skip-lint = false
 [programs.devnet]
 e_plays = "77vsiKoC6gxYZwbds54Qgqah1du7oDFYPEW84ykAQ7Y4"
 launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"
+snbl_staking = "4Emh8zTvZz6mYTqa3c5UMQFgaMgFPx7fB4YaMNNKhoBw"
 
 [programs.localnet]
 launchpad = "5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV"

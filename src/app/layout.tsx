@@ -8,6 +8,7 @@ import { GlobalHeader } from "@/components/global/layout/GlobalHeader";
 import { Footer } from "@/components/global/layout/Footer";
 import { WalletGate } from "@/components/global/wallet/WalletGate";
 import { WalletContextProvider } from "@/components/global/wallet/WalletContextProvider";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -54,10 +55,11 @@ export default function RootLayout({
                   </WalletGate>
                 </main>
               </div>
-              <Footer />
-            </div>
-          </WalletContextProvider>
-        </ThemeProvider>
+                <Footer />
+              </div>
+              <Toaster position="bottom-right" />
+            </WalletContextProvider>
+          </ThemeProvider>
       </body>
     </html>
   );
