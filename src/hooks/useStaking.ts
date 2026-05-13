@@ -12,9 +12,9 @@ import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import toast from "react-hot-toast";
 
-// Use the IDL from target/types directly
-import { SnblStaking } from "../../target/types/snbl_staking";
-import idl from "../../target/idl/snbl_staking.json";
+// Use the IDL from src directory which is tracked by git
+import { SnblStaking } from "../types/snbl_staking";
+import idl from "../idl/snbl_staking.json";
 
 export const STAKING_PROGRAM_ID = new PublicKey((idl as any).address || "4Emh8zTvZz6mYTqa3c5UMQFgaMgFPx7fB4YaMNNKhoBw");
 
