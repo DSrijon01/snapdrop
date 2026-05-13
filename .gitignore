@@ -46,3 +46,9 @@ test-ledger
 target/
 programs/launchpad/target/
 programs/street_sync/target/
+
+# Proprietary Protocol Source Code
+programs/
+tests/
+scripts/
+Anchor.toml
