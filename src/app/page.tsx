@@ -3,7 +3,7 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { AnimatedBackground } from "@/components/global/theme-logo/AnimatedBackground";
-import { CandyMachineMint } from "@/components/miscellaneous/CandyMachineMint";
+import { StackedNFTGallery } from "@/app/snbl/_components/StackedNFTGallery";
 import { NFTGallery } from "@/components/features/nft-marketplace/NFTGallery";
 
 import { Marketplace } from "@/components/features/nft-marketplace/Marketplace";
@@ -94,21 +94,18 @@ function StreetSyncContent() {
             </div>
         </div>
 
-        <div className="flex-1 flex flex-col relative z-0">
+        <div className="flex-1 flex flex-col relative overflow-hidden">
             <div className="animate-in fade-in duration-500">
                 {activeTab === 'stream' ? (
-                    <div className="container mx-auto p-6 space-y-8">
-                        {/* Mint Section */}
+                    <div className="container mx-auto px-4 py-4 space-y-4">
                         <section>
-                            <CandyMachineMint onMintSuccess={handleMintSuccess} />
+                            <StackedNFTGallery />
                         </section>
 
-
-                        {/* Gallery Section */}
                         <section>
-                            <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-2xl font-bold text-foreground flex items-center gap-2 font-display uppercase tracking-tight">
-                                <span className="w-2 h-8 bg-primary rounded-full"/>
+                            <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-xl font-bold text-foreground flex items-center gap-2 font-display uppercase tracking-tight">
+                                <span className="w-1.5 h-6 bg-primary rounded-full"/>
                                 Your Stream
                             </h3>
                             </div>

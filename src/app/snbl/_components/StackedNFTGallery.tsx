@@ -1,0 +1,454 @@
+"use client";
+
+import { useState, useMemo, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
+import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
+import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
+import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
+import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
+import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+
+interface NFTDetail {
+    image: string;
+    price: number;
+    mintAddress: string;
+}
+
+interface CarouselItem {
+  id: string;
+  type: "candymachine" | "direct";
+  title: string;
+  subtitle?: string;
+  images: string[];
+  price?: number; // Only needed for candy machine summary
+  candyMachineId?: string;
+  totalMinted?: number;
+  maxSupply?: number;
+  collection?: string;
+  nfts?: NFTDetail[];
+}
+
+const initialCards: CarouselItem[] = [
+  {
+    id: "nft-1",
+    type: "direct",
+    title: "Neon Cyber Collection",
+    subtitle: "Direct Purchase",
+    collection: "Cyber Series",
+    images: [
+        "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=800&h=800&fit=crop",
+        "https://images.unsplash.com/photo-1549490349-8643362247b5?w=800&h=800&fit=crop",
+        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop"
+    ],
+    nfts: [
+        { image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", price: 0.5, mintAddress: "MockMintAddress1" },
+        { image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", price: 0.6, mintAddress: "MockMintAddress2" },
+        { image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", price: 0.75, mintAddress: "MockMintAddress3" },
+        { image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&h=400&fit=crop", price: 1.0, mintAddress: "MockMintAddress4" }
+    ]
+  },
+  {
+    id: "cm-1",
+    type: "candymachine",
+    title: "Street Sync Genesis",
+    subtitle: "Blind Mint",
+    images: ["https://images.unsplash.com/photo-1614726365206-3532c1c696e9?w=800&h=800&fit=crop"],
+    price: 0.1,
+    totalMinted: 245,
+    maxSupply: 1000,
+    candyMachineId: "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG"
+  },
+  {
+    id: "nft-2",
+    type: "direct",
+    title: "Abstract Void Drops",
+    subtitle: "Direct Purchase",
+    collection: "Void Art",
+    images: [
+        "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&h=800&fit=crop",
+        "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&h=800&fit=crop",
+        "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&h=800&fit=crop"
+    ],
+    nfts: [
+        { image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&h=400&fit=crop", price: 1.2, mintAddress: "MockMintAddressA" },
+        { image: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=400&h=400&fit=crop", price: 1.5, mintAddress: "MockMintAddressB" },
+        { image: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=400&h=400&fit=crop", price: 2.0, mintAddress: "MockMintAddressC" },
+    ]
+  },
+  {
+    id: "cm-2",
+    type: "candymachine",
+    title: "Pixel Punks",
+    subtitle: "Blind Mint",
+    images: ["https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?w=800&h=800&fit=crop"],
+    price: 0.25,
+    totalMinted: 12,
+    maxSupply: 500,
+    candyMachineId: "MockCM2"
+  }
+];
+
+export const StackedNFTGallery = () => {
+    const { connection } = useConnection();
+    const wallet = useWallet();
+    const [cards] = useState(initialCards);
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [expandedCard, setExpandedCard] = useState<CarouselItem | null>(null);
+    const [selectedNFT, setSelectedNFT] = useState<NFTDetail | null>(null);
+    const [isMinting, setIsMinting] = useState(false);
+    const [status, setStatus] = useState("");
+
+    const umi = useMemo(() => {
+        const u = createUmi(connection.rpcEndpoint)
+            .use(mplCandyMachine())
+            .use(mplTokenMetadata());
+        if (wallet.wallet?.adapter) {
+            u.use(walletAdapterIdentity(wallet.wallet.adapter));
+        }
+        return u;
+    }, [connection.rpcEndpoint, wallet.wallet]);
+
+    // Slideshow Effect
+    useEffect(() => {
+        if (expandedCard) return; // Pause slideshow when modal is open
+        const interval = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % cards.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, [cards.length, expandedCard]);
+
+    // Reset selected NFT when modal opens/closes
+    useEffect(() => {
+        setSelectedNFT(null);
+        setStatus("");
+    }, [expandedCard]);
+
+    const handleMintCM = async (candyMachineIdStr: string) => {
+        if (!wallet.connected || !wallet.publicKey) {
+            setStatus("Please connect your wallet first!");
+            return;
+        }
+
+        setIsMinting(true);
+        setStatus("Initializing mint...");
+
+        try {
+            const candyMachineId = umiPublicKey(candyMachineIdStr);
+            const candyMachine = await fetchCandyMachine(umi, candyMachineId);
+            
+            setStatus("Confirm Transaction...");
+            const nftMint = generateSigner(umi);
+
+            const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID || "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo");
+
+            await transactionBuilder()
+                .add(setComputeUnitLimit(umi, { units: 800_000 }))
+                .add(mintV2(umi, {
+                    candyMachine: candyMachine.publicKey,
+                    candyGuard: CANDY_GUARD_ID,
+                    collectionMint: candyMachine.collectionMint,
+                    collectionUpdateAuthority: candyMachine.authority,
+                    nftMint,
+                    mintArgs: {
+                        solPayment: some({ destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") }),
+                    },
+                }))
+                .sendAndConfirm(umi, {
+                    confirm: { commitment: "finalized" }
+                });
+
+            setStatus("Mint successful!");
+        } catch (error: any) {
+            console.error("Mint failed:", error);
+            setStatus(`Mint failed: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsMinting(false);
+        }
+    };
+
+    const handleBuyDirect = async (mintAddress: string) => {
+        setStatus(`Purchasing NFT ${mintAddress} is not implemented yet.`);
+    };
+
+    return (
+        <div className="w-full flex flex-col items-center justify-center min-h-[280px] md:min-h-[320px] py-4 relative overflow-hidden bg-card/30 rounded-3xl border border-border">
+            
+            <div className="text-center mb-2 relative z-10">
+                <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground mb-0.5">
+                    Exclusive Drops
+                </h2>
+                <p className="text-muted-foreground text-[10px] md:text-xs max-w-lg mx-auto">
+                    Swipe through our curated collections. Select an exclusive drop to mint or purchase directly.
+                </p>
+            </div>
+
+            <div className="relative w-full h-[200px] md:h-[260px] flex items-center justify-center perspective-1000 mt-2">
+                <AnimatePresence>
+                    {cards.map((card, index) => {
+                        const offset = index - currentIndex;
+                        // Wrap around logic for infinite feel
+                        let displayOffset = offset;
+                        if (offset > cards.length / 2) displayOffset -= cards.length;
+                        if (offset < -cards.length / 2) displayOffset += cards.length;
+
+                        const isCenter = displayOffset === 0;
+                        const absOffset = Math.abs(displayOffset);
+                        
+                        if (absOffset > 2) return null;
+
+                        return (
+                            <motion.div
+                                key={card.id}
+                                className={`absolute w-[140px] h-[190px] md:w-[170px] md:h-[230px] ${isCenter ? 'cursor-pointer' : 'cursor-pointer'}`}
+                                initial={false}
+                                animate={{
+                                    x: `${displayOffset * 85}%`,
+                                    scale: 1 - absOffset * 0.15,
+                                    zIndex: 50 - absOffset,
+                                    opacity: 1 - absOffset * 0.4,
+                                    filter: `blur(${absOffset * 2}px)`,
+                                }}
+                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                onClick={() => {
+                                    if (isCenter) setExpandedCard(card);
+                                    else setCurrentIndex(index);
+                                }}
+                            >
+                                <div className="relative w-full h-full pt-10">
+                                    {card.images.map((img, i) => (
+                                        <div
+                                            key={i}
+                                            className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-card"
+                                            style={{
+                                                zIndex: 10 - i,
+                                                // Make stacked cards peek out top and sides by translating UP and scaling slightly
+                                                transform: `translateY(${i * -30}px) scale(${1 - i * 0.08})`,
+                                                transformOrigin: "bottom center",
+                                                opacity: 1 - i * 0.25,
+                                                boxShadow: i > 0 ? '0 -10px 30px rgba(0,0,0,0.5)' : '0 20px 50px rgba(0,0,0,0.5)'
+                                            }}
+                                        >
+                                            <img src={img} alt={`${card.title} - Layer ${i}`} className="w-full h-full object-cover" />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+                                            
+                                            {i === 0 && (
+                                                <div className="absolute bottom-0 left-0 right-0 p-3 text-white text-center">
+                                                    <div className="inline-block px-1.5 py-0.5 bg-white/10 backdrop-blur-md rounded-full text-[8px] font-bold uppercase tracking-widest mb-1 border border-white/20">
+                                                        {card.subtitle}
+                                                    </div>
+                                                    <h3 className="text-sm md:text-base font-black font-display uppercase tracking-tight mb-1 leading-none text-shadow">{card.title}</h3>
+                                                    {isCenter && card.type === 'candymachine' && (
+                                                        <motion.div 
+                                                            initial={{ opacity: 0, y: 5 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            className="text-xs font-mono font-black text-primary mt-1"
+                                                        >
+                                                            {card.price} SOL
+                                                        </motion.div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </motion.div>
+                        );
+                    })}
+                </AnimatePresence>
+            </div>
+
+            {/* Pagination / Navigation dots */}
+            <div className="flex items-center gap-1.5 mt-4 z-10">
+                {cards.map((_, idx) => (
+                    <button
+                        key={idx}
+                        onClick={() => setCurrentIndex(idx)}
+                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-6 bg-primary' : 'w-1.5 bg-white/20 hover:bg-white/40'}`}
+                    />
+                ))}
+            </div>
+
+            {/* Expanded Modal */}
+            <AnimatePresence>
+                {expandedCard && (
+                    <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-2xl"
+                        onClick={() => setExpandedCard(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, y: 30 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.95, y: 30 }}
+                            className="bg-card w-full max-w-6xl h-[85vh] md:h-[75vh] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 flex flex-col md:flex-row relative"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button 
+                                className="absolute top-6 right-6 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full z-20 transition-colors border border-white/10"
+                                onClick={() => setExpandedCard(null)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                            </button>
+
+                            {/* Left Side: Images */}
+                            <div className="md:w-1/2 h-[40%] md:h-full relative bg-black/50">
+                                {expandedCard.type === 'candymachine' ? (
+                                    <>
+                                        <img src={expandedCard.images[0]} alt={expandedCard.title} className="w-full h-full object-cover" />
+                                        <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-transparent" />
+                                        <div className="absolute bottom-8 left-8 text-white">
+                                            <h2 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight leading-none mb-2">
+                                                {expandedCard.title}
+                                            </h2>
+                                            <p className="text-primary font-bold tracking-widest uppercase text-sm">
+                                                {expandedCard.subtitle}
+                                            </p>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="w-full h-full flex flex-col">
+                                        <div className="p-6 bg-black/40 backdrop-blur-md border-b border-white/10 z-10 absolute top-0 left-0 right-0">
+                                            <h2 className="text-2xl font-black font-display uppercase tracking-tight text-white mb-1">
+                                                {expandedCard.collection}
+                                            </h2>
+                                            <p className="text-xs text-primary font-bold tracking-widest uppercase">
+                                                Select an NFT to Purchase
+                                            </p>
+                                        </div>
+                                        <div className="flex-1 overflow-y-auto p-6 pt-28 custom-scrollbar">
+                                            <div className="grid grid-cols-2 gap-4">
+                                                {expandedCard.nfts?.map((nft) => (
+                                                    <motion.div 
+                                                        key={nft.mintAddress}
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all shadow-lg ${selectedNFT?.mintAddress === nft.mintAddress ? 'border-primary shadow-primary/20' : 'border-transparent hover:border-white/20'}`}
+                                                        onClick={() => setSelectedNFT(nft)}
+                                                    >
+                                                        <img src={nft.image} className="w-full aspect-square object-cover" />
+                                                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 backdrop-blur-md border-t border-white/10">
+                                                            <div className="flex justify-between items-center">
+                                                                <span className="text-[10px] text-white/70 uppercase font-bold">Price</span>
+                                                                <span className="text-sm font-mono text-primary font-black">{nft.price} SOL</span>
+                                                            </div>
+                                                        </div>
+                                                        {selectedNFT?.mintAddress === nft.mintAddress && (
+                                                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground p-1 rounded-full">
+                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                                                            </div>
+                                                        )}
+                                                    </motion.div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right Side: Details & Actions */}
+                            <div className="md:w-1/2 p-8 md:p-12 flex flex-col bg-card/50 h-[60%] md:h-full overflow-y-auto">
+                                
+                                {expandedCard.type === 'candymachine' ? (
+                                    <div className="flex flex-col h-full justify-center">
+                                        <div className="space-y-8 mb-8">
+                                            <p className="text-muted-foreground text-lg leading-relaxed">
+                                                Blind mint a random NFT from the {expandedCard.title} collection. Try your luck and secure a potentially rare digital asset on the Solana blockchain.
+                                            </p>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-background/50 p-6 rounded-2xl border border-border">
+                                                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Minted</p>
+                                                    <p className="text-3xl font-mono font-black text-foreground">{expandedCard.totalMinted} <span className="text-sm text-muted-foreground font-sans font-normal">/ {expandedCard.maxSupply}</span></p>
+                                                </div>
+                                                <div className="bg-background/50 p-6 rounded-2xl border border-border">
+                                                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Price</p>
+                                                    <p className="text-3xl font-mono font-black text-primary">{expandedCard.price} <span className="text-sm text-muted-foreground font-sans font-normal">SOL</span></p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-auto">
+                                            <button 
+                                                className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] hover:shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                                                onClick={() => handleMintCM(expandedCard.candyMachineId!)}
+                                                disabled={isMinting}
+                                            >
+                                                {isMinting ? "Processing..." : "Mint Random NFT"}
+                                            </button>
+                                            {status && (
+                                                <div className="mt-6 text-center text-sm font-mono font-bold bg-background/50 p-4 rounded-xl border border-border text-foreground animate-in fade-in slide-in-from-bottom-2">
+                                                    {status}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col h-full justify-center">
+                                        <div className="space-y-6 mb-8">
+                                            <h3 className="text-3xl font-black font-display uppercase tracking-tight text-foreground">Collection Details</h3>
+                                            <p className="text-muted-foreground text-lg leading-relaxed">
+                                                {selectedNFT 
+                                                    ? "You have selected a specific asset from the collection. You can purchase it instantly to add it directly to your wallet."
+                                                    : `Explore the entire ${expandedCard.collection} collection. Click on any NFT from the gallery on the left to view its specific price and purchase.`
+                                                }
+                                            </p>
+
+                                            {selectedNFT ? (
+                                                <motion.div 
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="bg-background/80 p-6 rounded-2xl border border-primary/30 space-y-4 shadow-[0_0_30px_rgba(var(--primary),0.1)]"
+                                                >
+                                                    <div className="flex justify-between items-center pb-4 border-b border-white/5">
+                                                        <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Asset Hash</span>
+                                                        <span className="text-sm font-mono font-bold text-foreground bg-white/5 px-3 py-1 rounded-full">{selectedNFT.mintAddress.slice(0, 10)}...</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center">
+                                                        <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Price</span>
+                                                        <span className="text-3xl font-mono font-black text-primary">{selectedNFT.price} SOL</span>
+                                                    </div>
+                                                </motion.div>
+                                            ) : (
+                                                 <div className="bg-background/30 p-8 rounded-2xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center space-y-3">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
+                                                    <span className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Waiting for selection</span>
+                                                 </div>
+                                            )}
+                                        </div>
+
+                                        <div className="mt-auto">
+                                            {!selectedNFT ? (
+                                                <button 
+                                                    disabled 
+                                                    className="w-full py-5 bg-foreground/10 text-foreground/40 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-white/5"
+                                                >
+                                                    Select an NFT to Buy
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    className="w-full py-5 bg-foreground hover:bg-foreground/90 text-background rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                                                    onClick={() => handleBuyDirect(selectedNFT.mintAddress)}
+                                                    disabled={isMinting}
+                                                >
+                                                    {isMinting ? "Processing..." : "Buy Now"}
+                                                </button>
+                                            )}
+                                            {status && (
+                                                <div className="mt-6 text-center text-sm font-mono font-bold bg-background/50 p-4 rounded-xl border border-border text-foreground animate-in fade-in slide-in-from-bottom-2">
+                                                    {status}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
