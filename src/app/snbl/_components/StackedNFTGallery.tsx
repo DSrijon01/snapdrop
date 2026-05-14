@@ -10,13 +10,13 @@ import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } f
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
-interface NFTDetail {
+export interface NFTDetail {
     image: string;
     price: number;
     mintAddress: string;
 }
 
-interface CarouselItem {
+export interface CarouselItem {
   id: string;
   type: "candymachine" | "direct";
   title: string;
@@ -93,7 +93,7 @@ const initialCards: CarouselItem[] = [
 export const StackedNFTGallery = () => {
     const { connection } = useConnection();
     const wallet = useWallet();
-    const [cards] = useState(initialCards);
+    const [cards, setCards] = useState<CarouselItem[]>(initialCards);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [expandedCard, setExpandedCard] = useState<CarouselItem | null>(null);
     const [selectedNFT, setSelectedNFT] = useState<NFTDetail | null>(null);
@@ -109,6 +109,30 @@ export const StackedNFTGallery = () => {
         }
         return u;
     }, [connection.rpcEndpoint, wallet.wallet]);
+
+    // Load custom deployed NFTs from localStorage
+    useEffect(() => {
+        const handleStorage = () => {
+            try {
+                const stored = localStorage.getItem("street_sync_nft_gallery");
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    setCards([...parsed, ...initialCards]);
+                }
+            } catch (e) {
+                console.error("Failed to parse stored gallery items", e);
+            }
+        };
+
+        handleStorage(); // Initial load
+        window.addEventListener("gallery_updated", handleStorage);
+        window.addEventListener("storage", handleStorage);
+        
+        return () => {
+            window.removeEventListener("gallery_updated", handleStorage);
+            window.removeEventListener("storage", handleStorage);
+        };
+    }, []);
 
     // Slideshow Effect
     useEffect(() => {
@@ -185,6 +209,21 @@ export const StackedNFTGallery = () => {
             </div>
 
             <div className="relative w-full h-[200px] md:h-[260px] flex items-center justify-center perspective-1000 mt-2">
+                {/* Navigation Arrows */}
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length); }}
+                    className="absolute left-2 sm:left-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                </button>
+                
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev + 1) % cards.length); }}
+                    className="absolute right-2 sm:right-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </button>
+
                 <AnimatePresence>
                     {cards.map((card, index) => {
                         const offset = index - currentIndex;

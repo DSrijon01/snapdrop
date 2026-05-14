@@ -9,6 +9,7 @@ import { TokenGenerator } from './TokenGenerator';
 import { Token2022Studio } from './Token2022Studio';
 import { CreateMarketEvent } from './CreateMarketEvent';
 import { ResolveMarketEvent } from './ResolveMarketEvent';
+import { NFTStudio } from './NFTStudio';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -25,7 +26,7 @@ export const AdminDashboard: FC = () => {
     const anchorWallet = useAnchorWallet();
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'eplays' | 'eplays-resolve'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -185,6 +186,16 @@ export const AdminDashboard: FC = () => {
                     Token-2022 Studio
                 </button>
                 <button 
+                    onClick={() => setActiveTab('nftstudio')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'nftstudio' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    NFT Studio
+                </button>
+                <button 
                     onClick={() => setActiveTab('eplays')}
                     className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
                         activeTab === 'eplays' 
@@ -222,6 +233,8 @@ export const AdminDashboard: FC = () => {
                 <TokenGenerator onListNow={handleListToken} />
             ) : activeTab === 'token2022' ? (
                 <Token2022Studio onListNow={handleListToken} />
+            ) : activeTab === 'nftstudio' ? (
+                <NFTStudio />
             ) : activeTab === 'eplays' ? (
                 <CreateMarketEvent />
             ) : (
