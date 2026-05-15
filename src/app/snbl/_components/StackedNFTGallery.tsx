@@ -66,7 +66,8 @@ export const StackedNFTGallery = () => {
             try {
                 const listings = await program.account.galleryListing.all();
                 
-                const onChainCards: CarouselItem[] = [];
+                const groupedListings = new Map<string, CarouselItem>();
+                
                 for (const listing of listings) {
                     try {
                         const mintPubkey = listing.account.mint;
@@ -86,25 +87,37 @@ export const StackedNFTGallery = () => {
                             }
                         }
                         
-                        onChainCards.push({
-                            id: `onchain-${mintPubkey.toBase58()}`,
-                            type: "direct",
-                            title: title,
-                            subtitle: "On-Chain Treasury Listing",
-                            collection: "Treasury Vault",
-                            images: [imageUrl],
-                            nfts: [{
-                                image: imageUrl,
-                                price: listing.account.price.toNumber() / 1e9,
-                                mintAddress: mintPubkey.toBase58(),
-                            }],
-                            adminWallet: listing.account.admin.toBase58(),
-                        });
+                        const adminStr = listing.account.admin.toBase58();
+                        const baseName = title.split('#')[0].trim() || "Treasury";
+                        const groupId = `${adminStr}-${baseName}`;
+                        
+                        const nftDetail = {
+                            image: imageUrl,
+                            price: listing.account.price.toNumber() / 1e9,
+                            mintAddress: mintPubkey.toBase58(),
+                        };
+
+                        if (groupedListings.has(groupId)) {
+                            const group = groupedListings.get(groupId)!;
+                            group.images.push(imageUrl);
+                            group.nfts!.push(nftDetail);
+                        } else {
+                            groupedListings.set(groupId, {
+                                id: `onchain-${groupId}`,
+                                type: "direct",
+                                title: `${baseName} Series`,
+                                subtitle: "On-Chain Treasury Stack",
+                                collection: "Treasury Vault",
+                                images: [imageUrl],
+                                nfts: [nftDetail],
+                                adminWallet: adminStr,
+                            });
+                        }
                     } catch (e) {
                         console.error("Failed to fetch asset for mint", listing.account.mint.toBase58(), e);
                     }
                 }
-                return onChainCards;
+                return Array.from(groupedListings.values());
             } catch (e) {
                 console.error("Failed to fetch on-chain listings", e);
                 return [];
