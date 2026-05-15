@@ -37,7 +37,6 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
     }, [wallet.wallet]);
 
     const CANDY_MACHINE_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_MACHINE_ID || "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG");
-    const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID || "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo");
     
     // Limits
     const MAX_MINTS_PER_WALLET = 2;
@@ -155,12 +154,13 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                 .add(setComputeUnitLimit(umi, { units: 800_000 }))
                 .add(mintV2(umi, {
                     candyMachine: candyMachine.publicKey,
-                    candyGuard: CANDY_GUARD_ID,
+                    candyGuard: candyMachine.mintAuthority,
                     collectionMint: candyMachine.collectionMint,
                     collectionUpdateAuthority: candyMachine.authority,
                     nftMint,
+                    tokenStandard: candyMachine.tokenStandard,
                     mintArgs: {
-                        solPayment: some({ destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") }),
+                        solPayment: { destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") },
                     },
                 }))
                 .sendAndConfirm(umi, {

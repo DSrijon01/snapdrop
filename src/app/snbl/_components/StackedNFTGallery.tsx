@@ -6,8 +6,11 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
-import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
-import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
+import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner, sol } from "@metaplex-foundation/umi";
+import { setComputeUnitLimit, transferSol } from "@metaplex-foundation/mpl-toolbox";
+import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { useSsNftGallery } from '@/hooks/useSsNftGallery';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
 export interface NFTDetail {
@@ -28,71 +31,15 @@ export interface CarouselItem {
   maxSupply?: number;
   collection?: string;
   nfts?: NFTDetail[];
+  adminWallet?: string;
 }
 
-const initialCards: CarouselItem[] = [
-  {
-    id: "nft-1",
-    type: "direct",
-    title: "Neon Cyber Collection",
-    subtitle: "Direct Purchase",
-    collection: "Cyber Series",
-    images: [
-        "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=800&h=800&fit=crop",
-        "https://images.unsplash.com/photo-1549490349-8643362247b5?w=800&h=800&fit=crop",
-        "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=800&h=800&fit=crop"
-    ],
-    nfts: [
-        { image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", price: 0.5, mintAddress: "MockMintAddress1" },
-        { image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", price: 0.6, mintAddress: "MockMintAddress2" },
-        { image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", price: 0.75, mintAddress: "MockMintAddress3" },
-        { image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&h=400&fit=crop", price: 1.0, mintAddress: "MockMintAddress4" }
-    ]
-  },
-  {
-    id: "cm-1",
-    type: "candymachine",
-    title: "Street Sync Genesis",
-    subtitle: "Blind Mint",
-    images: ["https://images.unsplash.com/photo-1614726365206-3532c1c696e9?w=800&h=800&fit=crop"],
-    price: 0.1,
-    totalMinted: 245,
-    maxSupply: 1000,
-    candyMachineId: "FmiNM5JC6RJgJXVpDT84UrpSjZvMnz7Xcy7mAZjbkvUG"
-  },
-  {
-    id: "nft-2",
-    type: "direct",
-    title: "Abstract Void Drops",
-    subtitle: "Direct Purchase",
-    collection: "Void Art",
-    images: [
-        "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=800&h=800&fit=crop",
-        "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=800&h=800&fit=crop",
-        "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=800&h=800&fit=crop"
-    ],
-    nfts: [
-        { image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=400&h=400&fit=crop", price: 1.2, mintAddress: "MockMintAddressA" },
-        { image: "https://images.unsplash.com/photo-1518546305927-5a555bb7020d?w=400&h=400&fit=crop", price: 1.5, mintAddress: "MockMintAddressB" },
-        { image: "https://images.unsplash.com/photo-1557672172-298e090bd0f1?w=400&h=400&fit=crop", price: 2.0, mintAddress: "MockMintAddressC" },
-    ]
-  },
-  {
-    id: "cm-2",
-    type: "candymachine",
-    title: "Pixel Punks",
-    subtitle: "Blind Mint",
-    images: ["https://images.unsplash.com/photo-1605806616949-1e87b487cb2a?w=800&h=800&fit=crop"],
-    price: 0.25,
-    totalMinted: 12,
-    maxSupply: 500,
-    candyMachineId: "MockCM2"
-  }
-];
+const initialCards: CarouselItem[] = [];
 
 export const StackedNFTGallery = () => {
     const { connection } = useConnection();
     const wallet = useWallet();
+    const { program } = useSsNftGallery();
     const [cards, setCards] = useState<CarouselItem[]>(initialCards);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [expandedCard, setExpandedCard] = useState<CarouselItem | null>(null);
@@ -165,18 +112,17 @@ export const StackedNFTGallery = () => {
             setStatus("Confirm Transaction...");
             const nftMint = generateSigner(umi);
 
-            const CANDY_GUARD_ID = umiPublicKey(process.env.NEXT_PUBLIC_CANDY_GUARD_ID || "GVGDiH2y1DCEdNaDgSrgiMEofuD9QVQ36kSMrj2n6AQo");
-
             await transactionBuilder()
                 .add(setComputeUnitLimit(umi, { units: 800_000 }))
                 .add(mintV2(umi, {
                     candyMachine: candyMachine.publicKey,
-                    candyGuard: CANDY_GUARD_ID,
+                    candyGuard: candyMachine.mintAuthority,
                     collectionMint: candyMachine.collectionMint,
                     collectionUpdateAuthority: candyMachine.authority,
                     nftMint,
+                    tokenStandard: candyMachine.tokenStandard,
                     mintArgs: {
-                        solPayment: some({ destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") }),
+                        solPayment: { destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") },
                     },
                 }))
                 .sendAndConfirm(umi, {
@@ -193,7 +139,97 @@ export const StackedNFTGallery = () => {
     };
 
     const handleBuyDirect = async (mintAddress: string) => {
-        setStatus(`Purchasing NFT ${mintAddress} is not implemented yet.`);
+        if (!wallet.connected || !wallet.publicKey) {
+            setStatus("Please connect your wallet first!");
+            return;
+        }
+
+        const nftToBuy = expandedCard?.nfts?.find(n => n.mintAddress === mintAddress);
+        if (!nftToBuy) {
+            setStatus("NFT not found in collection.");
+            return;
+        }
+
+        if (!expandedCard?.adminWallet) {
+            setStatus("Missing admin wallet reference for this stack.");
+            return;
+        }
+
+        setIsMinting(true);
+        setStatus("Initiating purchase...");
+
+        try {
+            if (!program) throw new Error("Program not loaded");
+
+            const adminPubkey = new PublicKey(expandedCard.adminWallet);
+            const mintPubkey = new PublicKey(mintAddress);
+
+            const [listingPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from("gallery_listing"), mintPubkey.toBuffer(), adminPubkey.toBuffer()],
+                program.programId
+            );
+
+            const [escrowPda] = PublicKey.findProgramAddressSync(
+                [Buffer.from("gallery_vault"), mintPubkey.toBuffer(), adminPubkey.toBuffer()],
+                program.programId
+            );
+
+            const buyerTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
+
+            setStatus("Confirm Transaction...");
+            
+            await program.methods.buyNft()
+                .accounts({
+                    buyer: wallet.publicKey,
+                    admin: adminPubkey,
+                    mint: mintPubkey,
+                    listingAccount: listingPda,
+                    escrowTokenAccount: escrowPda,
+                    buyerTokenAccount: buyerTokenAccount,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                } as any)
+                .rpc();
+
+            setStatus("Purchase successful!");
+
+            // Remove purchased NFT from local storage to update UI
+            const stored = localStorage.getItem("street_sync_nft_gallery");
+            if (stored) {
+                let parsed: CarouselItem[] = JSON.parse(stored);
+                parsed = parsed.map(card => {
+                    if (card.id === expandedCard?.id && card.nfts) {
+                        return {
+                            ...card,
+                            nfts: card.nfts.filter(nft => nft.mintAddress !== mintAddress)
+                        };
+                    }
+                    return card;
+                });
+                // Remove card entirely if no NFTs left
+                parsed = parsed.filter(card => card.type === 'candymachine' || (card.nfts && card.nfts.length > 0));
+                
+                localStorage.setItem("street_sync_nft_gallery", JSON.stringify(parsed));
+                window.dispatchEvent(new Event("gallery_updated"));
+                
+                // Update local state directly so it reflects immediately in the modal
+                if (expandedCard) {
+                    const updatedExpanded = {
+                        ...expandedCard,
+                        nfts: expandedCard.nfts?.filter(nft => nft.mintAddress !== mintAddress) || []
+                    };
+                    setExpandedCard(updatedExpanded);
+                }
+            }
+
+            setSelectedNFT(null);
+        } catch (error: any) {
+            console.error("Purchase failed:", error);
+            setStatus(`Purchase failed: ${error.message || "Unknown error"}`);
+        } finally {
+            setIsMinting(false);
+        }
     };
 
     return (

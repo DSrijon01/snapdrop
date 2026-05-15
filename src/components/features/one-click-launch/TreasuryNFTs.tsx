@@ -1,5 +1,9 @@
 import { FC, useState } from 'react';
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useSsNftGallery } from '@/hooks/useSsNftGallery';
+import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { BN } from '@coral-xyz/anchor';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { umi } from '@/utils/umi';
@@ -58,6 +62,8 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
     const [stackPrice, setStackPrice] = useState("1.0");
     const [status, setStatus] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const wallet = useWallet();
+    const { program } = useSsNftGallery();
 
     const toggleSelection = (mintStr: string) => {
         setSelectedMints(prev => 
@@ -79,6 +85,43 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
             const selectedNfts = nfts.filter(n => selectedMints.includes(n.mint.toBase58()));
             const price = parseFloat(stackPrice || "0");
             
+            if (!wallet.publicKey || !program) {
+                setStatus("Wallet not connected.");
+                return;
+            }
+
+            const priceLamports = new BN(price * 1e9);
+
+            // 1. On-Chain Listing
+            for (const nft of selectedNfts) {
+                const mintPubkey = nft.mint;
+                
+                const [listingPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("gallery_listing"), mintPubkey.toBuffer(), wallet.publicKey.toBuffer()],
+                    program.programId
+                );
+
+                const [escrowPda] = PublicKey.findProgramAddressSync(
+                    [Buffer.from("gallery_vault"), mintPubkey.toBuffer(), wallet.publicKey.toBuffer()],
+                    program.programId
+                );
+
+                const adminTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
+
+                await program.methods.listNft(priceLamports)
+                    .accounts({
+                        admin: wallet.publicKey,
+                        mint: mintPubkey,
+                        adminTokenAccount: adminTokenAccount,
+                        listingAccount: listingPda,
+                        escrowTokenAccount: escrowPda,
+                        systemProgram: SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                        rent: SYSVAR_RENT_PUBKEY,
+                    } as any)
+                    .rpc();
+            }
+
             const nftsData = await Promise.all(selectedNfts.map(async (nft) => {
                 let imageUrl = "";
                 try {
@@ -106,7 +149,8 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
                 subtitle: "Treasury Stack",
                 collection: "Treasury Vault",
                 images: images.length > 0 ? images : ["https://via.placeholder.com/150"],
-                nfts: nftsData
+                nfts: nftsData,
+                adminWallet: wallet.publicKey.toBase58() // Save admin wallet to know who to pay
             };
 
             const existing = JSON.parse(localStorage.getItem("street_sync_nft_gallery") || "[]");

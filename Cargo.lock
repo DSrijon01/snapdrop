@@ -2317,6 +2317,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ss_nft_gallery"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+]
+
+[[package]]
 name = "street_sync"
 version = "0.1.0"
 dependencies = [
