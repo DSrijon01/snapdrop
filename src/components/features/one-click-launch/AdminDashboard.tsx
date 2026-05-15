@@ -10,6 +10,7 @@ import { Token2022Studio } from './Token2022Studio';
 import { CreateMarketEvent } from './CreateMarketEvent';
 import { ResolveMarketEvent } from './ResolveMarketEvent';
 import { NFTStudio } from './NFTStudio';
+import { TreasuryNFTs } from './TreasuryNFTs';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -25,8 +26,9 @@ export const AdminDashboard: FC = () => {
     const { publicKey } = useWallet();
     const anchorWallet = useAnchorWallet();
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
+    const [nfts, setNfts] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -79,9 +81,14 @@ export const AdminDashboard: FC = () => {
                 const isNft = t.decimals === 0 && t.amount === BigInt(1);
                 return t.amount > 0 && !isNft;
             });
+
+            const nftTokens = allTokens.filter(t => {
+                return t.decimals === 0 && t.amount === BigInt(1);
+            });
             
             console.log("Filtered Tokens:", filteredTokens);
             setTokens(filteredTokens);
+            setNfts(nftTokens);
         } catch (e) {
             console.error("Error fetching tokens", e);
         } finally {
@@ -176,6 +183,16 @@ export const AdminDashboard: FC = () => {
                     Token Generator
                 </button>
                 <button 
+                    onClick={() => setActiveTab('treasury-nfts')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'treasury-nfts' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    Treasury NFTs
+                </button>
+                <button 
                     onClick={() => setActiveTab('token2022')}
                     className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
                         activeTab === 'token2022' 
@@ -237,6 +254,8 @@ export const AdminDashboard: FC = () => {
                 <NFTStudio />
             ) : activeTab === 'eplays' ? (
                 <CreateMarketEvent />
+            ) : activeTab === 'treasury-nfts' ? (
+                <TreasuryNFTs nfts={nfts} />
             ) : (
                 <ResolveMarketEvent />
             )}

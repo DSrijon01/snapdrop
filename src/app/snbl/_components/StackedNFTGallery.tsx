@@ -235,7 +235,9 @@ export const StackedNFTGallery = () => {
                         const isCenter = displayOffset === 0;
                         const absOffset = Math.abs(displayOffset);
                         
-                        if (absOffset > 2) return null;
+                        const isSoldOut = card.type === 'candymachine' 
+                            ? (card.totalMinted !== undefined && card.maxSupply !== undefined && card.totalMinted >= card.maxSupply)
+                            : (card.nfts && card.nfts.length === 0);
 
                         return (
                             <motion.div
@@ -256,17 +258,22 @@ export const StackedNFTGallery = () => {
                                 }}
                             >
                                 <div className="relative w-full h-full pt-10">
+                                    {isSoldOut && isCenter && (
+                                        <div className="absolute inset-x-0 bottom-10 z-30 flex items-center justify-center pointer-events-none">
+                                            <span className="text-red-500 font-black font-display text-sm md:text-xl uppercase tracking-widest border-2 border-red-500 px-3 py-1 md:px-4 md:py-2 transform -rotate-12 bg-black/80 backdrop-blur-md shadow-[0_0_20px_rgba(239,68,68,0.5)]">Sold Out</span>
+                                        </div>
+                                    )}
                                     {card.images.map((img, i) => (
                                         <div
                                             key={i}
                                             className="absolute inset-0 rounded-2xl overflow-hidden shadow-2xl border border-white/10 bg-card"
                                             style={{
                                                 zIndex: 10 - i,
-                                                // Make stacked cards peek out top and sides by translating UP and scaling slightly
                                                 transform: `translateY(${i * -30}px) scale(${1 - i * 0.08})`,
                                                 transformOrigin: "bottom center",
                                                 opacity: 1 - i * 0.25,
-                                                boxShadow: i > 0 ? '0 -10px 30px rgba(0,0,0,0.5)' : '0 20px 50px rgba(0,0,0,0.5)'
+                                                boxShadow: i > 0 ? '0 -10px 30px rgba(0,0,0,0.5)' : '0 20px 50px rgba(0,0,0,0.5)',
+                                                filter: isSoldOut ? 'grayscale(80%)' : 'none'
                                             }}
                                         >
                                             <img src={img} alt={`${card.title} - Layer ${i}`} className="w-full h-full object-cover" />
@@ -278,7 +285,7 @@ export const StackedNFTGallery = () => {
                                                         {card.subtitle}
                                                     </div>
                                                     <h3 className="text-sm md:text-base font-black font-display uppercase tracking-tight mb-1 leading-none text-shadow">{card.title}</h3>
-                                                    {isCenter && card.type === 'candymachine' && (
+                                                    {isCenter && card.type === 'candymachine' && !isSoldOut && (
                                                         <motion.div 
                                                             initial={{ opacity: 0, y: 5 }}
                                                             animate={{ opacity: 1, y: 0 }}
@@ -410,13 +417,22 @@ export const StackedNFTGallery = () => {
                                         </div>
 
                                         <div className="mt-auto">
-                                            <button 
-                                                className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] hover:shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
-                                                onClick={() => handleMintCM(expandedCard.candyMachineId!)}
-                                                disabled={isMinting}
-                                            >
-                                                {isMinting ? "Processing..." : "Mint Random NFT"}
-                                            </button>
+                                            {expandedCard.totalMinted !== undefined && expandedCard.maxSupply !== undefined && expandedCard.totalMinted >= expandedCard.maxSupply ? (
+                                                <button 
+                                                    disabled 
+                                                    className="w-full py-5 bg-red-500/20 text-red-500 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-red-500/50 transition-all shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+                                                >
+                                                    Sold Out
+                                                </button>
+                                            ) : (
+                                                <button 
+                                                    className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] hover:shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
+                                                    onClick={() => handleMintCM(expandedCard.candyMachineId!)}
+                                                    disabled={isMinting}
+                                                >
+                                                    {isMinting ? "Processing..." : "Mint Random NFT"}
+                                                </button>
+                                            )}
                                             {status && (
                                                 <div className="mt-6 text-center text-sm font-mono font-bold bg-background/50 p-4 rounded-xl border border-border text-foreground animate-in fade-in slide-in-from-bottom-2">
                                                     {status}
@@ -431,7 +447,9 @@ export const StackedNFTGallery = () => {
                                             <p className="text-muted-foreground text-lg leading-relaxed">
                                                 {selectedNFT 
                                                     ? "You have selected a specific asset from the collection. You can purchase it instantly to add it directly to your wallet."
-                                                    : `Explore the entire ${expandedCard.collection} collection. Click on any NFT from the gallery on the left to view its specific price and purchase.`
+                                                    : expandedCard.nfts && expandedCard.nfts.length === 0
+                                                        ? `The ${expandedCard.collection} collection is completely sold out.`
+                                                        : `Explore the entire ${expandedCard.collection} collection. Click on any NFT from the gallery on the left to view its specific price and purchase.`
                                                 }
                                             </p>
 
@@ -453,13 +471,20 @@ export const StackedNFTGallery = () => {
                                             ) : (
                                                  <div className="bg-background/30 p-8 rounded-2xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center space-y-3">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                                                    <span className="text-sm text-muted-foreground font-bold uppercase tracking-widest">Waiting for selection</span>
+                                                    <span className="text-sm text-muted-foreground font-bold uppercase tracking-widest">{expandedCard.nfts && expandedCard.nfts.length === 0 ? "Sold Out" : "Waiting for selection"}</span>
                                                  </div>
                                             )}
                                         </div>
 
                                         <div className="mt-auto">
-                                            {!selectedNFT ? (
+                                            {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
+                                                <button 
+                                                    disabled 
+                                                    className="w-full py-5 bg-red-500/20 text-red-500 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]"
+                                                >
+                                                    Sold Out
+                                                </button>
+                                            ) : !selectedNFT ? (
                                                 <button 
                                                     disabled 
                                                     className="w-full py-5 bg-foreground/10 text-foreground/40 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-white/5"
