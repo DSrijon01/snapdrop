@@ -210,7 +210,7 @@ export const NFTStudio: FC = () => {
             })));
 
             setStatus("3/3: Minting Direct 1-of-1 NFTs to Treasury...");
-            const mints = [];
+            const mints: string[] = [];
             for (let i = 0; i < assets.length; i++) {
                 const mint = generateSigner(umi);
                 let builder = createNft(umi, {
