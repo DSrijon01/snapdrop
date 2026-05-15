@@ -20,7 +20,7 @@ export function useStreetSync() {
             { commitment: "confirmed" }
         );
 
-        return new Program(IDL as Idl, STREET_SYNC_PROGRAM_ID, provider) as unknown as Program<StreetSync>;
+        return new Program(IDL as Idl, provider) as unknown as Program<StreetSync>;
     }, [connection, wallet]);
 
     return { program };
