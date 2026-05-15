@@ -4,7 +4,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { FC, useState, useMemo, useEffect, useCallback, ReactNode } from "react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
+import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { mplTokenMetadata, fetchAllDigitalAssetByOwner } from "@metaplex-foundation/mpl-token-metadata";
@@ -144,6 +144,12 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
             console.log("Fetching Candy Machine...");
             const candyMachine = await fetchCandyMachine(umi, CANDY_MACHINE_ID);
+            const candyGuard = await fetchCandyGuard(umi, candyMachine.mintAuthority);
+
+            let paymentDestination = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
+            if (candyGuard.guards.solPayment.__option === 'Some') {
+                paymentDestination = candyGuard.guards.solPayment.value.destination;
+            }
             
             setStatus("Minting NFT (Confirm Transaction)...");
             console.log("Building Mint Transaction...");
@@ -160,7 +166,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                     nftMint,
                     tokenStandard: candyMachine.tokenStandard,
                     mintArgs: {
-                        solPayment: { destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") },
+                        solPayment: { destination: paymentDestination },
                     },
                 }))
                 .sendAndConfirm(umi, {

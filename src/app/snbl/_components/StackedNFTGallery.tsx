@@ -5,9 +5,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
-import { fetchCandyMachine, mintV2, mplCandyMachine } from "@metaplex-foundation/mpl-candy-machine";
-import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner, sol } from "@metaplex-foundation/umi";
-import { setComputeUnitLimit, transferSol } from "@metaplex-foundation/mpl-toolbox";
+import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
+import { publicKey as umiPublicKey, transactionBuilder, generateSigner } from "@metaplex-foundation/umi";
+import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -133,6 +133,19 @@ export const StackedNFTGallery = () => {
                     localCards = JSON.parse(stored);
                     // Filter out old simulated "direct" ones if we are fetching real on-chain ones now
                     localCards = localCards.filter(c => c.type !== 'direct');
+
+                    // Fetch real-time candy machine stats
+                    for (const card of localCards) {
+                        if (card.type === 'candymachine' && card.candyMachineId) {
+                            try {
+                                const cm = await fetchCandyMachine(umi, umiPublicKey(card.candyMachineId));
+                                card.totalMinted = Number(cm.itemsMinted);
+                                card.maxSupply = Number(cm.itemsLoaded);
+                            } catch (e) {
+                                console.error("Failed to fetch CM details", e);
+                            }
+                        }
+                    }
                 }
                 
                 // 2. Fetch On-Chain Escrowed NFTs
@@ -184,6 +197,12 @@ export const StackedNFTGallery = () => {
         try {
             const candyMachineId = umiPublicKey(candyMachineIdStr);
             const candyMachine = await fetchCandyMachine(umi, candyMachineId);
+            const candyGuard = await fetchCandyGuard(umi, candyMachine.mintAuthority);
+            
+            let paymentDestination = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
+            if (candyGuard.guards.solPayment.__option === 'Some') {
+                paymentDestination = candyGuard.guards.solPayment.value.destination;
+            }
             
             setStatus("Confirm Transaction...");
             const nftMint = generateSigner(umi);
@@ -198,7 +217,7 @@ export const StackedNFTGallery = () => {
                     nftMint,
                     tokenStandard: candyMachine.tokenStandard,
                     mintArgs: {
-                        solPayment: { destination: umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu") },
+                        solPayment: { destination: paymentDestination },
                     },
                 }))
                 .sendAndConfirm(umi, {
