@@ -199,7 +199,7 @@ export const StackedNFTGallery = () => {
             const candyMachine = await fetchCandyMachine(umi, candyMachineId);
             const candyGuard = await fetchCandyGuard(umi, candyMachine.mintAuthority);
             
-            let paymentDestination = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
+            let paymentDestination: any = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
             if (candyGuard.guards.solPayment.__option === 'Some') {
                 paymentDestination = candyGuard.guards.solPayment.value.destination;
             }

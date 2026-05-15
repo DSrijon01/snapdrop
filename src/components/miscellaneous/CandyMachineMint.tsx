@@ -146,7 +146,7 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
             const candyMachine = await fetchCandyMachine(umi, CANDY_MACHINE_ID);
             const candyGuard = await fetchCandyGuard(umi, candyMachine.mintAuthority);
 
-            let paymentDestination = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
+            let paymentDestination: any = umiPublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
             if (candyGuard.guards.solPayment.__option === 'Some') {
                 paymentDestination = candyGuard.guards.solPayment.value.destination;
             }
