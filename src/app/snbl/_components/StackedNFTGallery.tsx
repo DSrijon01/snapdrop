@@ -139,8 +139,8 @@ export const StackedNFTGallery = () => {
                         if (card.type === 'candymachine' && card.candyMachineId) {
                             try {
                                 const cm = await fetchCandyMachine(umi, umiPublicKey(card.candyMachineId));
-                                card.totalMinted = Number(cm.itemsMinted);
-                                card.maxSupply = Number(cm.itemsLoaded);
+                                card.totalMinted = Number(cm.itemsRedeemed);
+                                card.maxSupply = Number(cm.data.itemsAvailable);
                             } catch (e) {
                                 console.error("Failed to fetch CM details", e);
                             }
