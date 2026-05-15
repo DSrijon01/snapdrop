@@ -11,7 +11,7 @@ import { setComputeUnitLimit, transferSol } from "@metaplex-foundation/mpl-toolb
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 
 export interface NFTDetail {
     image: string;
@@ -57,14 +57,76 @@ export const StackedNFTGallery = () => {
         return u;
     }, [connection.rpcEndpoint, wallet.wallet]);
 
-    // Load custom deployed NFTs from localStorage
+    // Load custom deployed NFTs from localStorage AND On-Chain Gallery Listings
     useEffect(() => {
-        const handleStorage = () => {
+        let isMounted = true;
+        
+        const fetchOnChainListings = async () => {
+            if (!program) return [];
             try {
+                const listings = await program.account.galleryListing.all();
+                
+                const onChainCards: CarouselItem[] = [];
+                for (const listing of listings) {
+                    try {
+                        const mintPubkey = listing.account.mint;
+                        // Fetch Metadata via Umi
+                        const asset = await fetchDigitalAsset(umi, umiPublicKey(mintPubkey.toBase58()));
+                        let imageUrl = "";
+                        let title = "Treasury NFT";
+                        
+                        if (asset.metadata.uri) {
+                            try {
+                                const res = await fetch(asset.metadata.uri);
+                                const json = await res.json();
+                                imageUrl = json.image || "";
+                                title = json.name || title;
+                            } catch (e) {
+                                console.error("Failed to fetch JSON for URI", asset.metadata.uri);
+                            }
+                        }
+                        
+                        onChainCards.push({
+                            id: `onchain-${mintPubkey.toBase58()}`,
+                            type: "direct",
+                            title: title,
+                            subtitle: "On-Chain Treasury Listing",
+                            collection: "Treasury Vault",
+                            images: [imageUrl],
+                            nfts: [{
+                                image: imageUrl,
+                                price: listing.account.price.toNumber() / 1e9,
+                                mintAddress: mintPubkey.toBase58(),
+                            }],
+                            adminWallet: listing.account.admin.toBase58(),
+                        });
+                    } catch (e) {
+                        console.error("Failed to fetch asset for mint", listing.account.mint.toBase58(), e);
+                    }
+                }
+                return onChainCards;
+            } catch (e) {
+                console.error("Failed to fetch on-chain listings", e);
+                return [];
+            }
+        };
+
+        const handleStorage = async () => {
+            try {
+                // 1. Fetch Local Storage Cards (Candy Machines, etc)
+                let localCards: CarouselItem[] = [];
                 const stored = localStorage.getItem("street_sync_nft_gallery");
                 if (stored) {
-                    const parsed = JSON.parse(stored);
-                    setCards([...parsed, ...initialCards]);
+                    localCards = JSON.parse(stored);
+                    // Filter out old simulated "direct" ones if we are fetching real on-chain ones now
+                    localCards = localCards.filter(c => c.type !== 'direct');
+                }
+                
+                // 2. Fetch On-Chain Escrowed NFTs
+                const onChainCards = await fetchOnChainListings();
+                
+                if (isMounted) {
+                    setCards([...onChainCards, ...localCards, ...initialCards]);
                 }
             } catch (e) {
                 console.error("Failed to parse stored gallery items", e);
@@ -76,10 +138,11 @@ export const StackedNFTGallery = () => {
         window.addEventListener("storage", handleStorage);
         
         return () => {
+            isMounted = false;
             window.removeEventListener("gallery_updated", handleStorage);
             window.removeEventListener("storage", handleStorage);
         };
-    }, []);
+    }, [program, umi]);
 
     // Slideshow Effect
     useEffect(() => {
