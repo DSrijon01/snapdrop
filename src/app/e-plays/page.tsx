@@ -198,6 +198,12 @@ export default function EPlaysPage() {
                 const avgPrice = isYes ? matchedMarket.yesPrice : matchedMarket.noPrice;
                 const isWinner = matchedMarket.resolved && (matchedMarket.outcome === isYes);
 
+                const totalWinningShares = isYes ? matchedMarket.totalYesShares : matchedMarket.totalNoShares;
+                const totalPool = matchedMarket.totalYesShares + matchedMarket.totalNoShares;
+                const currentValue = matchedMarket.resolved
+                  ? (isWinner ? (balance * totalPool / (totalWinningShares || 1)) : 0)
+                  : balance; // 1:1 expected value before resolution
+
                 activePositions.push({
                   id: ta.pubkey.toBase58(),
                   marketId: matchedMarket.id,
@@ -205,7 +211,7 @@ export default function EPlaysPage() {
                   position: isYes ? 'Yes' : 'No',
                   shares: balance,
                   avgPrice,
-                  currentValue: balance * avgPrice,
+                  currentValue,
                   isResolved: matchedMarket.resolved,
                   isWinner,
                   mintPubkey: new PublicKey(mint),
@@ -229,7 +235,7 @@ export default function EPlaysPage() {
             position: "Yes",
             shares: 150.00,
             avgPrice: 0.65,
-            currentValue: 150 * 0.65,
+            currentValue: 150.00, // 1:1 spent value
             isResolved: false,
             isWinner: false,
             mintPubkey: PublicKey.default,
@@ -243,7 +249,7 @@ export default function EPlaysPage() {
             position: "Yes",
             shares: 200.00,
             avgPrice: 0.45,
-            currentValue: 200 * 1.0, // resolved yes, so current value is 1 SOL per share
+            currentValue: 200.00 / 0.45, // Pari-Mutuel winning distribution: 444.44 SOL
             isResolved: true,
             isWinner: true, // won
             mintPubkey: PublicKey.default,
@@ -309,7 +315,7 @@ export default function EPlaysPage() {
           marketId: selectedTrade.market.id,
           marketName: selectedTrade.market.title,
           position: sideSymbol,
-          shares: amountNum / (selectedTrade.side === 'yes' ? selectedTrade.market.yesPrice : selectedTrade.market.noPrice),
+          shares: amountNum, // 1:1 spent SOL = shares received
           avgPrice: selectedTrade.side === 'yes' ? selectedTrade.market.yesPrice : selectedTrade.market.noPrice,
           currentValue: amountNum,
           isResolved: false,
@@ -412,7 +418,7 @@ export default function EPlaysPage() {
       toast.loading("Simulating payout claim...", { duration: 1000 });
       setTimeout(() => {
         setIsSubmitting(false);
-        toast.success(`Claimed ◎ ${(pos.shares).toFixed(2)} SOL (2% Platform Fee Paid)`);
+        toast.success(`Claimed ◎ ${(pos.currentValue).toFixed(2)} SOL (2% Platform Fee Paid)`);
         setPositions(prev => prev.filter(p => p.id !== pos.id));
       }, 1200);
       return;
@@ -492,7 +498,8 @@ export default function EPlaysPage() {
     : 0;
     
   const amountNum = parseFloat(tradeAmount) || 0;
-  const estimatedShares = currentPrice > 0 ? (amountNum / currentPrice) : 0;
+  const estimatedShares = amountNum; // 1 SOL = 1 share
+  const estimatedPayout = currentPrice > 0 ? (amountNum / currentPrice) : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
@@ -788,7 +795,7 @@ export default function EPlaysPage() {
                         Est. Payout if {selectedTrade.side.toUpperCase()} Wins
                       </span>
                       <span className="font-black text-primary text-sm flex items-center gap-1">
-                        ◎ {estimatedShares.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SOL
+                        ◎ {estimatedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SOL
                       </span>
                     </div>
                   )}
