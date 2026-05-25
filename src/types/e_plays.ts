@@ -1,14 +1,20 @@
-{
+/**
+ * Program IDL in camelCase format in order to be used in JS/TS.
+ *
+ * Note that this is only a type helper and is not the actual IDL. The original
+ * IDL can be found at `target/idl/e_plays.json`.
+ */
+export type EPlays = {
   "address": "77vsiKoC6gxYZwbds54Qgqah1du7oDFYPEW84ykAQ7Y4",
   "metadata": {
-    "name": "e_plays",
+    "name": "ePlays",
     "version": "0.1.0",
     "spec": "0.1.0",
     "description": "Created with Anchor"
   },
   "instructions": [
     {
-      "name": "buy_shares",
+      "name": "buyShares",
       "discriminator": [
         40,
         239,
@@ -26,7 +32,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -44,13 +50,13 @@
               {
                 "kind": "account",
                 "path": "market_state.title",
-                "account": "MarketState"
+                "account": "marketState"
               }
             ]
           }
         },
         {
-          "name": "user_mint_account",
+          "name": "userMintAccount",
           "writable": true
         },
         {
@@ -58,27 +64,27 @@
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "amount_in",
+          "name": "amountIn",
           "type": "u64"
         },
         {
-          "name": "is_yes",
+          "name": "isYes",
           "type": "bool"
         }
       ]
     },
     {
-      "name": "claim_winnings",
+      "name": "claimWinnings",
       "discriminator": [
         161,
         215,
@@ -96,7 +102,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -114,13 +120,13 @@
               {
                 "kind": "account",
                 "path": "market_state.title",
-                "account": "MarketState"
+                "account": "marketState"
               }
             ]
           }
         },
         {
-          "name": "user_mint_account",
+          "name": "userMintAccount",
           "writable": true
         },
         {
@@ -128,22 +134,22 @@
           "writable": true
         },
         {
-          "name": "platform_wallet",
+          "name": "platformWallet",
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": []
     },
     {
-      "name": "close_losing_position",
+      "name": "closeLosingPosition",
       "discriminator": [
         156,
         236,
@@ -161,7 +167,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "pda": {
             "seeds": [
               {
@@ -178,13 +184,13 @@
               {
                 "kind": "account",
                 "path": "market_state.title",
-                "account": "MarketState"
+                "account": "marketState"
               }
             ]
           }
         },
         {
-          "name": "user_mint_account",
+          "name": "userMintAccount",
           "writable": true
         },
         {
@@ -192,14 +198,14 @@
           "writable": true
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         }
       ],
       "args": []
     },
     {
-      "name": "init_market",
+      "name": "initMarket",
       "discriminator": [
         33,
         253,
@@ -217,7 +223,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -240,7 +246,7 @@
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
@@ -250,13 +256,13 @@
           "type": "string"
         },
         {
-          "name": "expiry_ts",
+          "name": "expiryTs",
           "type": "i64"
         }
       ]
     },
     {
-      "name": "init_no_mint",
+      "name": "initNoMint",
       "discriminator": [
         108,
         240,
@@ -274,7 +280,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -297,7 +303,7 @@
           }
         },
         {
-          "name": "no_mint",
+          "name": "noMint",
           "writable": true,
           "pda": {
             "seeds": [
@@ -315,17 +321,17 @@
               },
               {
                 "kind": "account",
-                "path": "market_state"
+                "path": "marketState"
               }
             ]
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -341,7 +347,7 @@
       ]
     },
     {
-      "name": "init_yes_mint",
+      "name": "initYesMint",
       "discriminator": [
         68,
         119,
@@ -359,7 +365,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -382,7 +388,7 @@
           }
         },
         {
-          "name": "yes_mint",
+          "name": "yesMint",
           "writable": true,
           "pda": {
             "seeds": [
@@ -401,17 +407,17 @@
               },
               {
                 "kind": "account",
-                "path": "market_state"
+                "path": "marketState"
               }
             ]
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         },
         {
-          "name": "token_program",
+          "name": "tokenProgram",
           "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
@@ -427,7 +433,7 @@
       ]
     },
     {
-      "name": "resolve_market",
+      "name": "resolveMarket",
       "discriminator": [
         155,
         23,
@@ -445,7 +451,7 @@
           "signer": true
         },
         {
-          "name": "market_state",
+          "name": "marketState",
           "writable": true,
           "pda": {
             "seeds": [
@@ -463,19 +469,19 @@
               {
                 "kind": "account",
                 "path": "market_state.title",
-                "account": "MarketState"
+                "account": "marketState"
               }
             ]
           }
         },
         {
-          "name": "system_program",
+          "name": "systemProgram",
           "address": "11111111111111111111111111111111"
         }
       ],
       "args": [
         {
-          "name": "is_yes",
+          "name": "isYes",
           "type": "bool"
         }
       ]
@@ -483,7 +489,7 @@
   ],
   "accounts": [
     {
-      "name": "MarketState",
+      "name": "marketState",
       "discriminator": [
         0,
         125,
@@ -499,58 +505,58 @@
   "errors": [
     {
       "code": 6000,
-      "name": "InvalidExpiry",
+      "name": "invalidExpiry",
       "msg": "Market expiration time must be in the future."
     },
     {
       "code": 6001,
-      "name": "TitleTooLong",
+      "name": "titleTooLong",
       "msg": "Market title is too long (max 100 characters)."
     },
     {
       "code": 6002,
-      "name": "MarketExpired",
+      "name": "marketExpired",
       "msg": "Trading in this market has already expired."
     },
     {
       "code": 6003,
-      "name": "MarketResolved",
+      "name": "marketResolved",
       "msg": "This market has already been resolved."
     },
     {
       "code": 6004,
-      "name": "InvalidMint",
+      "name": "invalidMint",
       "msg": "Invalid YES or NO mint provided."
     },
     {
       "code": 6005,
-      "name": "UnauthorizedAdmin",
+      "name": "unauthorizedAdmin",
       "msg": "Unauthorized: Only the admin can resolve this market."
     },
     {
       "code": 6006,
-      "name": "MarketNotExpiredYet",
+      "name": "marketNotExpiredYet",
       "msg": "Market hasn't expired yet."
     },
     {
       "code": 6007,
-      "name": "MarketNotResolvedYet",
+      "name": "marketNotResolvedYet",
       "msg": "Market hasn't been resolved yet."
     },
     {
       "code": 6008,
-      "name": "InvalidLosingMint",
+      "name": "invalidLosingMint",
       "msg": "Invalid Mint: This token did not win the market!"
     },
     {
       "code": 6009,
-      "name": "NothingToClaim",
+      "name": "nothingToClaim",
       "msg": "No tokens available to claim."
     }
   ],
   "types": [
     {
-      "name": "MarketState",
+      "name": "marketState",
       "type": {
         "kind": "struct",
         "fields": [
@@ -563,11 +569,11 @@
             "type": "string"
           },
           {
-            "name": "yes_mint",
+            "name": "yesMint",
             "type": "pubkey"
           },
           {
-            "name": "no_mint",
+            "name": "noMint",
             "type": "pubkey"
           },
           {
@@ -575,15 +581,15 @@
             "type": "pubkey"
           },
           {
-            "name": "total_yes_shares",
+            "name": "totalYesShares",
             "type": "u64"
           },
           {
-            "name": "total_no_shares",
+            "name": "totalNoShares",
             "type": "u64"
           },
           {
-            "name": "expiry_ts",
+            "name": "expiryTs",
             "type": "i64"
           },
           {
@@ -601,11 +607,11 @@
             "type": "u8"
           },
           {
-            "name": "vault_bump",
+            "name": "vaultBump",
             "type": "u8"
           }
         ]
       }
     }
   ]
-}
+};

@@ -111,18 +111,7 @@ export const CreateMarketEvent: FC = () => {
                 })
                 .instruction();
 
-            const ix4 = await (program.methods as any).initVault(title)
-                .accounts({
-                    admin: publicKey,
-                    marketState: marketState,
-                    collateralMint: WSOL_MINT,
-                    vault: vault,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                })
-                .instruction();
-
-            const tx = new Transaction().add(ix1).add(ix2).add(ix3).add(ix4);
+            const tx = new Transaction().add(ix1).add(ix2).add(ix3);
             
             const signature = await provider.sendAndConfirm(tx, [], { commitment: 'confirmed' });
 
