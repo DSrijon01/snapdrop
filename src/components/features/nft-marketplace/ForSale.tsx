@@ -29,7 +29,7 @@ export const ForSale: FC = () => {
     const { connection } = useConnection();
     const wallet = useAnchorWallet();
     const baseWallet = useWallet(); // For Umi
-    const [isBuying, setIsBuying] = useState<number | null>(null);
+    const [isBuying, setIsBuying] = useState<string | null>(null);
 
     // Initialize Umi
     const umi = useMemo(() => {
@@ -40,8 +40,8 @@ export const ForSale: FC = () => {
 
     // FETCH REAL LISTINGS
     useEffect(() => {
-        const fetchListings = async () => {
-             setIsLoading(true);
+        const fetchListings = async (isInitial = false) => {
+             if (isInitial) setIsLoading(true);
              try {
                 // 1. Setup Anchor Provider (Read-Only is fine if wallet not connected, but let's assume connected or read-only provider)
                 // If wallet is null, we can't use AnchorProvider standard constructor easily without a mock wallet.
@@ -100,16 +100,16 @@ export const ForSale: FC = () => {
                 setActiveListings(resolvedItems);
 
              } catch (err) {
-                 console.error("Error fetching listings:", err);
+                  console.error("Error fetching listings:", err);
              } finally {
-                 setIsLoading(false);
+                  if (isInitial) setIsLoading(false);
              }
         };
 
-        fetchListings();
+        fetchListings(true);
         
-        // Poll every 10 seconds for updates
-        const interval = setInterval(fetchListings, 10000);
+        // Poll every 10 seconds for updates silently in the background
+        const interval = setInterval(() => fetchListings(false), 10000);
         return () => clearInterval(interval);
 
     }, [connection, wallet, umi]);
@@ -250,7 +250,7 @@ export const ForSale: FC = () => {
             />
 
             {/* Header / Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between sticky top-[57px] z-30 bg-background/80 backdrop-blur-xl p-4 rounded-2xl border border-border shadow-xl">
+            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-md">
                 {/* Search */}
                 <div className="relative w-full md:w-96">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

@@ -7,6 +7,7 @@ import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
+import { X } from "lucide-react";
 
 // NOTE: Since we don't have the Anchor Provider fully wired up with IDL in this snippet,
 // we will simulate the Instruction construction or use a simulated "Safe Mode" if Program ID is mock.
@@ -118,10 +119,19 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                         className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md p-6"
                     >
                         <div className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden">
-                            <div className="p-6">
-                                <h3 className="text-2xl font-black text-foreground uppercase italic font-display mb-4">
-                                    List for Sale
-                                </h3>
+                            <div className="p-6 relative">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-2xl font-black text-foreground uppercase italic font-display">
+                                        List for Sale
+                                    </h3>
+                                    <button
+                                        onClick={onClose}
+                                        className="p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors border border-border"
+                                        aria-label="Close modal"
+                                    >
+                                        <X size={18} />
+                                    </button>
+                                </div>
                                 
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-4 bg-muted p-3 rounded-xl border border-border">
@@ -149,14 +159,17 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                                         />
                                     </div>
 
-                                    <div className="text-xs text-muted-foreground bg-yellow-500/10 border border-yellow-500/20 p-3 rounded-lg">
-                                        <p className="font-bold text-yellow-600 mb-1">Listing Info</p>
-                                        <div className="flex justify-between">
-                                            <span>Platform Fee</span>
+                                    <div className="text-xs text-muted-foreground bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex flex-col gap-1.5">
+                                        <div className="flex justify-between items-center font-bold text-amber-600">
+                                            <span>Listing Details</span>
+                                            <span className="text-[10px] uppercase font-mono bg-amber-500/20 px-1.5 py-0.5 rounded">Security Fee</span>
+                                        </div>
+                                        <div className="flex justify-between mt-1 text-foreground font-semibold">
+                                            <span className="font-medium text-muted-foreground">Platform Fee</span>
                                             <span>0.01 SOL</span>
                                         </div>
-                                        <div className="flex justify-between mt-1 text-[10px] opacity-80">
-                                            <span>*NFT will be moved to Escrow</span>
+                                        <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                                            <span>*NFT will be securely held in Escrow</span>
                                         </div>
                                     </div>
 
