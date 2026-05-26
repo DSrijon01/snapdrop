@@ -616,8 +616,9 @@ export default function EPlaysPage() {
                     <th className="p-4 font-semibold">Market Event</th>
                     <th className="p-4 font-semibold">Selection</th>
                     <th className="p-4 font-semibold text-right">Shares Owned</th>
-                    <th className="p-4 font-semibold text-right">Purchase Price</th>
-                    <th className="p-4 font-semibold text-right">Current Value</th>
+                    <th className="p-4 font-semibold text-right">Winning Probability</th>
+                    <th className="p-4 font-semibold text-right">Total Pool</th>
+                    <th className="p-4 font-semibold text-right">Winning Calculation</th>
                     <th className="p-4 font-semibold text-center">Settlement Action</th>
                   </tr>
                 </thead>
@@ -625,6 +626,11 @@ export default function EPlaysPage() {
                   {positions.map((pos) => {
                     const isClaimable = pos.isResolved && pos.isWinner;
                     const isLosing = pos.isResolved && !pos.isWinner;
+                    
+                    const totalPool = (pos.market.totalYesShares + pos.market.totalNoShares) / 1e9;
+                    const estPayout = pos.isResolved
+                      ? (pos.isWinner ? pos.currentValue : 0)
+                      : (pos.avgPrice > 0 ? (pos.shares / pos.avgPrice) : 0);
 
                     return (
                       <tr key={pos.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
@@ -640,25 +646,28 @@ export default function EPlaysPage() {
                         </td>
                         <td className="p-4 text-right font-mono font-bold text-sm">{pos.shares.toFixed(2)}</td>
                         <td className="p-4 text-right font-mono text-sm">{(pos.avgPrice * 100).toFixed(0)}%</td>
+                        <td className="p-4 text-right font-mono text-sm">
+                          ◎ {totalPool.toFixed(2)}
+                        </td>
                         <td className="p-4 text-right font-mono text-primary font-black text-sm">
-                          ◎ {pos.currentValue.toFixed(2)}
+                          ◎ {estPayout.toFixed(2)}
                         </td>
                         <td className="p-4 text-center">
                           {isClaimable ? (
                             <button
-                              onClick={() => handleClaim(pos)}
-                              disabled={isSubmitting}
-                              className="px-4 py-2 text-xs font-black uppercase bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1 mx-auto shadow-lg shadow-green-500/15"
+                                onClick={() => handleClaim(pos)}
+                                disabled={isSubmitting}
+                                className="px-4 py-2 text-xs font-black uppercase bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors flex items-center gap-1 mx-auto shadow-lg shadow-green-500/15"
                             >
                               <Award className="w-3.5 h-3.5" />
                               Claim Payout
                             </button>
                           ) : isLosing ? (
                             <button
-                              onClick={() => handleCleanupLosing(pos)}
-                              disabled={isSubmitting}
-                              className="px-4 py-2 text-xs font-black uppercase bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-lg transition-colors flex items-center gap-1 mx-auto"
-                              title="Burn losing tokens & refund 0.002 SOL account rent"
+                                onClick={() => handleCleanupLosing(pos)}
+                                disabled={isSubmitting}
+                                className="px-4 py-2 text-xs font-black uppercase bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/30 rounded-lg transition-colors flex items-center gap-1 mx-auto"
+                                title="Burn losing tokens & refund 0.002 SOL account rent"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                               Clean Up Rent
@@ -674,7 +683,7 @@ export default function EPlaysPage() {
                   })}
                   {positions.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="p-12 text-center text-muted-foreground italic font-light text-sm">
+                      <td colSpan={7} className="p-12 text-center text-muted-foreground italic font-light text-sm">
                         No prediction shares owned in this wallet. Visit Active Markets to buy.
                       </td>
                     </tr>
