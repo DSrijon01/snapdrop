@@ -8,7 +8,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 interface CompanyDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
-    curve: BondingCurveAccount | null;
+    curve: any | null;
 }
 
 export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClose, curve }) => {
