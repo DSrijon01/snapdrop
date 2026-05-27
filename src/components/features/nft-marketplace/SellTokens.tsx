@@ -7,6 +7,7 @@ import { useLaunchpad, TokenListingAccount } from "@/hooks/useLaunchpad";
 import { useTokenMetadata } from "@/hooks/useTokenMetadata";
 import { BN } from "@coral-xyz/anchor";
 import { TokenBadge } from "../../global/wallet/TokenBadge";
+import toast from "react-hot-toast";
 
 const SecondaryListingItem = ({ 
     listing, 
@@ -25,27 +26,18 @@ const SecondaryListingItem = ({
 }) => {
     const { metadata, loading } = useTokenMetadata(listing.account.mint);
     
-    const amount = Number(listing.account.amount) / Math.pow(10, metadata?.isToken2022 || listing.isToken2022 ? 9 : 9); // Wait! Let's check decimals dynamically if we can. Or we can just calculate.
-    // In Solana, we can get decimals from the mint. Let's see: how many decimals did we fetch during initialization?
-    // In launchpad program, the decimals is checked dynamically. But for rendering, we can assume standard decimals, e.g. 9, or if we can fetch it. Let's assume standard decimals of 9 since we list/mint them via TokenGenerator / Token2022Studio.
-    // Let's verify decimals: TokenGenerator uses 9 decimals? Let's check!
-    // Yes, Solana tokens usually use 9 decimals.
+    const decimals = listing.decimals ?? 9;
+    const amount = Number(listing.account.amount) / Math.pow(10, decimals);
     const priceSol = Number(listing.account.price) / 1_000_000_000;
     const isSeller = walletAddress && listing.account.seller.toBase58() === walletAddress;
     const isToken2022 = listing.isToken2022 || metadata?.isToken2022;
 
-    // Retrieve decimals from connection?
-    // Let's make it robust:
     const [displayAmount, setDisplayAmount] = useState<string>("...");
     
     useEffect(() => {
-        if (!metadata && loading) return;
-        // Assume 9 decimals by default, or 6 if metadata symbol indicates.
-        // Let's assume 9 decimals for general launched tokens on this platform, but we can do a default of 9.
-        const decimals = 9; // Most devnet tokens listed here
         const amt = Number(listing.account.amount) / Math.pow(10, decimals);
         setDisplayAmount(amt.toLocaleString(undefined, { maximumFractionDigits: 9 }));
-    }, [listing, metadata, loading]);
+    }, [listing, decimals]);
 
     return (
         <motion.div
@@ -129,7 +121,7 @@ export const SellTokens: FC = () => {
 
     const handleBuy = async (listing: TokenListingAccount) => {
         if (!connected || !publicKey) {
-            alert("Connect wallet first!");
+            toast.error("Connect wallet first!");
             return;
         }
         setActiveOperationId(listing.publicKey.toBase58());
@@ -159,7 +151,7 @@ export const SellTokens: FC = () => {
             // Add to localStorage purchases
             const purchaseInfo = {
                 mint: listing.account.mint.toBase58(),
-                amount: (Number(listing.account.amount) / 1e9).toLocaleString(),
+                amount: (Number(listing.account.amount) / Math.pow(10, listing.decimals ?? 9)).toLocaleString(),
                 price: (Number(listing.account.price) / 1e9).toFixed(4),
                 name: "Secondary Purchase",
                 symbol: "SEC",
@@ -170,11 +162,11 @@ export const SellTokens: FC = () => {
             const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
             localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
 
-            alert(`Purchase successful! TX: ${tx}`);
+            toast.success(`Purchase successful! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
             fetchTokenListings();
         } catch (e: any) {
             console.error("Secondary purchase failed:", e);
-            alert(`Purchase failed: ${e.message || e}`);
+            toast.error(`Purchase failed: ${e.message || e}`);
         } finally {
             setActiveOperationId(null);
             setOperationType(null);
@@ -188,11 +180,11 @@ export const SellTokens: FC = () => {
         try {
             const tx = await cancelTokenSecondary(listing);
             console.log("Secondary listing canceled successfully. TX:", tx);
-            alert(`Listing canceled successfully! TX: ${tx}`);
+            toast.success(`Listing canceled successfully! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
             fetchTokenListings();
         } catch (e: any) {
             console.error("Cancel failed:", e);
-            alert(`Cancel failed: ${e.message || e}`);
+            toast.error(`Cancel failed: ${e.message || e}`);
         } finally {
             setActiveOperationId(null);
             setOperationType(null);

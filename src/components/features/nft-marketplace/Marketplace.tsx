@@ -14,6 +14,7 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
     const isFixedPrice = !!item.account.pricePerToken;
     const mint = item.account.mint;
     const { metadata } = useTokenMetadata(mint);
+    const decimals = item.decimals ?? 9;
     
     let price = 0;
     let supply = "0";
@@ -75,7 +76,7 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
                     </div>
                      <div className="text-right">
                         <div className="text-[10px] text-muted-foreground uppercase">Supply</div>
-                        <div className="font-mono text-xs">{(Number(supply) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div className="font-mono text-xs">{(Number(supply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                 </div>
             </div>

@@ -20,6 +20,7 @@ export type BondingCurveAccount = {
     };
     isToken2022?: boolean;
     activeExtensions?: ExtensionType[];
+    decimals?: number;
 };
 
 export type FixedPriceVaultAccount = {
@@ -34,6 +35,7 @@ export type FixedPriceVaultAccount = {
     };
     isToken2022?: boolean;
     activeExtensions?: ExtensionType[];
+    decimals?: number;
 };
 
 export type TokenListingAccount = {
@@ -47,6 +49,7 @@ export type TokenListingAccount = {
     };
     isToken2022?: boolean;
     activeExtensions?: ExtensionType[];
+    decimals?: number;
 };
 
 export const useLaunchpad = () => {
@@ -103,9 +106,13 @@ export const useLaunchpad = () => {
                 const mintInfo = mintInfos[index];
                 let isToken2022 = false;
                 let activeExtensions: ExtensionType[] = [];
+                let decimals = 9;
 
                 if (mintInfo) {
                     isToken2022 = mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+                    if (mintInfo.data.length > 44) {
+                        decimals = mintInfo.data[44];
+                    }
                     if (isToken2022) {
                         try {
                             // Extract extension types from mint data
@@ -119,7 +126,8 @@ export const useLaunchpad = () => {
                 return {
                     ...acc,
                     isToken2022,
-                    activeExtensions
+                    activeExtensions,
+                    decimals
                 };
             });
 
@@ -146,9 +154,13 @@ export const useLaunchpad = () => {
                 const mintInfo = mintInfos[index];
                 let isToken2022 = false;
                 let activeExtensions: ExtensionType[] = [];
+                let decimals = 9;
 
                 if (mintInfo) {
                     isToken2022 = mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+                    if (mintInfo.data.length > 44) {
+                        decimals = mintInfo.data[44];
+                    }
                     if (isToken2022) {
                         try {
                             activeExtensions = getExtensionTypes(mintInfo.data);
@@ -161,7 +173,8 @@ export const useLaunchpad = () => {
                 return {
                     ...acc,
                     isToken2022,
-                    activeExtensions
+                    activeExtensions,
+                    decimals
                 };
             });
 
@@ -186,9 +199,13 @@ export const useLaunchpad = () => {
                 const mintInfo = mintInfos[index];
                 let isToken2022 = false;
                 let activeExtensions: ExtensionType[] = [];
+                let decimals = 9;
 
                 if (mintInfo) {
                     isToken2022 = mintInfo.owner.equals(TOKEN_2022_PROGRAM_ID);
+                    if (mintInfo.data.length > 44) {
+                        decimals = mintInfo.data[44];
+                    }
                     if (isToken2022) {
                         try {
                             activeExtensions = getExtensionTypes(mintInfo.data);
@@ -201,7 +218,8 @@ export const useLaunchpad = () => {
                 return {
                     ...acc,
                     isToken2022,
-                    activeExtensions
+                    activeExtensions,
+                    decimals
                 };
             });
 

@@ -4,6 +4,7 @@ import { BondingCurveAccount, useLaunchpad } from "../../../hooks/useLaunchpad";
 import { useTokenMetadata } from "../../../hooks/useTokenMetadata";
 import { BN } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import toast from "react-hot-toast";
 
 interface CompanyDetailModalProps {
     isOpen: boolean;
@@ -21,6 +22,7 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
     const [estimatedCost, setEstimatedCost] = useState<number>(0);
 
     const isFixedPrice = !!curve?.account.pricePerToken;
+    const decimals = curve?.decimals ?? 9;
 
     useEffect(() => {
         if (!curve || amount <= 0) return;
@@ -72,11 +74,11 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                  tx = await buyTokens(curve, amount);
              }
              console.log("Purchase TX:", tx);
-             alert(`Purchase Successful! TX: ${tx}`);
+             toast.success(`Purchase Successful! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
              onClose();
-        } catch (error) {
-            console.error(error);
-            alert("Purchase failed: " + error);
+        } catch (error: any) {
+            console.error("Purchase failed", error);
+            toast.error(`Purchase failed: ${error.message || error}`);
         } finally {
             setIsBuying(false);
         }
@@ -143,7 +145,7 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                                     <span>{isFixedPrice ? "Remaining Supply" : "Reserves (Virtual)"}</span>
                                     <span className="font-mono">
                                         {isFixedPrice 
-                                            ? (Number(curve.account.remainingSupply) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                            ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })
                                             : new BN(curve.account.virtualTokenReserves).toString()}
                                     </span>
                                 </div>
