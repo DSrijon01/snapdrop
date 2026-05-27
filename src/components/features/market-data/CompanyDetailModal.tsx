@@ -25,6 +25,17 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
     const decimals = curve?.decimals ?? 9;
 
     useEffect(() => {
+        if (curve) {
+            if (isFixedPrice) {
+                const rem = Number(curve.account.remainingSupply) / Math.pow(10, decimals);
+                setAmount(rem);
+            } else {
+                setAmount(1);
+            }
+        }
+    }, [curve, isFixedPrice, decimals]);
+
+    useEffect(() => {
         if (!curve || amount <= 0) return;
         try {
             if (isFixedPrice) {
@@ -138,7 +149,9 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                                 <div className="flex justify-between text-sm mb-2">
                                     <span>Price per Token</span>
                                     <span className="font-bold">
-                                        {(estimatedCost / (amount || 1)).toFixed(6)} SOL
+                                        {isFixedPrice 
+                                            ? `${parseFloat((Number(curve.account.pricePerToken) / LAMPORTS_PER_SOL).toFixed(6))} SOL`
+                                            : `${(estimatedCost / (amount || 1)).toFixed(6)} SOL`}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
@@ -157,14 +170,25 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                                     <input 
                                         type="number" 
                                         min="1"
+                                        max={isFixedPrice ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)) : undefined}
                                         value={amount}
-                                        onChange={(e) => setAmount(Number(e.target.value))}
+                                        onChange={(e) => {
+                                            const val = Number(e.target.value);
+                                            const maxVal = isFixedPrice ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)) : Infinity;
+                                            if (val > maxVal) {
+                                                setAmount(maxVal);
+                                            } else {
+                                                setAmount(val);
+                                            }
+                                        }}
                                         className="w-full bg-background border border-border rounded-lg px-3 py-2 font-mono"
                                     />
                                 </div>
                                 <div className="flex-1 text-right">
                                     <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Total Cost</label>
-                                    <div className="font-bold text-lg">{estimatedCost.toFixed(4)} SOL</div>
+                                    <div className="font-bold text-lg">
+                                        {isFixedPrice ? parseFloat(estimatedCost.toFixed(6)) : estimatedCost.toFixed(4)} SOL
+                                    </div>
                                 </div>
                             </div>
 

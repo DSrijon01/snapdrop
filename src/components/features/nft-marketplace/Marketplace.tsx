@@ -71,12 +71,18 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
                 
                 <div className="flex justify-between items-end mt-auto">
                     <div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Price</div>
-                        <div className="font-bold text-lg">{price.toFixed(6)} SOL</div>
+                        <div className="text-[10px] text-muted-foreground uppercase">
+                            {isFixedPrice ? "Price Per Token" : "Price"}
+                        </div>
+                        <div className="font-bold text-lg">
+                            {isFixedPrice ? parseFloat(price.toFixed(6)) : price.toFixed(6)} SOL
+                        </div>
                     </div>
                      <div className="text-right">
                         <div className="text-[10px] text-muted-foreground uppercase">Supply</div>
-                        <div className="font-mono text-xs">{(Number(supply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+                        <div className="font-bold text-lg">
+                            {(Number(supply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        </div>
                     </div>
                 </div>
             </div>

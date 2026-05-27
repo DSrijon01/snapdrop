@@ -59,7 +59,7 @@ export const useLaunchpad = () => {
     const [curves, setCurves] = useState<BondingCurveAccount[]>([]);
     const [fixedPriceVaults, setFixedPriceVaults] = useState<FixedPriceVaultAccount[]>([]);
     const [tokenListings, setTokenListings] = useState<TokenListingAccount[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const provider = useMemo(() => {
         if (wallet && wallet.publicKey) {
@@ -92,7 +92,6 @@ export const useLaunchpad = () => {
 
     const fetchCurves = async () => {
         if (!program) return;
-        setLoading(true);
         try {
             console.log("Fetching bonding curves...");
             // @ts-ignore
@@ -135,8 +134,6 @@ export const useLaunchpad = () => {
             setCurves(enrichedAccounts);
         } catch (error) {
             console.error("Error fetching curves:", error);
-        } finally {
-            setLoading(false);
         }
     };
 
@@ -232,9 +229,14 @@ export const useLaunchpad = () => {
 
     useEffect(() => {
         if (program) {
-            fetchCurves();
-            fetchFixedPriceVaults();
-            fetchTokenListings();
+            setLoading(true);
+            Promise.all([
+                fetchCurves(),
+                fetchFixedPriceVaults(),
+                fetchTokenListings()
+            ]).finally(() => {
+                setLoading(false);
+            });
         }
     }, [program]);
 
