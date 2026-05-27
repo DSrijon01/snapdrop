@@ -10,25 +10,23 @@ import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 
-const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onClick: () => void }) => {
-    const { metadata } = useTokenMetadata(curve.account.mint);
+const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) => {
+    const isFixedPrice = !!item.account.pricePerToken;
+    const mint = item.account.mint;
+    const { metadata } = useTokenMetadata(mint);
     
-    // Calculate display price (Virtual Sol / Virtual Token) or just reserves ratio
-    // Price = VirtualSol / VirtualToken
-    const vSol = new BN(curve.account.virtualSolReserves);
-    const vTok = new BN(curve.account.virtualTokenReserves);
-    // Avoid division by zero, though virtual reserves ensure > 0
-    const priceLamports = vTok.gt(new BN(0)) ? vSol.div(vTok).toNumber() : 0; // Very rough approximation
-    // Better: Buy 1 token price
-    // But for grid display, ratio is fine.
-    // Wait, vSol is large, vTok is large. vSol/vTok might be < 1 if lots of tokens.
-    // Let's just show Price per Token in SOL.
-    // If vSol/vTok ~ 0 (e.g. 30 SOL / 1000000 Tokens), checks precision.
-    // BN div is integer division. We need float.
-    const price = Number(curve.account.virtualSolReserves) / Number(curve.account.virtualTokenReserves);
+    let price = 0;
+    let supply = "0";
+    if (isFixedPrice) {
+        price = Number(item.account.pricePerToken) / 1_000_000_000;
+        supply = new BN(item.account.remainingSupply).toString();
+    } else {
+        price = Number(item.account.virtualSolReserves) / Number(item.account.virtualTokenReserves);
+        supply = new BN(item.account.realTokenReserves).toString();
+    }
 
     // Prefer curve properties since they are fetched directly from mint account in Launchpad
-    const isToken2022 = curve.isToken2022 || metadata?.isToken2022;
+    const isToken2022 = item.isToken2022 || metadata?.isToken2022;
 
     return (
         <motion.div
@@ -54,11 +52,18 @@ const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onCli
             </div>
 
             <div className="p-4 flex flex-col flex-1">
-                <h3 className="font-bold text-foreground text-lg font-display uppercase truncate">{metadata?.name || "Unknown"}</h3>
+                <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-foreground text-lg font-display uppercase truncate max-w-[150px]" title={metadata?.name}>{metadata?.name || "Unknown"}</h3>
+                    {isFixedPrice && (
+                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                            Fixed Price
+                        </span>
+                    )}
+                </div>
                 <p className="text-xs font-mono text-muted-foreground mb-3">{metadata?.symbol || "..."}</p>
                 
                 <div className="flex flex-wrap gap-2 mb-4">
-                    {curve.activeExtensions?.map((ext: any) => (
+                    {item.activeExtensions?.map((ext: any) => (
                         <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
                     ))}
                 </div>
@@ -70,7 +75,7 @@ const MarketplaceItem = ({ curve, onClick }: { curve: BondingCurveAccount, onCli
                     </div>
                      <div className="text-right">
                         <div className="text-[10px] text-muted-foreground uppercase">Supply</div>
-                        <div className="font-mono text-xs">{new BN(curve.account.realTokenReserves).toString()}</div>
+                        <div className="font-mono text-xs">{(Number(supply) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
                     </div>
                 </div>
             </div>
@@ -83,47 +88,42 @@ interface MarketplaceProps {
 }
 
 export const Marketplace: FC<MarketplaceProps> = () => {
-    const { curves, loading } = useLaunchpad();
-    const [selectedCurve, setSelectedCurve] = useState<BondingCurveAccount | null>(null);
+    const { curves, fixedPriceVaults, loading } = useLaunchpad();
+    const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
 
-    // Identify filtered curves
-    // Since metadata filtering requires metadata which is async, 
-    // we can filter by mint address or just fetch all logic? 
-    // For now, simpler: just map all curves. Search might be tricky without metadata loaded parent-side.
-    // I'll skip search for now or implement CLIENT SIDE search inside Item? No.
-    // Let's just render all.
+    const allItems = [...curves, ...fixedPriceVaults];
 
-    if (loading) {
+    if (loading && allItems.length === 0) {
         return <div className="text-center p-10">Loading Launchpad...</div>;
     }
 
     return (
         <div className="container mx-auto p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
              <CompanyDetailModal 
-                isOpen={!!selectedCurve} 
-                onClose={() => setSelectedCurve(null)} 
-                curve={selectedCurve} 
+                isOpen={!!selectedItem} 
+                onClose={() => setSelectedItem(null)} 
+                curve={selectedItem} 
             />
 
             <div className="flex justify-between items-center mb-8">
                  <h2 className="text-3xl font-black font-display uppercase">Launchpad Market</h2>
                  <div className="text-sm text-muted-foreground">
-                    {curves.length} Live Tokens
+                    {allItems.length} Live Tokens
                  </div>
             </div>
 
-            {curves.length === 0 ? (
+            {allItems.length === 0 ? (
                 <div className="text-center p-20 text-muted-foreground border border-dashed border-border rounded-3xl">
                     No active tokens enabled for the Launchpad yet.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {curves.map((curve: any) => (
+                    {allItems.map((item: any) => (
                         <MarketplaceItem 
-                            key={curve.publicKey.toString()} 
-                            curve={curve} 
-                            onClick={() => setSelectedCurve(curve)} 
+                            key={item.publicKey.toString()} 
+                            item={item} 
+                            onClick={() => setSelectedItem(item)} 
                         />
                     ))}
                 </div>

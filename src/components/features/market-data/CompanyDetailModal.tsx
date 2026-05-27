@@ -13,49 +13,64 @@ interface CompanyDetailModalProps {
 
 export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClose, curve }) => {
     const { metadata, loading: metadataLoading } = useTokenMetadata(curve?.account.mint || null);
-    const { buyTokens, loading: programLoading } = useLaunchpad();
+    const { buyTokens, buyTokensFixedPrice, loading: programLoading } = useLaunchpad();
     const [amount, setAmount] = useState<number>(1);
     const [isBuying, setIsBuying] = useState(false);
     
     // Calculate price
-    // K = V_SOL * V_TOK
-    // New_V_TOK = V_TOK - amount
-    // New_V_SOL = K / New_V_TOK
-    // Cost = New_V_SOL - V_SOL
     const [estimatedCost, setEstimatedCost] = useState<number>(0);
+
+    const isFixedPrice = !!curve?.account.pricePerToken;
 
     useEffect(() => {
         if (!curve || amount <= 0) return;
         try {
-            const vSol = new BN(curve.account.virtualSolReserves);
-            const vTok = new BN(curve.account.virtualTokenReserves);
-            const k = vSol.mul(vTok);
-            const amountBN = new BN(amount); // Assuming raw units or handled decimals? 
-            // NOTE: Amount should be in ATOMIC units. If UI uses 1 token, we need decimals.
-            // For now, let's assume 6 decimals or 9? 
-            // We should fetch decimals from mint. But basic bonding curve often uses 6.
-            // Let's assume input is RAW for simplicity or 1 = 1 token (need multiplier).
-            // Better to use 1_000_000 multiplier for 6 decimals.
-            // I'll stick to raw units in logic or update later.
-            // Prompt says: "Calculate SOL cost based on constant product formula".
-            
-            const newVTok = vTok.sub(amountBN);
-            if (newVTok.lte(new BN(0))) {
-                setEstimatedCost(0);
-                return;
+            if (isFixedPrice) {
+                const pricePerToken = Number(curve.account.pricePerToken) / LAMPORTS_PER_SOL;
+                setEstimatedCost(amount * pricePerToken);
+            } else {
+                const vSol = new BN(curve.account.virtualSolReserves);
+                const vTok = new BN(curve.account.virtualTokenReserves);
+                const k = vSol.mul(vTok);
+                const amountBN = new BN(amount);
+                
+                const newVTok = vTok.sub(amountBN);
+                if (newVTok.lte(new BN(0))) {
+                    setEstimatedCost(0);
+                    return;
+                }
+                const newVSol = k.div(newVTok).add(new BN(1));
+                const cost = newVSol.sub(vSol);
+                
+                setEstimatedCost(cost.toNumber() / LAMPORTS_PER_SOL);
             }
-            const newVSol = k.div(newVTok).add(new BN(1));
-            const cost = newVSol.sub(vSol);
-            
-            setEstimatedCost(cost.toNumber() / LAMPORTS_PER_SOL);
         } catch(e) { console.error(e); }
-    }, [curve, amount]);
+    }, [curve, amount, isFixedPrice]);
 
     const handleBuy = async () => {
         if (!curve) return;
         setIsBuying(true);
         try {
-             const tx = await buyTokens(curve, amount);
+             let tx = "";
+             if (isFixedPrice) {
+                 tx = await buyTokensFixedPrice(curve, amount);
+
+                 // Save to fixed price purchases history in localStorage
+                 const purchaseInfo = {
+                     mint: curve.account.mint.toBase58(),
+                     amount: amount.toLocaleString(),
+                     price: estimatedCost.toFixed(4),
+                     name: metadata?.name || "Unknown",
+                     symbol: metadata?.symbol || "UNK",
+                     image: metadata?.image || "",
+                     date: Date.now(),
+                     signature: tx
+                 };
+                 const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
+                 localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
+             } else {
+                 tx = await buyTokens(curve, amount);
+             }
              console.log("Purchase TX:", tx);
              alert(`Purchase Successful! TX: ${tx}`);
              onClose();
@@ -125,9 +140,11 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-sm">
-                                    <span>Reserves (Virtual)</span>
+                                    <span>{isFixedPrice ? "Remaining Supply" : "Reserves (Virtual)"}</span>
                                     <span className="font-mono">
-                                        {new BN(curve.account.virtualTokenReserves).toString()}
+                                        {isFixedPrice 
+                                            ? (Number(curve.account.remainingSupply) / 1e9).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                            : new BN(curve.account.virtualTokenReserves).toString()}
                                     </span>
                                 </div>
                             </div>
