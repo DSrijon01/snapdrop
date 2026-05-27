@@ -322,7 +322,7 @@ export const useLaunchpad = () => {
                 vault: vaultAta,
                 buyer: wallet.publicKey,
                 buyerTokenAccount: buyerTokenAccount,
-                creator: vault.account.creator,
+                globalWallet: vault.account.creator,
                 tokenProgram: tokenProgramId,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
