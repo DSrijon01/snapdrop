@@ -2,6 +2,7 @@ import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BondingCurveAccount, useLaunchpad } from "../../../hooks/useLaunchpad";
 import { useTokenMetadata } from "../../../hooks/useTokenMetadata";
+import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { BN } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import toast from "react-hot-toast";
@@ -135,8 +136,19 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                         </div>
                         
                         {metadata?.isToken2022 && (
-                             <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-500">
-                                <strong>Warning:</strong> This is a Token-2022 asset. Transfer Fees or Delegated Authority may apply.
+                            <div className="mb-4 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-xs text-yellow-500 space-y-2">
+                                <div>
+                                    <strong>Warning:</strong> This is a Token-2022 asset. Active Extensions:
+                                </div>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {metadata.extensions && metadata.extensions.length > 0 ? (
+                                        metadata.extensions.map((ext: number) => (
+                                            <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
+                                        ))
+                                    ) : (
+                                        <span className="text-[10px] text-yellow-500/60 italic">Standard behavior (no custom extensions)</span>
+                                    )}
+                                </div>
                             </div>
                         )}
 

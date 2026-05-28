@@ -73,6 +73,14 @@ const SecondaryListingItem = ({
                     </div>
                 </div>
 
+                {metadata?.extensions && metadata.extensions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                        {metadata.extensions.map((ext: number) => (
+                            <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
+                        ))}
+                    </div>
+                )}
+
                 <div className="flex justify-between items-end mt-auto pt-4 border-t border-border/50">
                     <div>
                         <div className="text-[10px] text-muted-foreground uppercase">Total Price</div>

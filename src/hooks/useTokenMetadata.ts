@@ -4,7 +4,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { umi } from '../utils/umi';
 import { fetchMetadata, findMetadataPda } from '@metaplex-foundation/mpl-token-metadata';
 import { publicKey } from '@metaplex-foundation/umi';
-import { TOKEN_2022_PROGRAM_ID, getTokenMetadata } from '@solana/spl-token';
+import { TOKEN_2022_PROGRAM_ID, getTokenMetadata, unpackMint, getExtensionTypes } from '@solana/spl-token';
 
 export type TokenMetadata = {
     name: string;
@@ -13,6 +13,7 @@ export type TokenMetadata = {
     image?: string;
     description?: string;
     isToken2022?: boolean;
+    extensions?: number[];
 };
 
 // Global in-memory cache for token metadata to prevent redundant RPC and HTTP requests
@@ -53,6 +54,16 @@ export const useTokenMetadata = (mint: PublicKey | null) => {
                          // First check if it's a Token-2022 mint
                          const mintAccountInfo = await connection.getAccountInfo(mint);
                          const isToken2022 = mintAccountInfo?.owner.equals(TOKEN_2022_PROGRAM_ID);
+                         let extensions: number[] = [];
+
+                         if (isToken2022 && mintAccountInfo) {
+                             try {
+                                 const unpacked = unpackMint(mint, mintAccountInfo, TOKEN_2022_PROGRAM_ID);
+                                 extensions = getExtensionTypes(unpacked.tlvData).map(e => Number(e));
+                             } catch (extErr) {
+                                 console.warn("Failed parsing extensions locally:", extErr);
+                             }
+                         }
 
                          if (isToken2022) {
                              // Try to fetch Token-2022 native metadata
@@ -72,7 +83,8 @@ export const useTokenMetadata = (mint: PublicKey | null) => {
                                          uri: metadataOnChain.uri,
                                          image: jsonMetadata.image,
                                          description: jsonMetadata.description,
-                                         isToken2022: true
+                                         isToken2022: true,
+                                         extensions: extensions
                                      };
                                      metadataCache[mintStr] = result;
                                      return result;
@@ -103,7 +115,8 @@ export const useTokenMetadata = (mint: PublicKey | null) => {
                              uri: account.uri,
                              image: jsonMetadata.image,
                              description: jsonMetadata.description,
-                             isToken2022: account.header.owner.toString() === "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", 
+                             isToken2022: isToken2022, 
+                             extensions: extensions
                          };
                          metadataCache[mintStr] = result;
                          return result;

@@ -5,6 +5,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync,
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import idl from '../../../idl/launchpad.json';
 import { useTokenMetadata } from '@/hooks/useTokenMetadata';
+import { TokenBadge } from '@/components/global/wallet/TokenBadge';
 import { TokenGenerator } from './TokenGenerator';
 import { Token2022Studio } from './Token2022Studio';
 import { CreateMarketEvent } from './CreateMarketEvent';
@@ -359,6 +360,13 @@ const TokenCard: FC<{
              <div className="text-xs text-blue-400">
                 {token.programId.equals(TOKEN_2022_PROGRAM_ID) ? "Token-2022" : "SPL Token"}
             </div>
+            {token.programId.equals(TOKEN_2022_PROGRAM_ID) && metadata?.extensions && metadata.extensions.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mt-1">
+                    {metadata.extensions.map((ext: number) => (
+                        <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
+                    ))}
+                </div>
+            )}
 
             {/* Launch Config Form */}
             <div className="space-y-3 p-3 bg-muted/40 rounded-lg border border-border/50 text-xs">

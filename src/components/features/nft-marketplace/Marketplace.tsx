@@ -63,11 +63,13 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
                 </div>
                 <p className="text-xs font-mono text-muted-foreground mb-3">{metadata?.symbol || "..."}</p>
                 
-                <div className="flex flex-wrap gap-2 mb-4">
-                    {item.activeExtensions?.map((ext: any) => (
-                        <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
-                    ))}
-                </div>
+                {metadata?.extensions && metadata.extensions.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                        {metadata.extensions.map((ext: number) => (
+                            <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
+                        ))}
+                    </div>
+                )}
                 
                 <div className="flex justify-between items-end mt-auto">
                     <div>

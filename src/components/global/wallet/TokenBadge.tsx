@@ -44,18 +44,83 @@ export const TokenBadge: FC<TokenBadgeProps> = ({ type, extensionType, className
     let style = "";
 
     switch (extensionType) {
+      case ExtensionType.TransferFeeConfig:
+        label = "💸 Transfer Fee";
+        tooltip = "A transaction fee is collected on transfers.";
+        style = "bg-blue-500/10 text-blue-500 border-blue-500/20";
+        break;
+      case ExtensionType.InterestBearingConfig:
+        label = "📈 Interest Bearing";
+        tooltip = "Tokens accumulate interest continuously.";
+        style = "bg-blue-500/10 text-blue-500 border-blue-500/20";
+        break;
       case ExtensionType.PermanentDelegate:
-        label = "🛡️ Platform Delegated";
-        tooltip = "A designated authority can transfer or burn these tokens.";
-        style = "bg-blue-500/20 text-blue-500 border-blue-500/30";
+        label = "👤 Perm Delegate";
+        tooltip = "The platform has absolute authority to transfer or burn tokens.";
+        style = "bg-purple-500/10 text-purple-500 border-purple-500/20";
+        break;
+      case ExtensionType.MintCloseAuthority:
+        label = "🔒 Close Auth";
+        tooltip = "Authority can close the mint account permanently.";
+        style = "bg-purple-500/10 text-purple-500 border-purple-500/20";
+        break;
+      case ExtensionType.PausableConfig:
+        label = "⏸️ Pausable";
+        tooltip = "Authority can pause and resume token transfers.";
+        style = "bg-purple-500/10 text-purple-500 border-purple-500/20";
+        break;
+      case ExtensionType.DefaultAccountState:
+        label = "❄️ Default State";
+        tooltip = "New accounts are frozen by default.";
+        style = "bg-purple-500/10 text-purple-500 border-purple-500/20";
         break;
       case ExtensionType.NonTransferable:
         label = "🔒 Soulbound";
-        tooltip = "These tokens cannot be transferred to another wallet.";
-        style = "bg-purple-500/20 text-purple-500 border-purple-500/30";
+        tooltip = "These tokens are Soulbound and cannot be transferred.";
+        style = "bg-orange-500/10 text-orange-500 border-orange-500/20";
+        break;
+      case ExtensionType.TokenGroup:
+        label = "📁 Token Group Parent";
+        tooltip = "This token acts as a collection/parent group.";
+        style = "bg-orange-500/10 text-orange-500 border-orange-500/20";
+        break;
+      case ExtensionType.TokenGroupMember:
+        label = "🏷️ Token Group Child";
+        tooltip = "This token is a member of a parent token group.";
+        style = "bg-orange-500/10 text-orange-500 border-orange-500/20";
+        break;
+      case ExtensionType.TransferHook:
+        label = "⚓ Transfer Hook";
+        tooltip = "External program executes on every transfer.";
+        style = "bg-orange-500/10 text-orange-500 border-orange-500/20";
+        break;
+      case ExtensionType.TokenMetadata:
+        label = "📄 Metadata";
+        tooltip = "Stores native metadata directly in the mint account.";
+        style = "bg-green-500/10 text-green-500 border-green-500/20";
+        break;
+      case ExtensionType.MetadataPointer:
+        label = "📍 Meta Pointer";
+        tooltip = "Points to where token metadata is stored.";
+        style = "bg-green-500/10 text-green-500 border-green-500/20";
+        break;
+      case ExtensionType.ImmutableOwner:
+        label = "🔒 Immutable Owner";
+        tooltip = "Associated token accounts cannot change ownership.";
+        style = "bg-green-500/10 text-green-500 border-green-500/20";
+        break;
+      case ExtensionType.CpiGuard:
+        label = "🛡️ CPI Guard";
+        tooltip = "Locks token account from unauthorized Cross-Program Invocations.";
+        style = "bg-green-500/10 text-green-500 border-green-500/20";
+        break;
+      case ExtensionType.MemoTransfer:
+        label = "📝 Memo Required";
+        tooltip = "Requires memo text for all incoming transfers.";
+        style = "bg-green-500/10 text-green-500 border-green-500/20";
         break;
       default:
-        return null; // Don't render badges for other extensions like TokenMetadata right now unless needed.
+        return null;
     }
 
     return (
