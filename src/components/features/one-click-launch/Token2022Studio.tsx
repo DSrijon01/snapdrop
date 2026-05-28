@@ -202,6 +202,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             if (enableMintCloseAuthority || enablePausable) activeExtensions.push(ExtensionType.MintCloseAuthority); // Pausable requires CloseAuth usually or similar space
             if (enableDefaultAccountState) activeExtensions.push(ExtensionType.DefaultAccountState);
             if (enableMetadataPointer) activeExtensions.push(ExtensionType.MetadataPointer);
+            if (enableTokenMetadata) activeExtensions.push(ExtensionType.TokenMetadata);
             
             // New active extensions for getMintLen calculation
             if (enablePausable) activeExtensions.push(ExtensionType.PausableConfig);
