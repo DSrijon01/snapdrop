@@ -192,28 +192,25 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             const mintKeypair = Keypair.generate();
             const mint = mintKeypair.publicKey;
 
-            // Define which extensions are active (Mint Extensions primarily for space calculation)
-            const activeExtensions: ExtensionType[] = [];
+            // Define which extensions are active initially (Mint Extensions initialized BEFORE InitializeMint)
+            const initialExtensions: ExtensionType[] = [];
             
-            if (enableTransferFee) activeExtensions.push(ExtensionType.TransferFeeConfig);
-            if (enableNonTransferable) activeExtensions.push(ExtensionType.NonTransferable);
-            if (enableInterestBearing) activeExtensions.push(ExtensionType.InterestBearingConfig);
-            if (enablePermanentDelegate) activeExtensions.push(ExtensionType.PermanentDelegate);
-            if (enableMintCloseAuthority || enablePausable) activeExtensions.push(ExtensionType.MintCloseAuthority); // Pausable requires CloseAuth usually or similar space
-            if (enableDefaultAccountState) activeExtensions.push(ExtensionType.DefaultAccountState);
-            if (enableMetadataPointer) activeExtensions.push(ExtensionType.MetadataPointer);
-            if (enableTokenMetadata) activeExtensions.push(ExtensionType.TokenMetadata);
+            if (enableTransferFee) initialExtensions.push(ExtensionType.TransferFeeConfig);
+            if (enableNonTransferable) initialExtensions.push(ExtensionType.NonTransferable);
+            if (enableInterestBearing) initialExtensions.push(ExtensionType.InterestBearingConfig);
+            if (enablePermanentDelegate) initialExtensions.push(ExtensionType.PermanentDelegate);
+            if (enableMintCloseAuthority || enablePausable) initialExtensions.push(ExtensionType.MintCloseAuthority); // Pausable requires CloseAuth usually or similar space
+            if (enableDefaultAccountState) initialExtensions.push(ExtensionType.DefaultAccountState);
+            if (enableMetadataPointer) initialExtensions.push(ExtensionType.MetadataPointer);
             
-            // New active extensions for getMintLen calculation
-            if (enablePausable) activeExtensions.push(ExtensionType.PausableConfig);
-            if (enableTransferHook) activeExtensions.push(ExtensionType.TransferHook);
+            // New active extensions for getMintLen calculation (initialized BEFORE InitializeMint)
+            if (enablePausable) initialExtensions.push(ExtensionType.PausableConfig);
+            if (enableTransferHook) initialExtensions.push(ExtensionType.TransferHook);
             if (enableTokenGroup) {
-                activeExtensions.push(ExtensionType.GroupPointer);
-                activeExtensions.push(ExtensionType.TokenGroup);
+                initialExtensions.push(ExtensionType.GroupPointer);
             }
             if (enableTokenGroupMember) {
-                activeExtensions.push(ExtensionType.GroupMemberPointer);
-                activeExtensions.push(ExtensionType.TokenGroupMember);
+                initialExtensions.push(ExtensionType.GroupMemberPointer);
             }
 
             // Note: ImmutableOwner, MemoTransfer, CpiGuard are ALL Account extensions. 
@@ -226,10 +223,19 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             if (enableMemoOnTransfer) accountExtensions.push(ExtensionType.MemoTransfer);
             if (enableCpiGuard) accountExtensions.push(ExtensionType.CpiGuard);
 
-            // Initialize exact initial space needed for Mint account + declared extensions
-            const mintLen = getMintLen(activeExtensions);
+            // Initialize exact initial space needed for Mint account (pointers + pre-mint extensions)
+            const initialMintLen = getMintLen(initialExtensions);
 
-            // TokenMetadata is NOT part of getMintLen(). 
+            // Extensions initialized AFTER InitializeMint (e.g. TokenGroup, TokenGroupMember)
+            const finalExtensions = [...initialExtensions];
+            if (enableTokenGroup) {
+                finalExtensions.push(ExtensionType.TokenGroup);
+            }
+            if (enableTokenGroupMember) {
+                finalExtensions.push(ExtensionType.TokenGroupMember);
+            }
+
+            // TokenMetadata is NOT part of getMintLen() directly. 
             // We have to add its space exclusively for lamports, so realloc succeeds later.
             const metaData = {
                 updateAuthority: wallet.publicKey,
@@ -240,16 +246,16 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 additionalMetadata: [] // Can add custom fields here later
             };
 
-            let finalAccountSize = mintLen;
-
+            // Calculate final space using getMintLen with variable length extensions
+            const variableExtensions: { [key in ExtensionType]?: number } = {};
             if (enableTokenMetadata) {
-                // TokenMetadata Extension takes dynamic space based on data length
-                const exactMetadataSpace = TYPE_SIZE + LENGTH_SIZE + pack(metaData).length;
-                finalAccountSize += exactMetadataSpace + 4; // Add slight buffer for realloc safety
+                variableExtensions[ExtensionType.TokenMetadata] = pack(metaData).length;
             }
 
+            const finalMintLen = getMintLen(finalExtensions, variableExtensions);
+
             // Fund rent for the FINAL size, but strictly create account with INITIAL size
-            const lamports = await connection.getMinimumBalanceForRentExemption(finalAccountSize);
+            const lamports = await connection.getMinimumBalanceForRentExemption(finalMintLen);
 
             const transaction = new Transaction();
 
@@ -258,8 +264,8 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 SystemProgram.createAccount({
                     fromPubkey: wallet.publicKey,
                     newAccountPubkey: mint,
-                    space: mintLen, // MUST be exact initial size for InitializeMint
-                    lamports, // MUST be final size for TokenMetadata realloc
+                    space: initialMintLen, // MUST be exact initial size for InitializeMint
+                    lamports, // MUST be final size for TokenMetadata and Group realloc
                     programId: TOKEN_2022_PROGRAM_ID,
                 })
             );
