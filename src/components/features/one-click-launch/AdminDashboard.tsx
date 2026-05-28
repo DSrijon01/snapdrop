@@ -47,7 +47,7 @@ export const AdminDashboard: FC = () => {
         if (publicKey && publicKey.toString() === ADMIN_WALLET) {
             fetchWalletTokens();
         }
-    }, [publicKey, connection]);
+    }, [publicKey, connection, activeTab]);
 
     const fetchWalletTokens = async () => {
         if (!publicKey) return;
@@ -296,9 +296,15 @@ export const AdminDashboard: FC = () => {
                     )}
                 </div>
             ) : activeTab === 'generator' ? (
-                <TokenGenerator onListNow={handleListToken} />
+                <TokenGenerator onListNow={async () => {
+                    await fetchWalletTokens();
+                    setActiveTab('tokens');
+                }} />
             ) : activeTab === 'token2022' ? (
-                <Token2022Studio onListNow={handleListToken} />
+                <Token2022Studio onListNow={async () => {
+                    await fetchWalletTokens();
+                    setActiveTab('tokens');
+                }} />
             ) : activeTab === 'nftstudio' ? (
                 <NFTStudio />
             ) : activeTab === 'eplays' ? (

@@ -377,7 +377,7 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                 }
             }
 
-            // Token Group
+            // Token Group Pointer Setup
             if (enableTokenGroup) {
                 transaction.add(
                     createInitializeGroupPointerInstruction(
@@ -387,20 +387,9 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                         TOKEN_2022_PROGRAM_ID
                     )
                 );
-                // The actual group initialization, max_size etc normally defaults
-                transaction.add(
-                    createInitializeGroupInstruction({
-                        programId: TOKEN_2022_PROGRAM_ID,
-                        mint: mint,
-                        group: mint,
-                        mintAuthority: wallet.publicKey, // Authority that can mint into this group
-                        updateAuthority: wallet.publicKey,
-                        maxSize: BigInt(0), // 0 = undefined/uncapped max size in standard usage
-                    })
-                );
             }
 
-            // Token Group Member
+            // Token Group Member Pointer Setup
             if (enableTokenGroupMember && parentGroupId) {
                 try {
                     const parentGroup = new PublicKey(parentGroupId);
@@ -411,16 +400,6 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                             mint,
                             TOKEN_2022_PROGRAM_ID
                         )
-                    );
-                    transaction.add(
-                        createInitializeMemberInstruction({
-                            programId: TOKEN_2022_PROGRAM_ID,
-                            member: mint,
-                            memberMint: mint,
-                            group: parentGroup,
-                            groupUpdateAuthority: wallet.publicKey, // Requires parent group update authority to sign (must match actual logic of group)
-                            memberMintAuthority: wallet.publicKey,
-                        })
                     );
                 } catch (e) {
                     console.warn("Invalid Parent Group ID provided.");
@@ -454,6 +433,39 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
                         }
                     )
                 );
+            }
+
+            // Post-Mint Data: Token Group Setup
+            if (enableTokenGroup) {
+                transaction.add(
+                    createInitializeGroupInstruction({
+                        programId: TOKEN_2022_PROGRAM_ID,
+                        mint: mint,
+                        group: mint,
+                        mintAuthority: wallet.publicKey, // Authority that can mint into this group
+                        updateAuthority: wallet.publicKey,
+                        maxSize: BigInt(0), // 0 = undefined/uncapped max size in standard usage
+                    })
+                );
+            }
+
+            // Post-Mint Data: Token Group Member Setup
+            if (enableTokenGroupMember && parentGroupId) {
+                try {
+                    const parentGroup = new PublicKey(parentGroupId);
+                    transaction.add(
+                        createInitializeMemberInstruction({
+                            programId: TOKEN_2022_PROGRAM_ID,
+                            member: mint,
+                            memberMint: mint,
+                            group: parentGroup,
+                            groupUpdateAuthority: wallet.publicKey, // Requires parent group update authority to sign (must match actual logic of group)
+                            memberMintAuthority: wallet.publicKey,
+                        })
+                    );
+                } catch (e) {
+                    console.warn("Invalid Parent Group ID provided.");
+                }
             }
 
             // 5. Create ATA for Global Wallet and Mint Initial Supply

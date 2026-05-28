@@ -3,7 +3,7 @@
 import { FC, useState } from "react";
 import { motion } from "framer-motion";
 import { useLaunchpad, BondingCurveAccount } from "../../../hooks/useLaunchpad";
-import { useTokenMetadata } from "../../../hooks/useTokenMetadata";
+import { useTokenMetadata, metadataCache } from "../../../hooks/useTokenMetadata";
 import { CompanyDetailModal } from "../market-data/CompanyDetailModal";
 import { BN } from "@coral-xyz/anchor";
 import { TokenBadge } from "../../global/wallet/TokenBadge";
@@ -98,8 +98,40 @@ export const Marketplace: FC<MarketplaceProps> = () => {
     const { curves, fixedPriceVaults, loading } = useLaunchpad();
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
+    const [extensionFilter, setExtensionFilter] = useState<string>("all");
 
     const allItems = [...curves, ...fixedPriceVaults];
+
+    // Filter items based on search term and extension type selection
+    const filteredItems = allItems.filter((item: any) => {
+        const mintStr = item.account.mint.toBase58().toLowerCase();
+        
+        // Match search term against mint address, name, or symbol
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            const meta = metadataCache[item.account.mint.toBase58()];
+            const nameMatch = meta?.name?.toLowerCase().includes(term);
+            const symbolMatch = meta?.symbol?.toLowerCase().includes(term);
+            const mintMatch = mintStr.includes(term);
+            if (!nameMatch && !symbolMatch && !mintMatch) {
+                return false;
+            }
+        }
+
+        // Match extension selection
+        if (extensionFilter !== "all") {
+            if (extensionFilter === "token-2022") {
+                if (!item.isToken2022) return false;
+            } else if (extensionFilter === "spl") {
+                if (item.isToken2022) return false;
+            } else {
+                const extType = Number(extensionFilter);
+                if (!item.activeExtensions?.includes(extType)) return false;
+            }
+        }
+
+        return true;
+    });
 
     if (loading && allItems.length === 0) {
         return <div className="text-center p-10">Loading Launchpad...</div>;
@@ -113,20 +145,48 @@ export const Marketplace: FC<MarketplaceProps> = () => {
                 curve={selectedItem} 
             />
 
-            <div className="flex justify-between items-center mb-8">
-                 <h2 className="text-3xl font-black font-display uppercase">Launchpad Market</h2>
-                 <div className="text-sm text-muted-foreground">
-                    {allItems.length} Live Tokens
+            <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-start md:items-center border-b border-border/40 pb-5">
+                 <div>
+                     <h2 className="text-3xl font-black font-display uppercase">Launchpad Market</h2>
+                     <div className="text-sm text-muted-foreground mt-1">
+                        {filteredItems.length} of {allItems.length} Live Tokens
+                     </div>
+                 </div>
+
+                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                     {/* Search Input */}
+                     <input
+                         type="text"
+                         placeholder="Search name, symbol, mint..."
+                         value={searchTerm}
+                         onChange={(e) => setSearchTerm(e.target.value)}
+                         className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors w-full sm:w-64"
+                     />
+                     {/* Extension Dropdown */}
+                     <select
+                         value={extensionFilter}
+                         onChange={(e) => setExtensionFilter(e.target.value)}
+                         className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors cursor-pointer w-full sm:w-auto min-w-[200px]"
+                     >
+                         <option value="all">All Token Types</option>
+                         <option value="spl">Standard SPL</option>
+                         <option value="token-2022">Token-2022 (All)</option>
+                         <option value="1">↳ Transfer Fee Config</option>
+                         <option value="5">↳ Interest Bearing Config</option>
+                         <option value="4">↳ Non-Transferable (Soulbound)</option>
+                         <option value="8">↳ Permanent Delegate</option>
+                         <option value="15">↳ Token Group Parent</option>
+                     </select>
                  </div>
             </div>
 
-            {allItems.length === 0 ? (
+            {filteredItems.length === 0 ? (
                 <div className="text-center p-20 text-muted-foreground border border-dashed border-border rounded-3xl">
-                    No active tokens enabled for the Launchpad yet.
+                    No active tokens match your search or filter options.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {allItems.map((item: any) => (
+                    {filteredItems.map((item: any) => (
                         <MarketplaceItem 
                             key={item.publicKey.toString()} 
                             item={item} 

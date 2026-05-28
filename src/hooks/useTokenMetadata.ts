@@ -16,7 +16,7 @@ export type TokenMetadata = {
 };
 
 // Global in-memory cache for token metadata to prevent redundant RPC and HTTP requests
-const metadataCache: Record<string, TokenMetadata> = {};
+export const metadataCache: Record<string, TokenMetadata> = {};
 const loadingPromises: Record<string, Promise<TokenMetadata | null> | undefined> = {};
 
 export const useTokenMetadata = (mint: PublicKey | null) => {
