@@ -1,4 +1,4 @@
-import { FC, ReactNode } from "react";
+import { FC, ReactNode, useState } from "react";
 import { ExtensionType } from "@solana/spl-token";
 
 export type BadgeType = "SPL" | "TOKEN_2022" | "EXTENSION";
@@ -10,13 +10,20 @@ interface TokenBadgeProps {
 }
 
 const Tooltip = ({ children, content }: { children: ReactNode; content: string }) => {
+  const [show, setShow] = useState(false);
   return (
-    <div className="relative group inline-block">
+    <div 
+      className="relative inline-block"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
       {children}
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 bg-black/90 text-white text-xs rounded-md p-2 shadow-xl z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-        {content}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/90"></div>
-      </div>
+      {show && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 bg-black/95 text-white text-xs rounded-md p-2.5 shadow-xl z-50 pointer-events-none transition-all duration-200 text-center font-normal leading-normal whitespace-normal">
+          {content}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-black/95"></div>
+        </div>
+      )}
     </div>
   );
 };
