@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { useConnection, useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, ComputeBudgetProgram } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, ExtensionType, getExtensionTypes } from '@solana/spl-token';
@@ -54,7 +54,7 @@ export type TokenListingAccount = {
 
 export const useLaunchpad = () => {
     const { connection } = useConnection();
-    const wallet = useWallet();
+    const wallet = useAnchorWallet();
     const [program, setProgram] = useState<Program<Idl> | null>(null);
     const [curves, setCurves] = useState<BondingCurveAccount[]>([]);
     const [fixedPriceVaults, setFixedPriceVaults] = useState<FixedPriceVaultAccount[]>([]);
@@ -62,8 +62,8 @@ export const useLaunchpad = () => {
     const [loading, setLoading] = useState(true);
 
     const provider = useMemo(() => {
-        if (wallet && wallet.publicKey) {
-            return new AnchorProvider(connection, wallet as any, {
+        if (wallet) {
+            return new AnchorProvider(connection, wallet, {
                 preflightCommitment: 'confirmed',
             });
         } else {
@@ -241,7 +241,7 @@ export const useLaunchpad = () => {
     }, [program]);
 
     const buyTokens = async (curve: BondingCurveAccount, amount: number) => {
-        if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
+        if (!program || !wallet) throw new Error("Wallet not connected");
         
         const mint = curve.account.mint;
         // Determine token program (standard or 2022)
@@ -294,7 +294,7 @@ export const useLaunchpad = () => {
                 vault: vault,
                 buyer: wallet.publicKey,
                 buyerTokenAccount: buyerTokenAccount,
-                globalWallet: TREASURY_WALLET,
+                globalWallet: curve.account.creator,
                 tokenProgram: tokenProgramId,
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
@@ -306,7 +306,7 @@ export const useLaunchpad = () => {
     };
 
     const buyTokensFixedPrice = async (vault: FixedPriceVaultAccount, amount: number) => {
-        if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
+        if (!program || !wallet) throw new Error("Wallet not connected");
 
         const mint = vault.account.mint;
         const mintAccountInfo = await connection.getAccountInfo(mint);
@@ -353,7 +353,7 @@ export const useLaunchpad = () => {
     };
 
     const listTokenSecondary = async (mint: PublicKey, amount: number, priceSol: number) => {
-        if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
+        if (!program || !wallet) throw new Error("Wallet not connected");
 
         const mintAccountInfo = await connection.getAccountInfo(mint);
         if (!mintAccountInfo) throw new Error("Mint not found");
@@ -401,7 +401,7 @@ export const useLaunchpad = () => {
     };
 
     const buyTokenSecondary = async (listing: TokenListingAccount) => {
-        if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
+        if (!program || !wallet) throw new Error("Wallet not connected");
 
         const mint = listing.account.mint;
         const mintAccountInfo = await connection.getAccountInfo(mint);
@@ -442,7 +442,7 @@ export const useLaunchpad = () => {
     };
 
     const cancelTokenSecondary = async (listing: TokenListingAccount) => {
-        if (!program || !wallet.publicKey) throw new Error("Wallet not connected");
+        if (!program || !wallet) throw new Error("Wallet not connected");
 
         const mint = listing.account.mint;
         const mintAccountInfo = await connection.getAccountInfo(mint);
