@@ -122,6 +122,7 @@ export const SellTokens: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [activeOperationId, setActiveOperationId] = useState<string | null>(null);
     const [operationType, setOperationType] = useState<'buy' | 'cancel' | null>(null);
+    const [completedListingIds, setCompletedListingIds] = useState<string[]>([]);
 
     useEffect(() => {
         fetchTokenListings();
@@ -171,6 +172,7 @@ export const SellTokens: FC = () => {
             localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
 
             toast.success(`Purchase successful! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
+            setCompletedListingIds(prev => [...prev, listing.publicKey.toBase58()]);
             fetchTokenListings();
         } catch (e: any) {
             console.error("Secondary purchase failed:", e);
@@ -189,6 +191,7 @@ export const SellTokens: FC = () => {
             const tx = await cancelTokenSecondary(listing);
             console.log("Secondary listing canceled successfully. TX:", tx);
             toast.success(`Listing canceled successfully! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
+            setCompletedListingIds(prev => [...prev, listing.publicKey.toBase58()]);
             fetchTokenListings();
         } catch (e: any) {
             console.error("Cancel failed:", e);
@@ -200,8 +203,9 @@ export const SellTokens: FC = () => {
     };
 
     const filteredListings = tokenListings.filter((listing) => 
-        listing.account.mint.toBase58().toLowerCase().includes(searchTerm.toLowerCase()) ||
-        listing.account.seller.toBase58().toLowerCase().includes(searchTerm.toLowerCase())
+        !completedListingIds.includes(listing.publicKey.toBase58()) &&
+        (listing.account.mint.toBase58().toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.account.seller.toBase58().toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     if (loading && tokenListings.length === 0) {
