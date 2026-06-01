@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -36,12 +36,26 @@ export interface CarouselItem {
 
 const initialCards: CarouselItem[] = [];
 
+const getDisplayOffset = (index: number, currIndex: number, total: number) => {
+    if (total === 0) return 0;
+    const offset = index - currIndex;
+    let displayOffset = offset;
+    if (offset > total / 2) displayOffset -= total;
+    if (offset < -total / 2) displayOffset += total;
+    return displayOffset;
+};
+
 export const StackedNFTGallery = () => {
     const { connection } = useConnection();
     const wallet = useWallet();
     const { program } = useSsNftGallery();
     const [cards, setCards] = useState<CarouselItem[]>(initialCards);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const prevCurrentIndexRef = useRef(currentIndex);
+    useEffect(() => {
+        prevCurrentIndexRef.current = currentIndex;
+    }, [currentIndex]);
+    const prevCurrentIndex = prevCurrentIndexRef.current;
     const [expandedCard, setExpandedCard] = useState<CarouselItem | null>(null);
     const [selectedNFT, setSelectedNFT] = useState<NFTDetail | null>(null);
     const [isMinting, setIsMinting] = useState(false);
@@ -170,11 +184,23 @@ export const StackedNFTGallery = () => {
         };
     }, [program, umi]);
 
+    // Reset currentIndex if it's out of bounds or NaN
+    useEffect(() => {
+        if (cards.length === 0) {
+            setCurrentIndex(0);
+        } else if (isNaN(currentIndex) || currentIndex >= cards.length) {
+            setCurrentIndex(0);
+        }
+    }, [cards.length, currentIndex]);
+
     // Slideshow Effect
     useEffect(() => {
-        if (expandedCard) return; // Pause slideshow when modal is open
+        if (expandedCard || cards.length <= 1) return;
         const interval = setInterval(() => {
-            setCurrentIndex((prev) => (prev + 1) % cards.length);
+            setCurrentIndex((prev) => {
+                const nextVal = (prev + 1) % cards.length;
+                return isNaN(nextVal) ? 0 : nextVal;
+            });
         }, 4000);
         return () => clearInterval(interval);
     }, [cards.length, expandedCard]);
@@ -387,11 +413,10 @@ export const StackedNFTGallery = () => {
 
                 <AnimatePresence>
                     {cards.map((card, index) => {
-                        const offset = index - currentIndex;
-                        // Wrap around logic for infinite feel
-                        let displayOffset = offset;
-                        if (offset > cards.length / 2) displayOffset -= cards.length;
-                        if (offset < -cards.length / 2) displayOffset += cards.length;
+                        const newDisplayOffset = getDisplayOffset(index, currentIndex, cards.length);
+                        const oldDisplayOffset = getDisplayOffset(index, prevCurrentIndex, cards.length);
+                        const isJumping = Math.abs(newDisplayOffset - oldDisplayOffset) > 1.5;
+                        const displayOffset = newDisplayOffset;
 
                         const isCenter = displayOffset === 0;
                         const absOffset = Math.abs(displayOffset);
@@ -406,15 +431,15 @@ export const StackedNFTGallery = () => {
                                 className="absolute w-[140px] h-[190px] md:w-[170px] md:h-[230px]"
                                 initial={false}
                                 animate={{
-                                    x: `${displayOffset * 85}%`,
-                                    scale: absOffset > 2 ? 0.5 : 1 - absOffset * 0.15,
+                                    x: `${displayOffset * 105}%`,
+                                    scale: absOffset === 0 ? 1 : absOffset === 1 ? 0.85 : 0.7,
                                     zIndex: 50 - absOffset,
-                                    opacity: absOffset > 2 ? 0 : 1 - absOffset * 0.4,
+                                    opacity: absOffset >= 2 ? 0 : 1 - absOffset * 0.4,
                                     filter: `blur(${absOffset * 2}px)`,
-                                    visibility: absOffset > 2 ? "hidden" : "visible",
-                                    pointerEvents: absOffset > 2 ? "none" : "auto",
+                                    visibility: absOffset >= 2 ? "hidden" : "visible",
+                                    pointerEvents: absOffset >= 2 ? "none" : "auto",
                                 }}
-                                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                                transition={isJumping ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
                                 onClick={() => {
                                     if (isCenter) setExpandedCard(card);
                                     else setCurrentIndex(index);
