@@ -36,41 +36,41 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
     const hasTransferHook = activeExtensions.includes(ExtensionType.TransferHook);
     const hasMemoTransfer = activeExtensions.includes(ExtensionType.MemoTransfer);
 
-    const getBlockingWarning = () => {
+    const getListingWarning = () => {
         if (metadataLoading) return null;
         if (!metadata) return null;
 
         if (hasNonTransferable) {
             return {
-                title: "Soulbound Token Locked",
-                msg: "This token has the Non-Transferable (Soulbound) extension active. It is bound to your wallet and cannot be transferred or listed for sale.",
+                title: "Soulbound Token Warning",
+                msg: "This token has the Non-Transferable (Soulbound) extension active. It is bound to your wallet and may fail to transfer on-chain when depositing into the escrow vault. Proceed at your own discretion.",
                 icon: "🔒"
             };
         }
         if (hasTransferFee) {
             return {
-                title: "Transfer Fee Token Disabled",
-                msg: "This token has a Transfer Fee enabled. Listing is disabled to prevent buyer purchase failure due to on-chain fee deductions in the escrow account.",
+                title: "Transfer Fee Enabled",
+                msg: "This token has a Transfer Fee enabled. The actual amount deposited in escrow will be lower than listed due to on-chain fee deductions. The contract will automatically record the actual received balance.",
                 icon: "💸"
             };
         }
         if (hasDefaultFrozen) {
             return {
-                title: "Frozen Default Account State",
-                msg: "This token freezes new accounts by default. It cannot be safely deposited into the secondary marketplace escrow account.",
+                title: "Default Frozen Warning",
+                msg: "This token freezes new accounts by default. The escrow vault account may be frozen, which could prevent buyers from purchasing or canceling the listing. Proceed at your own discretion.",
                 icon: "❄️"
             };
         }
         if (hasTransferHook) {
             return {
-                title: "Transfer Hook Active",
-                msg: "This token requires custom transfer validation instructions not supported by the secondary market escrow contract.",
+                title: "Transfer Hook Warning",
+                msg: "This token uses a custom Transfer Hook instruction for transfer validation. On-chain transfers may fail if the hook's required extra accounts or permissions are missing.",
                 icon: "⚓"
             };
         }
         if (hasMemoTransfer) {
             return {
-                title: "Memo Transfer Required",
+                title: "Memo Transfer Warning",
                 msg: "This token requires transaction memo text for all incoming transfers, which is not supported by standard escrow contracts.",
                 icon: "📝"
             };
@@ -78,10 +78,9 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
         return null;
     };
 
-    const blockingWarning = getBlockingWarning();
+    const listingWarning = getListingWarning();
 
     const handleList = async () => {
-        if (blockingWarning) return;
         if (!publicKey || !amount || !price || isNaN(Number(amount)) || isNaN(Number(price))) return;
         
         const amountNum = parseFloat(amount);
@@ -177,60 +176,58 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
                                         </div>
                                     </div>
 
-                                    {blockingWarning ? (
-                                        <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-500 space-y-2">
-                                            <div className="font-bold flex items-center gap-1.5 text-red-400">
-                                                <span>{blockingWarning.icon}</span>
-                                                <span>{blockingWarning.title}</span>
+                                    {listingWarning && (
+                                        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-xl text-xs text-amber-500 space-y-2">
+                                            <div className="font-bold flex items-center gap-1.5 text-amber-400">
+                                                <span>{listingWarning.icon}</span>
+                                                <span>{listingWarning.title}</span>
                                             </div>
                                             <p className="text-muted-foreground/90 font-medium leading-relaxed">
-                                                {blockingWarning.msg}
+                                                {listingWarning.msg}
                                             </p>
                                         </div>
-                                    ) : (
-                                        <>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div>
-                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
-                                                        Amount
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={amount}
-                                                        onChange={(e) => setAmount(e.target.value)}
-                                                        placeholder={`Max ${maxBalance.toFixed(2)}`}
-                                                        className="w-full bg-background border border-border rounded-xl p-3 text-base font-bold focus:ring-2 focus:ring-primary/50 outline-none font-mono"
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
-                                                        Total Price (SOL)
-                                                    </label>
-                                                    <input
-                                                        type="number"
-                                                        value={price}
-                                                        onChange={(e) => setPrice(e.target.value)}
-                                                        placeholder="0.00"
-                                                        className="w-full bg-background border border-border rounded-xl p-3 text-base font-bold focus:ring-2 focus:ring-primary/50 outline-none font-mono"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="text-xs text-muted-foreground bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex flex-col gap-1.5">
-                                                <div className="flex justify-between items-center font-bold text-amber-600">
-                                                    <span>Listing Details</span>
-                                                    <span className="text-[10px] uppercase font-mono bg-amber-500/20 px-1.5 py-0.5 rounded">Security Fee</span>
-                                                </div>
-                                                <div className="flex justify-between mt-1 text-foreground font-semibold">
-                                                    <span className="font-medium text-muted-foreground">Platform Listing Fee</span>
-                                                    <span>2% on Sale</span>
-                                                </div>
-                                                <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
-                                                    <span>*Tokens will be securely held in Escrow</span>
-                                                </div>
-                                            </div>
-                                        </>
                                     )}
+
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
+                                                Amount
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={amount}
+                                                onChange={(e) => setAmount(e.target.value)}
+                                                placeholder={`Max ${maxBalance.toFixed(2)}`}
+                                                className="w-full bg-background border border-border rounded-xl p-3 text-base font-bold focus:ring-2 focus:ring-primary/50 outline-none font-mono"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 block">
+                                                Total Price (SOL)
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={price}
+                                                onChange={(e) => setPrice(e.target.value)}
+                                                placeholder="0.00"
+                                                className="w-full bg-background border border-border rounded-xl p-3 text-base font-bold focus:ring-2 focus:ring-primary/50 outline-none font-mono"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="text-xs text-muted-foreground bg-amber-500/10 border border-amber-500/20 p-3.5 rounded-xl flex flex-col gap-1.5">
+                                        <div className="flex justify-between items-center font-bold text-amber-600">
+                                            <span>Listing Details</span>
+                                            <span className="text-[10px] uppercase font-mono bg-amber-500/20 px-1.5 py-0.5 rounded">Security Fee</span>
+                                        </div>
+                                        <div className="flex justify-between mt-1 text-foreground font-semibold">
+                                            <span className="font-medium text-muted-foreground">Platform Listing Fee</span>
+                                            <span>2% on Sale</span>
+                                        </div>
+                                        <div className="flex justify-between text-[10px] text-muted-foreground font-mono">
+                                            <span>*Tokens will be securely held in Escrow</span>
+                                        </div>
+                                    </div>
 
                                     {error && (
                                         <p className="text-destructive text-sm font-bold">{error}</p>
@@ -238,10 +235,10 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
 
                                     <button
                                         onClick={handleList}
-                                        disabled={isLoading || (!blockingWarning && (!amount || !price)) || !publicKey || !!blockingWarning}
+                                        disabled={isLoading || !amount || !price || !publicKey}
                                         className="w-full py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-black uppercase tracking-widest rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
-                                        {isLoading ? "Listing..." : blockingWarning ? "Listing Blocked" : "Confirm Listing"}
+                                        {isLoading ? "Listing..." : "Confirm Listing"}
                                     </button>
                                 </div>
                             </div>
