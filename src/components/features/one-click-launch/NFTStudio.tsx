@@ -47,7 +47,7 @@ export const NFTStudio: FC = () => {
             u.use(walletAdapterIdentity(wallet.wallet.adapter));
         }
         return u;
-    }, [connection.rpcEndpoint, wallet.wallet]);
+    }, [connection.rpcEndpoint, wallet.wallet, wallet.publicKey, wallet.connected]);
 
     const handleImageDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
         e.preventDefault();
@@ -126,7 +126,12 @@ export const NFTStudio: FC = () => {
                     __kind: 'V1',
                     size: 0,
                 },
-            }).sendAndConfirm(umi);
+                updateAuthority: umi.identity.publicKey,
+                tokenOwner: umi.identity.publicKey,
+            }).sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
+
+            // Introduce a short delay to allow the RPC nodes to index the newly created collection NFT metadata
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
             setStatus("4/5: Deploying Candy Machine V3 Account...");
             const candyMachine = generateSigner(umi);
