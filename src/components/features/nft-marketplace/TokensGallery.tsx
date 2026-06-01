@@ -59,10 +59,9 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 programId: item.account.owner,
             }));
 
-            // Filter for actual fungible tokens (ignore NFTs which have decimals = 0 and amount = 1)
+            // Filter for actual fungible tokens (ignore NFTs/SFTs which have decimals = 0)
             const filteredTokens = allTokens.filter(t => {
-                const isNft = t.decimals === 0 && t.amount === BigInt(1);
-                return t.amount > 0 && !isNft;
+                return t.amount > 0 && t.decimals > 0;
             });
 
             setTokens(filteredTokens);

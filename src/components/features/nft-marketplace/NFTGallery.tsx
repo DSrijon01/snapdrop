@@ -199,7 +199,9 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 
                 // 1. Fetch Items in Wallet
                 const assets = await fetchAllDigitalAssetByOwner(umi, owner);
-                const walletNfts = await Promise.all(assets.map(async (asset: any) => {
+                // Filter to ensure we only process assets with 0 decimals (actual NFTs / SFTs)
+                const nftAssets = assets.filter((asset: any) => asset.mint.decimals === 0);
+                const walletNfts = await Promise.all(nftAssets.map(async (asset: any) => {
                     let json = undefined;
                     if (asset.metadata.uri) {
                          try {
@@ -241,6 +243,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     // Fetch metadata for mint
                     try {
                         const asset = await import("@metaplex-foundation/mpl-token-metadata").then(m => m.fetchDigitalAsset(umi, toPublicKey(mintAddr)));
+                        if (asset.mint.decimals !== 0) return null;
                         let json = undefined;
                         if (asset.metadata.uri) {
                              const r = await fetch(asset.metadata.uri);
