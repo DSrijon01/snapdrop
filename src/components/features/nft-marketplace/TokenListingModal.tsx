@@ -6,6 +6,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useLaunchpad } from "@/hooks/useLaunchpad";
 import { useTokenMetadata } from "@/hooks/useTokenMetadata";
 import { X } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface Props {
     isOpen: boolean;
@@ -54,7 +55,7 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
             console.log(`Listing ${amountNum} of mint ${token.mint.toBase58()} for ${priceNum} SOL`);
             const tx = await listTokenSecondary(token.mint, amountNum, priceNum);
             console.log("Token Listed Successfully. Signature:", tx);
-            alert(`Token listed successfully! TX: ${tx}`);
+            toast.success(`Token listed successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
             onListComplete();
             onClose();
         } catch (err: any) {

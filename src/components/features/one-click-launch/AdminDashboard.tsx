@@ -8,6 +8,7 @@ import { useTokenMetadata } from '@/hooks/useTokenMetadata';
 import { TokenBadge } from '@/components/global/wallet/TokenBadge';
 import { TokenGenerator } from './TokenGenerator';
 import { Token2022Studio } from './Token2022Studio';
+import toast from 'react-hot-toast';
 import { CreateMarketEvent } from './CreateMarketEvent';
 import { ResolveMarketEvent } from './ResolveMarketEvent';
 import { NFTStudio } from './NFTStudio';
@@ -198,12 +199,12 @@ export const AdminDashboard: FC = () => {
                     })
                     .rpc();
                 
-                alert(`Token Listed Successfully! TX: ${tx}`);
+                toast.success(`Token Listed Successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
                 fetchWalletTokens();
             }
         } catch (e: any) {
             console.error("Listing failed", e);
-            alert(`Listing failed! ${e.message || JSON.stringify(e)}`);
+            toast.error(`Listing failed! ${e.message || JSON.stringify(e)}`);
         }
     };
 
