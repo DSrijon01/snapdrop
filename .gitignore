@@ -57,3 +57,26 @@ Anchor.toml
 /hashkey_whitepaper.pdf
 /hashkey_whitepaper.txt
 
+# Rust / Cargo workspaces config
+/Cargo.toml
+/Cargo.lock
+/rust-toolchain.toml
+
+# Local build logs and candy machine caches
+/sugar.log
+/validate_errors.json
+/cache.json
+/config.json
+/gh_logs.txt
+/loaded_idl.json
+
+# Local scripts & test runners
+/check_size.ts
+/check_spl.ts
+/get_mint.ts
+/test_*.ts
+
+# Sub-codebase (Proprietary Rust project)
+/kerosene-main/
+
+
