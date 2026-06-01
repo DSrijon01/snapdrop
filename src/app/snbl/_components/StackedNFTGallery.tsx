@@ -327,6 +327,32 @@ export const StackedNFTGallery = () => {
         }
     };
 
+    if (cards.length === 0) {
+        return (
+            <div className="w-full flex flex-col items-center justify-center min-h-[280px] md:min-h-[320px] py-4 relative overflow-hidden bg-card/30 rounded-3xl border border-border">
+                <div className="text-center mb-2 relative z-10">
+                    <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground mb-0.5">
+                        Exclusive Drops
+                    </h2>
+                    <p className="text-muted-foreground text-[10px] md:text-xs max-w-lg mx-auto">
+                        Swipe through our curated collections. Select an exclusive drop to mint or purchase directly.
+                    </p>
+                </div>
+                
+                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center max-w-md mx-auto">
+                    <div className="bg-muted/40 p-4 rounded-full border border-border mb-3">
+                        <svg className="w-8 h-8 text-muted-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <p className="text-sm text-muted-foreground font-medium leading-relaxed">
+                        No active exclusive drops or collections found at the moment. Deployed candy machines or listed treasury NFTs will appear here.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="w-full flex flex-col items-center justify-center min-h-[280px] md:min-h-[320px] py-4 relative overflow-hidden bg-card/30 rounded-3xl border border-border">
             
@@ -341,19 +367,23 @@ export const StackedNFTGallery = () => {
 
             <div className="relative w-full h-[200px] md:h-[260px] flex items-center justify-center perspective-1000 mt-2">
                 {/* Navigation Arrows */}
-                <button 
-                    onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length); }}
-                    className="absolute left-2 sm:left-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
-                </button>
-                
-                <button 
-                    onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev + 1) % cards.length); }}
-                    className="absolute right-2 sm:right-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-                </button>
+                {cards.length > 1 && (
+                    <>
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length); }}
+                            className="absolute left-2 sm:left-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+                        </button>
+                        
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev + 1) % cards.length); }}
+                            className="absolute right-2 sm:right-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                        </button>
+                    </>
+                )}
 
                 <AnimatePresence>
                     {cards.map((card, index) => {
@@ -373,14 +403,16 @@ export const StackedNFTGallery = () => {
                         return (
                             <motion.div
                                 key={card.id}
-                                className={`absolute w-[140px] h-[190px] md:w-[170px] md:h-[230px] ${isCenter ? 'cursor-pointer' : 'cursor-pointer'}`}
+                                className="absolute w-[140px] h-[190px] md:w-[170px] md:h-[230px]"
                                 initial={false}
                                 animate={{
                                     x: `${displayOffset * 85}%`,
-                                    scale: 1 - absOffset * 0.15,
+                                    scale: absOffset > 2 ? 0.5 : 1 - absOffset * 0.15,
                                     zIndex: 50 - absOffset,
-                                    opacity: 1 - absOffset * 0.4,
+                                    opacity: absOffset > 2 ? 0 : 1 - absOffset * 0.4,
                                     filter: `blur(${absOffset * 2}px)`,
+                                    visibility: absOffset > 2 ? "hidden" : "visible",
+                                    pointerEvents: absOffset > 2 ? "none" : "auto",
                                 }}
                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                 onClick={() => {
@@ -437,15 +469,17 @@ export const StackedNFTGallery = () => {
             </div>
 
             {/* Pagination / Navigation dots */}
-            <div className="flex items-center gap-1.5 mt-4 z-10">
-                {cards.map((_, idx) => (
-                    <button
-                        key={idx}
-                        onClick={() => setCurrentIndex(idx)}
-                        className={`h-1.5 rounded-full transition-all duration-300 ${idx === currentIndex ? 'w-6 bg-primary' : 'w-1.5 bg-white/20 hover:bg-white/40'}`}
-                    />
-                ))}
-            </div>
+            {cards.length > 1 && (
+                <div className="flex items-center gap-1.5 mt-4 z-10 max-w-full overflow-x-auto no-scrollbar px-4 py-1">
+                    {cards.map((_, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => setCurrentIndex(idx)}
+                            className={`h-1.5 rounded-full transition-all duration-300 shrink-0 ${idx === currentIndex ? 'w-6 bg-primary' : 'w-1.5 bg-white/20 hover:bg-white/40'}`}
+                        />
+                    ))}
+                </div>
+            )}
 
             {/* Expanded Modal */}
             <AnimatePresence>
