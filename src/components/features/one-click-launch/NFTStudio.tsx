@@ -85,7 +85,7 @@ export const NFTStudio: FC = () => {
         if (!coverImage) return setStatus("Please provide a Collection Cover Image.");
         
         setIsLoading(true);
-        setStatus("1/4: Uploading Cover and Assets to Arweave...");
+        setStatus("1/5: Uploading Cover and Assets to Arweave...");
         try {
             // Upload Cover and all inner assets
             const coverBuffer = await coverImage.arrayBuffer();
@@ -100,7 +100,7 @@ export const NFTStudio: FC = () => {
             const coverUri = allUris[0];
             const imageUris = allUris.slice(1);
 
-            setStatus("2/4: Uploading Metadata JSONs...");
+            setStatus("2/5: Uploading Metadata JSONs...");
             const collectionJsonUri = await umi.uploader.uploadJson({
                 name: cmCollectionName,
                 symbol: cmSymbol,
@@ -113,7 +113,7 @@ export const NFTStudio: FC = () => {
                 image: imageUris[i],
             })));
 
-            setStatus("3/4: Initializing Base Collection NFT...");
+            setStatus("3/5: Initializing Base Collection NFT...");
             const collectionMint = generateSigner(umi);
             await createNft(umi, {
                 mint: collectionMint,
@@ -124,7 +124,7 @@ export const NFTStudio: FC = () => {
                 isCollection: true,
             }).sendAndConfirm(umi);
 
-            setStatus("4/4: Deploying Candy Machine V3 & Config Lines...");
+            setStatus("4/5: Deploying Candy Machine V3 Account...");
             const candyMachine = generateSigner(umi);
             
             const createCmBuilder = await create(umi, {
@@ -153,6 +153,11 @@ export const NFTStudio: FC = () => {
             await transactionBuilder()
                 .add(setComputeUnitLimit(umi, { units: 800_000 }))
                 .add(createCmBuilder)
+                .sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
+
+            setStatus("5/5: Adding Config Lines to Candy Machine...");
+            await transactionBuilder()
+                .add(setComputeUnitLimit(umi, { units: 800_000 }))
                 .add(addConfigLines(umi, {
                     candyMachine: candyMachine.publicKey,
                     index: 0,
