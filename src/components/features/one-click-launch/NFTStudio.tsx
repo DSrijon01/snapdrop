@@ -122,6 +122,10 @@ export const NFTStudio: FC = () => {
                 uri: collectionJsonUri,
                 sellerFeeBasisPoints: percentAmount(0),
                 isCollection: true,
+                collectionDetails: {
+                    __kind: 'V1',
+                    size: 0,
+                },
             }).sendAndConfirm(umi);
 
             setStatus("4/5: Deploying Candy Machine V3 Account...");
