@@ -108,6 +108,25 @@ export const TokenListingModal: FC<Props> = ({ isOpen, onClose, token, onListCom
             console.log(`Listing ${amountNum} of mint ${token.mint.toBase58()} for ${priceNum} SOL`);
             const tx = await listTokenSecondary(token.mint, amountNum, priceNum);
             console.log("Token Listed Successfully. Signature:", tx);
+            
+            // Save to localStorage purchases under type: "SELL"
+            const listingInfo = {
+                mint: token.mint.toBase58(),
+                amount: amountNum.toLocaleString(),
+                price: priceNum.toFixed(4),
+                name: metadata?.name || "Unknown",
+                symbol: metadata?.symbol || "UNK",
+                image: metadata?.image || "",
+                date: Date.now(),
+                signature: tx,
+                type: "SELL"
+            };
+            const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
+            localStorage.setItem("street_sync_token_purchases", JSON.stringify([listingInfo, ...existing]));
+            
+            // Dispatch global event for instant UI updates
+            window.dispatchEvent(new Event("token_purchases_updated"));
+
             toast.success(`Token listed successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
             onListComplete();
             onClose();

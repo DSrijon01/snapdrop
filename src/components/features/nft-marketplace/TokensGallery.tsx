@@ -133,10 +133,10 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 )}
             </div>
 
-            {/* Purchase History Section */}
+            {/* Transaction History Section */}
             <div>
                 <h4 className="text-lg font-black text-foreground uppercase tracking-tight font-display mb-4">
-                    Fixed-Price Purchase History
+                    Token Transaction History
                 </h4>
                 {purchaseHistory.length > 0 ? (
                     <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md">
@@ -145,8 +145,9 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 <thead>
                                     <tr className="border-b border-border bg-muted/30 text-xs font-bold uppercase text-muted-foreground">
                                         <th className="p-4">Token</th>
+                                        <th className="p-4">Type</th>
                                         <th className="p-4">Amount</th>
-                                        <th className="p-4">Price Paid</th>
+                                        <th className="p-4">Price (SOL)</th>
                                         <th className="p-4">Date</th>
                                         <th className="p-4">Transaction</th>
                                     </tr>
@@ -161,8 +162,19 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                                 <span>{history.name || history.symbol || "Unknown"}</span>
                                                 <span className="text-xs text-muted-foreground">({history.symbol})</span>
                                             </td>
+                                            <td className="p-4">
+                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                                                    history.type === "SELL" 
+                                                        ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                                                        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                                                }`}>
+                                                    {history.type === "SELL" ? "SELL" : "BUY"}
+                                                </span>
+                                            </td>
                                             <td className="p-4 font-mono">{history.amount}</td>
-                                            <td className="p-4 font-bold text-primary">{history.price} SOL</td>
+                                            <td className={`p-4 font-bold ${history.type === "SELL" ? "text-red-400" : "text-emerald-400"}`}>
+                                                {history.price} SOL
+                                            </td>
                                             <td className="p-4 text-muted-foreground">
                                                 {new Date(history.date).toLocaleString()}
                                             </td>
@@ -184,7 +196,7 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-10 italic bg-card/40 rounded-2xl border border-border">
-                        No fixed-price token purchase history found.
+                        No token transaction history found.
                     </div>
                 )}
             </div>

@@ -124,6 +124,7 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
     const name = metadata?.name || history.name || "Unknown Token";
     const symbol = metadata?.symbol || history.symbol || "UNK";
     const image = metadata?.image || history.image || "";
+    const isSell = history.type === "SELL";
 
     return (
         <div className="bg-background/40 hover:bg-background/80 border border-border/60 hover:border-primary/20 p-4 rounded-2xl flex gap-3 transition-all duration-300 group text-left">
@@ -146,8 +147,12 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
                             {loading ? "..." : symbol}
                         </p>
                     </div>
-                    <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full shrink-0">
-                        BUY
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                        isSell 
+                            ? "text-red-400 bg-red-500/10 border border-red-500/20" 
+                            : "text-emerald-400 bg-emerald-500/10 border border-emerald-500/20"
+                    }`}>
+                        {isSell ? "SELL" : "BUY"}
                     </span>
                 </div>
                 
@@ -157,8 +162,10 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
                         <span className="font-mono font-bold text-foreground">{history.amount}</span>
                     </div>
                     <div className="text-right">
-                        <span className="text-[9px] text-muted-foreground block uppercase">Paid</span>
-                        <span className="font-bold text-primary">{history.price} SOL</span>
+                        <span className="text-[9px] text-muted-foreground block uppercase">
+                            {isSell ? "Listed" : "Paid"}
+                        </span>
+                        <span className={`font-bold ${isSell ? "text-red-400" : "text-primary"}`}>{history.price} SOL</span>
                     </div>
                 </div>
 
@@ -369,8 +376,8 @@ export const SellTokens: FC = () => {
                         >
                             <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-3 shrink-0">
                                 <h3 className="text-lg font-black font-display uppercase tracking-tight flex items-center gap-2">
-                                    <span className="w-1.5 h-5 bg-emerald-500 rounded-full animate-pulse"/>
-                                    Live Purchase Feed
+                                    <span className="w-1.5 h-5 bg-primary rounded-full animate-pulse"/>
+                                    Live Market Feed
                                 </h3>
                                 <button 
                                     onClick={() => setIsSidebarOpen(false)}
@@ -390,7 +397,7 @@ export const SellTokens: FC = () => {
                             ) : (
                                 <div className="flex-1 flex flex-col items-center justify-center text-center p-6 text-muted-foreground italic text-sm">
                                     <svg className="w-12 h-12 text-muted-foreground/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                                    No live purchases recorded yet.
+                                    No live activity recorded yet.
                                 </div>
                             )}
                         </motion.div>
