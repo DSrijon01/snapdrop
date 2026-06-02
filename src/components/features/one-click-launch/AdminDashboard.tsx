@@ -156,7 +156,7 @@ export const AdminDashboard: FC = () => {
                     })
                     .rpc();
 
-                alert(`Fixed-Price Vault Initialized successfully! TX: ${tx}`);
+                toast.success(`Fixed-Price Vault Initialized successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
                 fetchWalletTokens();
             } else {
                 // Derive PDAs
