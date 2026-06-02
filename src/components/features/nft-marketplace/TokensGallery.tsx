@@ -37,6 +37,18 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         }
     }, [publicKey, connected, refreshTrigger]);
 
+    useEffect(() => {
+        const handleUpdate = () => {
+            if (connected && publicKey) {
+                loadPurchaseHistory();
+            }
+        };
+        window.addEventListener("token_purchases_updated", handleUpdate);
+        return () => {
+            window.removeEventListener("token_purchases_updated", handleUpdate);
+        };
+    }, [connected, publicKey]);
+
     const fetchWalletTokens = async () => {
         if (!publicKey) return;
         setLoading(true);

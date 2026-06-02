@@ -66,25 +66,34 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
         setIsBuying(true);
         try {
              let tx = "";
+             const purchaseInfo = {
+                 mint: curve.account.mint.toBase58(),
+                 amount: amount.toLocaleString(),
+                 price: estimatedCost.toFixed(4),
+                 name: metadata?.name || "Unknown",
+                 symbol: metadata?.symbol || "UNK",
+                 image: metadata?.image || "",
+                 date: Date.now(),
+                 signature: ""
+             };
+
              if (isFixedPrice) {
                  tx = await buyTokensFixedPrice(curve, amount);
-
-                 // Save to fixed price purchases history in localStorage
-                 const purchaseInfo = {
-                     mint: curve.account.mint.toBase58(),
-                     amount: amount.toLocaleString(),
-                     price: estimatedCost.toFixed(4),
-                     name: metadata?.name || "Unknown",
-                     symbol: metadata?.symbol || "UNK",
-                     image: metadata?.image || "",
-                     date: Date.now(),
-                     signature: tx
-                 };
+                 purchaseInfo.signature = tx;
+                 
                  const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
                  localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
              } else {
                  tx = await buyTokens(curve, amount);
+                 purchaseInfo.signature = tx;
+
+                 const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
+                 localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
              }
+             
+             // Dispatch global event for instant UI updates
+             window.dispatchEvent(new Event("token_purchases_updated"));
+
              console.log("Purchase TX:", tx);
              toast.success(`Purchase Successful! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
              onClose();
