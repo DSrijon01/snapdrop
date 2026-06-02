@@ -271,6 +271,11 @@ export const SellTokens: FC = () => {
             fetchTokenListings();
         } catch (e: any) {
             console.error("Secondary purchase failed:", e);
+            if (e.getLogs) {
+                try {
+                    console.error("Transaction logs:", e.getLogs());
+                } catch (logErr) {}
+            }
             toast.error(`Purchase failed: ${e.message || e}`);
         } finally {
             setActiveOperationId(null);
@@ -290,6 +295,11 @@ export const SellTokens: FC = () => {
             fetchTokenListings();
         } catch (e: any) {
             console.error("Cancel failed:", e);
+            if (e.getLogs) {
+                try {
+                    console.error("Transaction logs:", e.getLogs());
+                } catch (logErr) {}
+            }
             toast.error(`Cancel failed: ${e.message || e}`);
         } finally {
             setActiveOperationId(null);
