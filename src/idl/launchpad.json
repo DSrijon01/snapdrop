@@ -34,7 +34,8 @@
           "writable": true
         },
         {
-          "name": "mint"
+          "name": "mint",
+          "writable": true
         },
         {
           "name": "listing_account",
@@ -66,6 +67,10 @@
               {
                 "kind": "account",
                 "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "unique_id"
               }
             ]
           }
@@ -196,7 +201,12 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "unique_id",
+          "type": "pubkey"
+        }
+      ]
     },
     {
       "name": "buy_tokens",
@@ -597,7 +607,8 @@
           "signer": true
         },
         {
-          "name": "mint"
+          "name": "mint",
+          "writable": true
         },
         {
           "name": "listing_account",
@@ -629,6 +640,10 @@
               {
                 "kind": "account",
                 "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "unique_id"
               }
             ]
           }
@@ -706,7 +721,12 @@
           "address": "11111111111111111111111111111111"
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "unique_id",
+          "type": "pubkey"
+        }
+      ]
     },
     {
       "name": "initialize_curve",
@@ -1074,6 +1094,10 @@
               {
                 "kind": "account",
                 "path": "seller"
+              },
+              {
+                "kind": "arg",
+                "path": "unique_id"
               }
             ]
           }
@@ -1149,6 +1173,10 @@
       ],
       "args": [
         {
+          "name": "unique_id",
+          "type": "pubkey"
+        },
+        {
           "name": "amount",
           "type": "u64"
         },
@@ -1187,16 +1215,16 @@
       ]
     },
     {
-      "name": "TokenListing",
+      "name": "TokenListingV2",
       "discriminator": [
-        177,
-        235,
-        242,
-        219,
-        140,
-        19,
-        11,
-        82
+        251,
+        68,
+        35,
+        157,
+        66,
+        184,
+        41,
+        70
       ]
     }
   ],
@@ -1278,7 +1306,7 @@
       }
     },
     {
-      "name": "TokenListing",
+      "name": "TokenListingV2",
       "type": {
         "kind": "struct",
         "fields": [
@@ -1297,6 +1325,10 @@
           {
             "name": "price",
             "type": "u64"
+          },
+          {
+            "name": "unique_id",
+            "type": "pubkey"
           },
           {
             "name": "bump",

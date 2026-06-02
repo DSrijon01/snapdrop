@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
-import { PublicKey, SystemProgram, ComputeBudgetProgram } from '@solana/web3.js';
+import { PublicKey, SystemProgram, ComputeBudgetProgram, Keypair } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, ExtensionType, getExtensionTypes } from '@solana/spl-token';
 import idl from '../idl/launchpad.json';
 
@@ -45,6 +45,7 @@ export type TokenListingAccount = {
         mint: PublicKey;
         amount: BN;
         price: BN;
+        uniqueId: PublicKey;
         bump: number;
     };
     isToken2022?: boolean;
@@ -187,7 +188,7 @@ export const useLaunchpad = () => {
         try {
             console.log("Fetching secondary token listings...");
             // @ts-ignore
-            const accounts = await program.account.tokenListing.all();
+            const accounts = await program.account.tokenListingV2.all();
             
             const mintPubkeys = accounts.map((acc: any) => acc.account.mint);
             const mintInfos = await connection.getMultipleAccountsInfo(mintPubkeys);
@@ -366,8 +367,15 @@ export const useLaunchpad = () => {
             tokenProgramId
         );
 
+        const uniqueId = Keypair.generate().publicKey;
+
         const [listingPda] = PublicKey.findProgramAddressSync(
-            [Buffer.from("token_listing"), mint.toBuffer(), wallet.publicKey.toBuffer()],
+            [
+                Buffer.from("token_listing"), 
+                mint.toBuffer(), 
+                wallet.publicKey.toBuffer(), 
+                uniqueId.toBuffer()
+            ],
             program.programId
         );
 
@@ -384,7 +392,7 @@ export const useLaunchpad = () => {
         const priceLamports = new BN(priceSol * 1_000_000_000);
 
         const tx = await program.methods
-            .listTokenSecondary(atomicAmount, priceLamports)
+            .listTokenSecondary(uniqueId, atomicAmount, priceLamports)
             .accounts({
                 seller: wallet.publicKey,
                 mint: mint,
@@ -423,7 +431,7 @@ export const useLaunchpad = () => {
         );
 
         const tx = await program.methods
-            .buyTokenSecondary()
+            .buyTokenSecondary(listing.account.uniqueId)
             .accounts({
                 buyer: wallet.publicKey,
                 seller: listing.account.seller,
@@ -464,7 +472,7 @@ export const useLaunchpad = () => {
         );
 
         const tx = await program.methods
-            .cancelTokenSecondary()
+            .cancelTokenSecondary(listing.account.uniqueId)
             .accounts({
                 seller: wallet.publicKey,
                 mint: mint,
