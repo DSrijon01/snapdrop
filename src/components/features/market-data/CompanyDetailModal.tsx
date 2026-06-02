@@ -179,7 +179,7 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                                     <span>{isFixedPrice ? "Remaining Supply" : "Reserves (Virtual)"}</span>
                                     <span className="font-mono">
                                         {isFixedPrice 
-                                            ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })
+                                            ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 4 })
                                             : new BN(curve.account.virtualTokenReserves).toString()}
                                     </span>
                                 </div>
@@ -187,10 +187,25 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                             
                             <div className="flex items-center gap-4">
                                 <div className="flex-1">
-                                    <label className="text-xs font-bold uppercase text-muted-foreground mb-1 block">Amount</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-xs font-bold uppercase text-muted-foreground block">Amount</label>
+                                        {isFixedPrice && (
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    const maxVal = Number(curve.account.remainingSupply) / Math.pow(10, decimals);
+                                                    setAmount(maxVal);
+                                                }}
+                                                className="text-[10px] text-primary hover:underline font-bold"
+                                            >
+                                                Use Max ({(Number(curve.account.remainingSupply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 4 })})
+                                            </button>
+                                        )}
+                                    </div>
                                     <input 
                                         type="number" 
-                                        min="1"
+                                        step="any"
+                                        min="0.0001"
                                         max={isFixedPrice ? (Number(curve.account.remainingSupply) / Math.pow(10, decimals)) : undefined}
                                         value={amount}
                                         onChange={(e) => {
