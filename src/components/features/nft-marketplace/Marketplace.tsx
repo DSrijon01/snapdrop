@@ -38,7 +38,14 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
         >
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
-                    <img src={metadata.image} alt={metadata.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img 
+                        src={metadata.image} 
+                        alt={metadata.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        }}
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground">Loading...</div>
                 )}

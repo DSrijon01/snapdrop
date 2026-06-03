@@ -12,6 +12,7 @@ import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
+import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 
 interface NFT {
     name: string;
@@ -46,7 +47,7 @@ const generateRandomOwner = () => {
 
 // Mock data for display when no NFTs found or for preview
 const MOCK_NFTS = [
-    { name: "Cosmic Cube #001", image: "https://images.unsplash.com/photo-1614726365206-3532c1c696e9?w=400&h=400&fit=crop", ownerName: "CosmicTraveler", ownerAddress: "Cosm...9x1", mint: "MockMintAddress1" },
+    { name: "Cosmic Cube #001", image: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=400&h=400&fit=crop", ownerName: "CosmicTraveler", ownerAddress: "Cosm...9x1", mint: "MockMintAddress1" },
     { name: "Neon Genesis", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", ownerName: "NeonKnight", ownerAddress: "Neon...7z2", mint: "MockMintAddress2" },
     { name: "Abstract Thought", image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", ownerName: "AbstractArt", ownerAddress: "Abst...3y8", mint: "MockMintAddress3" },
     { name: "Pixel Punk", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", ownerName: "PixelPunk", ownerAddress: "Pixe...1a9", mint: "MockMintAddress4" },
@@ -242,19 +243,19 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     const mintAddr = data.mint.toBase58();
                     // Fetch metadata for mint
                     try {
-                        const asset = await import("@metaplex-foundation/mpl-token-metadata").then(m => m.fetchDigitalAsset(umi, toPublicKey(mintAddr)));
-                        if (asset.mint.decimals !== 0) return null;
-                        let json = undefined;
-                        if (asset.metadata.uri) {
-                             const r = await fetch(asset.metadata.uri);
-                             json = await r.json();
-                        }
+                        const meta = await getTokenMetadataWithCache(new PublicKey(mintAddr), connection, umi);
+                        if (!meta) return null;
                         return {
-                            name: asset.metadata.name,
-                            image: json?.image || "",
+                            name: meta.name,
+                            image: meta.image || "",
                             mint: mintAddr,
-                            description: json?.description,
-                            json,
+                            description: meta.description,
+                            json: {
+                                name: meta.name,
+                                image: meta.image,
+                                description: meta.description,
+                                symbol: meta.symbol
+                            },
                             ownerName: "Me (Listed)",
                             ownerAddress: "Escrow",
                             isListed: true,
@@ -314,6 +315,9 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             src={nft.json?.image || nft.image || "https://placehold.co/400x400/121212/pink?text=NFT"} 
                             alt={nft.name || nft.json?.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                            onError={(e) => {
+                                (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                            }}
                         />
                         
                         {/* Gradient Overlay */}
@@ -365,6 +369,9 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 src={nft.image} 
                                 alt={nft.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                                }}
                             />
                             
                             {/* Owner Info Mock */}
@@ -416,6 +423,9 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                     src={selectedNft.json?.image || selectedNft.image} 
                                     alt={selectedNft.name}
                                     className="w-full h-full object-contain"
+                                    onError={(e) => {
+                                        (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                                    }}
                                 />
                             </div>
 

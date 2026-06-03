@@ -340,7 +340,14 @@ const TokenCard: FC<{
                  {loading ? (
                     <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
                  ) : image ? (
-                    <img src={image} alt={name} className="w-12 h-12 rounded-full object-cover bg-muted" />
+                    <img 
+                        src={image} 
+                        alt={name} 
+                        className="w-12 h-12 rounded-full object-cover bg-muted" 
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        }}
+                    />
                 ) : (
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">
                         No Img

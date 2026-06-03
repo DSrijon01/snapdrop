@@ -48,7 +48,14 @@ const SecondaryListingItem = ({
         >
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
-                    <img src={metadata.image} alt={metadata.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <img 
+                        src={metadata.image} 
+                        alt={metadata.name} 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        }}
+                    />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-muted-foreground animate-pulse">Loading Image...</div>
                 )}
@@ -131,7 +138,14 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
             {loading ? (
                 <div className="w-10 h-10 rounded-full bg-muted animate-pulse shrink-0" />
             ) : image ? (
-                <img src={image} alt={name} className="w-10 h-10 rounded-full object-cover shrink-0 bg-muted border border-border" />
+                <img 
+                    src={image} 
+                    alt={name} 
+                    className="w-10 h-10 rounded-full object-cover shrink-0 bg-muted border border-border" 
+                    onError={(e) => {
+                        (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                    }}
+                />
             ) : (
                 <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-mono shrink-0">
                     No Img

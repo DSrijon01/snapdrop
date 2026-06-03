@@ -14,6 +14,7 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { mplTokenMetadata, fetchDigitalAsset } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
+import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 
 export const ForSale: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -66,20 +67,14 @@ export const ForSale: FC = () => {
                     const sellerAddr = data.seller.toBase58();
                     const priceSol = data.price.toNumber() / LAMPORTS_PER_SOL;
                     
-                    // Fetch Metadata via Umi
                     let name = "Unknown NFT";
                     let image = "https://placehold.co/400?text=No+Image";
-                    let rank = 0;
 
                     try {
-                        const asset = await fetchDigitalAsset(umi, toPublicKey(mintAddr));
-                        name = asset.metadata.name;
-                        
-                        // Fetch JSON URI
-                        if (asset.metadata.uri) {
-                             const resp = await fetch(asset.metadata.uri);
-                             const json = await resp.json();
-                             if (json.image) image = json.image;
+                        const meta = await getTokenMetadataWithCache(new PublicKey(mintAddr), connection, umi);
+                        if (meta) {
+                            name = meta.name;
+                            image = meta.image || image;
                         }
                     } catch (err) {
                         console.error(`Failed to fetch metadata for ${mintAddr}`, err);
@@ -314,6 +309,9 @@ export const ForSale: FC = () => {
                                 src={item.image} 
                                 alt={item.name}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                                }}
                             />
                         </div>
 

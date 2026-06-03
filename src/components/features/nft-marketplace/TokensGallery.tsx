@@ -157,7 +157,14 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                         <tr key={i} className="hover:bg-muted/10 transition-colors">
                                             <td className="p-4 font-bold flex items-center gap-2">
                                                 {history.image && (
-                                                    <img src={history.image} alt={history.name} className="w-6 h-6 rounded-full object-cover" />
+                                                    <img 
+                                                        src={history.image} 
+                                                        alt={history.name} 
+                                                        className="w-6 h-6 rounded-full object-cover" 
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                                                        }}
+                                                    />
                                                 )}
                                                 <span>{history.name || history.symbol || "Unknown"}</span>
                                                 <span className="text-xs text-muted-foreground">({history.symbol})</span>
@@ -229,7 +236,14 @@ const TokenRow: FC<{ token: TokenAccountInfo; onListForSale: () => void }> = ({ 
                 {loading ? (
                     <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
                 ) : metadata?.image ? (
-                    <img src={metadata.image} alt={metadata.name} className="w-10 h-10 rounded-full object-cover bg-muted border border-border" />
+                    <img 
+                        src={metadata.image} 
+                        alt={metadata.name} 
+                        className="w-10 h-10 rounded-full object-cover bg-muted border border-border" 
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        }}
+                    />
                 ) : (
                     <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-mono">
                         No Img

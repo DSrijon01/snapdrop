@@ -12,6 +12,7 @@ import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
+import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 
 export interface NFTDetail {
     image: string;
@@ -85,21 +86,9 @@ export const StackedNFTGallery = () => {
                 for (const listing of listings) {
                     try {
                         const mintPubkey = listing.account.mint;
-                        // Fetch Metadata via Umi
-                        const asset = await fetchDigitalAsset(umi, umiPublicKey(mintPubkey.toBase58()));
-                        let imageUrl = "";
-                        let title = "Treasury NFT";
-                        
-                        if (asset.metadata.uri) {
-                            try {
-                                const res = await fetch(asset.metadata.uri);
-                                const json = await res.json();
-                                imageUrl = json.image || "";
-                                title = json.name || title;
-                            } catch (e) {
-                                console.error("Failed to fetch JSON for URI", asset.metadata.uri);
-                            }
-                        }
+                        const meta = await getTokenMetadataWithCache(mintPubkey, connection, umi);
+                        const imageUrl = meta?.image || "";
+                        const title = meta?.name || "Treasury NFT";
                         
                         const adminStr = listing.account.admin.toBase58();
                         const baseName = title.split('#')[0].trim() || "Treasury";
@@ -464,7 +453,14 @@ export const StackedNFTGallery = () => {
                                                 filter: isSoldOut ? 'grayscale(80%)' : 'none'
                                             }}
                                         >
-                                            <img src={img} alt={`${card.title} - Layer ${i}`} className="w-full h-full object-cover" />
+                                            <img 
+                                                src={img} 
+                                                alt={`${card.title} - Layer ${i}`} 
+                                                className="w-full h-full object-cover" 
+                                                onError={(e) => {
+                                                    (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                                }}
+                                            />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                                             
                                             {i === 0 && (
@@ -534,7 +530,14 @@ export const StackedNFTGallery = () => {
                             <div className="md:w-1/2 h-[40%] md:h-full relative bg-black/50">
                                 {expandedCard.type === 'candymachine' ? (
                                     <>
-                                        <img src={expandedCard.images[0]} alt={expandedCard.title} className="w-full h-full object-cover" />
+                                        <img 
+                                            src={expandedCard.images[0]} 
+                                            alt={expandedCard.title} 
+                                            className="w-full h-full object-cover" 
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                            }}
+                                        />
                                         <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-transparent" />
                                         <div className="absolute bottom-8 left-8 text-white">
                                             <h2 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight leading-none mb-2">
@@ -565,7 +568,13 @@ export const StackedNFTGallery = () => {
                                                         className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all shadow-lg ${selectedNFT?.mintAddress === nft.mintAddress ? 'border-primary shadow-primary/20' : 'border-transparent hover:border-white/20'}`}
                                                         onClick={() => setSelectedNFT(nft)}
                                                     >
-                                                        <img src={nft.image} className="w-full aspect-square object-cover" />
+                                                        <img 
+                                                            src={nft.image} 
+                                                            className="w-full aspect-square object-cover" 
+                                                            onError={(e) => {
+                                                                (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                                            }}
+                                                        />
                                                         <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 backdrop-blur-md border-t border-white/10">
                                                             <div className="flex justify-between items-center">
                                                                 <span className="text-[10px] text-white/70 uppercase font-bold">Price</span>

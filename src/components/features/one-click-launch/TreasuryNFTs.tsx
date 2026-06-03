@@ -1,10 +1,10 @@
 import { FC, useState } from 'react';
 import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { BN } from '@coral-xyz/anchor';
-import { useTokenMetadata } from '@/hooks/useTokenMetadata';
+import { useTokenMetadata, getTokenMetadataWithCache } from '@/hooks/useTokenMetadata';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { umi } from '@/utils/umi';
 import { findMetadataPda, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
@@ -33,7 +33,14 @@ const NFTCard: FC<{ nft: TokenAccountInfo; isSelected: boolean; onSelect: () => 
                  {loading ? (
                     <div className="w-16 h-16 rounded-lg bg-muted animate-pulse" />
                  ) : metadata?.image ? (
-                    <img src={metadata.image} alt={metadata.name} className="w-16 h-16 rounded-lg object-cover bg-muted" />
+                    <img 
+                        src={metadata.image} 
+                        alt={metadata.name} 
+                        className="w-16 h-16 rounded-lg object-cover bg-muted" 
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        }}
+                    />
                 ) : (
                     <div className="w-16 h-16 rounded-lg bg-muted flex items-center justify-center text-xs text-muted-foreground text-center p-1">
                         No Img
@@ -63,6 +70,7 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
     const [status, setStatus] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const wallet = useWallet();
+    const { connection } = useConnection();
     const { program } = useSsNftGallery();
 
     const toggleSelection = (mintStr: string) => {
@@ -125,14 +133,8 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
             const nftsData = await Promise.all(selectedNfts.map(async (nft) => {
                 let imageUrl = "";
                 try {
-                    const mintPubkey = publicKey(nft.mint.toBase58());
-                    const metadataPda = findMetadataPda(umi, { mint: mintPubkey });
-                    const account = await fetchMetadata(umi, metadataPda);
-                    if (account.uri) {
-                        const res = await globalThis.fetch(account.uri);
-                        const json = await res.json();
-                        imageUrl = json.image || "";
-                    }
+                    const meta = await getTokenMetadataWithCache(nft.mint, connection, umi);
+                    imageUrl = meta?.image || "";
                 } catch (err) {
                     console.error("Failed to fetch metadata for", nft.mint.toBase58(), err);
                 }
