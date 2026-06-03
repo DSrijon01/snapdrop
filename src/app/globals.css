@@ -124,6 +124,30 @@
       display: none;
   }
   
+  .custom-scrollbar {
+    --scrollbar-thumb: var(--border);
+    --scrollbar-track: transparent;
+
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+    scrollbar-width: thin;
+  }
+
+  @supports not (scrollbar-color: auto) {
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 3px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: var(--scrollbar-track);
+    }
+  }
+  
   /* Glassmorphism utilities */
   .glass {
     @apply bg-background/80 backdrop-blur-md border-b border-border;

@@ -102,7 +102,7 @@ export function TrendingTickers({ posts, activeTicker, onSelectTicker }: Trendin
         )}
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1.5 custom-scrollbar">
         {tickerStats.map(({ ticker, count, bullishPct }) => {
           const isActive = activeTicker === ticker;
           const isBullish = bullishPct >= 50;

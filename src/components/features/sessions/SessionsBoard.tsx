@@ -284,7 +284,7 @@ export function SessionsBoard() {
       <div className="flex items-center justify-center p-8 min-h-[calc(100vh-100px)]">
         <div className="text-center space-y-4">
           <RefreshCw className="animate-spin text-primary mx-auto" size={40} />
-          <p className="font-mono text-muted-foreground uppercase tracking-widest text-sm">Loading Subreddit Feed...</p>
+          <p className="font-mono text-muted-foreground uppercase tracking-widest text-sm">Loading Street Sync Feed...</p>
         </div>
       </div>
     );
@@ -300,7 +300,7 @@ export function SessionsBoard() {
         <div className="space-y-2 relative z-10">
           <div className="flex items-center gap-3">
             <span className="bg-primary text-primary-foreground font-black font-display text-[10px] tracking-widest uppercase px-3 py-1 rounded-full shadow-md shadow-primary/20">
-              r/StreetSync
+              StreetSync
             </span>
             <span className="flex items-center gap-1.5 text-xs font-mono font-bold text-green-500 bg-green-500/10 border border-green-500/20 px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
