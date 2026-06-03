@@ -193,9 +193,6 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         const fetchNFTs = async () => {
             setLoading(true);
             try {
-                // Force a small delay
-                await new Promise(r => setTimeout(r, 2000));
-                
                 const owner = toPublicKey(wallet.publicKey!.toBase58());
                 
                 // 1. Fetch Items in Wallet
