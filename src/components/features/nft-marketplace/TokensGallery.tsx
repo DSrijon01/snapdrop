@@ -19,11 +19,14 @@ interface Props {
     refreshTrigger?: number;
 }
 
+// Global in-memory cache for user's token balances to prevent redundant RPC fetches on tab switch
+const walletTokensCache: Record<string, TokenAccountInfo[]> = {};
+
 export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const { connection } = useConnection();
     const { publicKey, connected } = useWallet();
-    const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [tokens, setTokens] = useState<TokenAccountInfo[]>(publicKey ? (walletTokensCache[publicKey.toBase58()] || []) : []);
+    const [loading, setLoading] = useState(publicKey ? !walletTokensCache[publicKey.toBase58()] : false);
     const [selectedTokenForListing, setSelectedTokenForListing] = useState<TokenAccountInfo | null>(null);
     const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
 
@@ -51,7 +54,10 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
     const fetchWalletTokens = async () => {
         if (!publicKey) return;
-        setLoading(true);
+        const walletKey = publicKey.toBase58();
+        if (!walletTokensCache[walletKey]) {
+            setLoading(true);
+        }
         try {
             const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, {
                 programId: TOKEN_PROGRAM_ID,
@@ -77,8 +83,12 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
             });
 
             setTokens(filteredTokens);
+            walletTokensCache[walletKey] = filteredTokens;
         } catch (e) {
             console.error("Error fetching tokens", e);
+            if (!walletTokensCache[walletKey]) {
+                setTokens([]);
+            }
         } finally {
             setLoading(false);
         }

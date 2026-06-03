@@ -53,6 +53,9 @@ const MOCK_NFTS = [
     { name: "Pixel Punk", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", ownerName: "PixelPunk", ownerAddress: "Pixe...1a9", mint: "MockMintAddress4" },
 ];
 
+// Global in-memory cache for user's wallet NFTs to prevent redundant RPC fetches on tab switch
+const walletNftsCache: Record<string, NFT[]> = {};
+
 interface Props {
     refreshTrigger?: number;
 }
@@ -61,8 +64,8 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const { connection } = useConnection();
     const wallet = useWallet();
     const anchorWallet = useAnchorWallet();
-    const [nfts, setNfts] = useState<NFT[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [nfts, setNfts] = useState<NFT[]>(wallet.publicKey ? (walletNftsCache[wallet.publicKey.toBase58()] || []) : []);
+    const [loading, setLoading] = useState(wallet.publicKey ? !walletNftsCache[wallet.publicKey.toBase58()] : false);
     const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
     const [listingNft, setListingNft] = useState<NFT | null>(null);
     const [delistingId, setDelistingId] = useState<string | null>(null);
@@ -191,9 +194,13 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         }
 
         const fetchNFTs = async () => {
-            setLoading(true);
+            if (!wallet.publicKey) return;
+            const walletKey = wallet.publicKey.toBase58();
+            if (!walletNftsCache[walletKey]) {
+                setLoading(true);
+            }
             try {
-                const owner = toPublicKey(wallet.publicKey!.toBase58());
+                const owner = toPublicKey(walletKey);
                 
                 // 1. Fetch Items in Wallet
                 const assets = await fetchAllDigitalAssetByOwner(umi, owner);
@@ -215,7 +222,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         description: json?.description || "",
                         json,
                         ownerName: "Me",
-                        ownerAddress: wallet.publicKey!.toBase58(),
+                        ownerAddress: walletKey,
                         isListed: false
                     } as NFT;
                 }));
@@ -230,7 +237,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     {
                         memcmp: {
                             offset: 8, // Discriminator
-                            bytes: wallet.publicKey!.toBase58() // Seller is first field
+                            bytes: walletKey // Seller is first field
                         }
                     }
                  ]);
@@ -274,10 +281,13 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 // 'fetchAllDigitalAssetByOwner' will pick it up automatically in the next fetch cycle.
 
                 setNfts(availableNfts);
+                walletNftsCache[walletKey] = availableNfts;
             } catch (error) {
                 console.error("Error fetching NFTs:", error);
-                // Fallback to mock for demo if fetch fails
-                setNfts([]); 
+                // Fallback to empty if we don't have cache
+                if (!walletNftsCache[walletKey]) {
+                    setNfts([]);
+                }
             } finally {
                 setLoading(false);
             }

@@ -53,14 +53,20 @@ export type TokenListingAccount = {
     decimals?: number;
 };
 
+// Global in-memory cache for launchpad data to prevent blocking loads on tab switch
+let cachedCurves: BondingCurveAccount[] = [];
+let cachedFixedPriceVaults: FixedPriceVaultAccount[] = [];
+let cachedTokenListings: TokenListingAccount[] = [];
+let hasFetchedOnce = false;
+
 export const useLaunchpad = () => {
     const { connection } = useConnection();
     const wallet = useAnchorWallet();
     const [program, setProgram] = useState<Program<Idl> | null>(null);
-    const [curves, setCurves] = useState<BondingCurveAccount[]>([]);
-    const [fixedPriceVaults, setFixedPriceVaults] = useState<FixedPriceVaultAccount[]>([]);
-    const [tokenListings, setTokenListings] = useState<TokenListingAccount[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [curves, setCurves] = useState<BondingCurveAccount[]>(cachedCurves);
+    const [fixedPriceVaults, setFixedPriceVaults] = useState<FixedPriceVaultAccount[]>(cachedFixedPriceVaults);
+    const [tokenListings, setTokenListings] = useState<TokenListingAccount[]>(cachedTokenListings);
+    const [loading, setLoading] = useState(!hasFetchedOnce);
 
     const provider = useMemo(() => {
         if (wallet) {
@@ -133,6 +139,7 @@ export const useLaunchpad = () => {
 
             console.log("Fetched and enriched curves:", enrichedAccounts);
             setCurves(enrichedAccounts);
+            cachedCurves = enrichedAccounts;
         } catch (error) {
             console.error("Error fetching curves:", error);
         }
@@ -178,6 +185,7 @@ export const useLaunchpad = () => {
 
             console.log("Fetched fixed price vaults:", enrichedAccounts);
             setFixedPriceVaults(enrichedAccounts);
+            cachedFixedPriceVaults = enrichedAccounts;
         } catch (error) {
             console.error("Error fetching fixed price vaults:", error);
         }
@@ -223,6 +231,7 @@ export const useLaunchpad = () => {
 
             console.log("Fetched token listings:", enrichedAccounts);
             setTokenListings(enrichedAccounts);
+            cachedTokenListings = enrichedAccounts;
         } catch (error) {
             console.error("Error fetching token listings:", error);
         }
@@ -230,12 +239,15 @@ export const useLaunchpad = () => {
 
     useEffect(() => {
         if (program) {
-            setLoading(true);
+            if (!hasFetchedOnce) {
+                setLoading(true);
+            }
             Promise.all([
                 fetchCurves(),
                 fetchFixedPriceVaults(),
                 fetchTokenListings()
             ]).finally(() => {
+                hasFetchedOnce = true;
                 setLoading(false);
             });
         }
