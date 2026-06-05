@@ -198,7 +198,17 @@ export default function SSScanPage() {
       
       // 2. Load NFTs
       const storedNfts = localStorage.getItem("street_sync_purchases");
-      const realNfts: NFTTx[] = storedNfts ? JSON.parse(storedNfts) : [];
+      const realNftsRaw: any[] = storedNfts ? JSON.parse(storedNfts) : [];
+      const realNfts: NFTTx[] = realNftsRaw.map(item => ({
+        name: item.name || "Unknown NFT",
+        image: item.image,
+        price: item.price || 0,
+        seller: item.seller || "unknown",
+        buyer: item.buyer || "unknown",
+        date: item.date || item.purchaseDate || Date.now(),
+        signature: item.signature || "unknown",
+        type: item.type || "BUY"
+      }));
 
       // 3. Load Predictions
       const storedPreds = localStorage.getItem("street_sync_prediction_history");

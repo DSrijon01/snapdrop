@@ -1,13 +1,14 @@
 "use client";
 
 import { FC, useState, useEffect, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
 import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { NFT3DViewer } from "./NFT3DViewer";
+import { X, CheckCircle, Copy, ExternalLink } from "lucide-react";
 
 // Metaplex Imports
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -26,6 +27,7 @@ export const ForSale: FC = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     const [selected3DItem, setSelected3DItem] = useState<any | null>(null);
+    const [successTx, setSuccessTx] = useState<{ signature: string; name: string; image: string; price: number } | null>(null);
 
     const { connection } = useConnection();
     const wallet = useAnchorWallet();
@@ -189,14 +191,26 @@ export const ForSale: FC = () => {
             
             // --- STATE UPDATE: Add to Purchases (for the buyer) ---
             // We still use localStorage for "My Purchases" history as we don't have an indexer
-            const purchaseItem = { ...item, buyer: wallet.publicKey.toBase58(), purchaseDate: Date.now() };
+            const purchaseItem = { 
+                ...item, 
+                buyer: wallet.publicKey.toBase58(), 
+                purchaseDate: Date.now(),
+                date: Date.now(),
+                signature: signature 
+            };
             const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
             localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
 
             // Dispatch event to update Gallery
             window.dispatchEvent(new Event('storage'));
 
-            alert(`Purchase Successful! Signature: ${signature}`);
+            // Show custom success modal with signature
+            setSuccessTx({
+                signature: signature,
+                name: item.name,
+                image: item.image,
+                price: item.price
+            });
             
             // Refresh listings
             // fetchListings(); // triggered by interval or re-render
@@ -353,6 +367,108 @@ export const ForSale: FC = () => {
                     </motion.div>
                 ))}
             </div>
+
+            <AnimatePresence>
+                {successTx && (
+                    <>
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSuccessTx(null)}
+                            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-300"
+                        >
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="bg-card border border-border rounded-2xl shadow-2xl overflow-hidden w-full max-w-md p-6 relative space-y-6"
+                            >
+                                <button
+                                    onClick={() => setSuccessTx(null)}
+                                    className="absolute right-4 top-4 p-1.5 hover:bg-secondary rounded-lg text-muted-foreground hover:text-foreground transition-colors border border-border"
+                                    aria-label="Close dialog"
+                                >
+                                    <X size={16} />
+                                </button>
+
+                                <div className="text-center space-y-2">
+                                    <div className="mx-auto w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                                        <CheckCircle size={28} />
+                                    </div>
+                                    <h3 className="text-2xl font-black text-foreground uppercase italic font-display">
+                                        Purchase Successful!
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground font-mono uppercase tracking-wider">
+                                        Verified on Solana Devnet
+                                    </p>
+                                </div>
+
+                                <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border">
+                                    <img
+                                        src={successTx.image}
+                                        alt={successTx.name}
+                                        className="w-16 h-16 rounded-lg object-cover bg-muted"
+                                        onError={(e) => {
+                                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                                        }}
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-foreground text-base truncate uppercase font-display">
+                                            {successTx.name}
+                                        </p>
+                                        <p className="text-xs text-primary font-bold font-mono">
+                                            {successTx.price} SOL Paid
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block font-mono">
+                                        Transaction Signature
+                                    </label>
+                                    <div className="relative">
+                                        <textarea
+                                            readOnly
+                                            value={successTx.signature}
+                                            className="w-full bg-background border border-border rounded-xl p-3 pr-10 text-xs font-mono text-foreground outline-none resize-none h-16 leading-relaxed select-all"
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(successTx.signature);
+                                                // Using lightweight browser verification or state logic instead of alerts
+                                            }}
+                                            className="absolute right-3.5 top-3.5 p-1.5 bg-secondary hover:bg-secondary/80 border border-border rounded-lg text-muted-foreground hover:text-foreground transition-all"
+                                            title="Copy Signature"
+                                        >
+                                            <Copy size={12} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="flex gap-3">
+                                    <a
+                                        href={`https://solscan.io/tx/${successTx.signature}?cluster=devnet`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex-1 py-3 bg-secondary hover:bg-secondary/80 text-foreground border border-border rounded-xl font-bold text-xs transition-colors flex items-center justify-center gap-1.5 uppercase font-display tracking-wider text-center"
+                                    >
+                                        View Solscan
+                                        <ExternalLink size={12} />
+                                    </a>
+                                    <button
+                                        onClick={() => setSuccessTx(null)}
+                                        className="flex-1 py-3 bg-primary hover:bg-primary/95 text-primary-foreground rounded-xl font-bold text-xs transition-all uppercase font-display tracking-wider shadow-lg shadow-primary/20"
+                                    >
+                                        Got It
+                                    </button>
+                                </div>
+                            </motion.div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
         </div>
     );
 };
