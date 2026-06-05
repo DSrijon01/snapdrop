@@ -28,29 +28,14 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const [tokens, setTokens] = useState<TokenAccountInfo[]>(publicKey ? (walletTokensCache[publicKey.toBase58()] || []) : []);
     const [loading, setLoading] = useState(publicKey ? !walletTokensCache[publicKey.toBase58()] : false);
     const [selectedTokenForListing, setSelectedTokenForListing] = useState<TokenAccountInfo | null>(null);
-    const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
 
     useEffect(() => {
         if (connected && publicKey) {
             fetchWalletTokens();
-            loadPurchaseHistory();
         } else {
             setTokens([]);
-            setPurchaseHistory([]);
         }
     }, [publicKey, connected, refreshTrigger]);
-
-    useEffect(() => {
-        const handleUpdate = () => {
-            if (connected && publicKey) {
-                loadPurchaseHistory();
-            }
-        };
-        window.addEventListener("token_purchases_updated", handleUpdate);
-        return () => {
-            window.removeEventListener("token_purchases_updated", handleUpdate);
-        };
-    }, [connected, publicKey]);
 
     const fetchWalletTokens = async () => {
         if (!publicKey) return;
@@ -94,17 +79,6 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         }
     };
 
-    const loadPurchaseHistory = () => {
-        try {
-            const stored = localStorage.getItem("street_sync_token_purchases");
-            if (stored) {
-                setPurchaseHistory(JSON.parse(stored));
-            }
-        } catch (e) {
-            console.error("Failed to load purchase history", e);
-        }
-    };
-
     if (!connected || !publicKey) {
         return (
             <div className="text-center text-muted-foreground py-10 italic">
@@ -143,80 +117,7 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 )}
             </div>
 
-            {/* Transaction History Section */}
-            <div>
-                <h4 className="text-lg font-black text-foreground uppercase tracking-tight font-display mb-4">
-                    Token Transaction History
-                </h4>
-                {purchaseHistory.length > 0 ? (
-                    <div className="bg-card border border-border rounded-2xl overflow-hidden shadow-md">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left border-collapse">
-                                <thead>
-                                    <tr className="border-b border-border bg-muted/30 text-xs font-bold uppercase text-muted-foreground">
-                                        <th className="p-4">Token</th>
-                                        <th className="p-4">Type</th>
-                                        <th className="p-4">Amount</th>
-                                        <th className="p-4">Price (SOL)</th>
-                                        <th className="p-4">Date</th>
-                                        <th className="p-4">Transaction</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-border text-sm">
-                                    {purchaseHistory.map((history, i) => (
-                                        <tr key={i} className="hover:bg-muted/10 transition-colors">
-                                            <td className="p-4 font-bold flex items-center gap-2">
-                                                {history.image && (
-                                                    <img 
-                                                        src={history.image} 
-                                                        alt={history.name} 
-                                                        className="w-6 h-6 rounded-full object-cover" 
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
-                                                        }}
-                                                    />
-                                                )}
-                                                <span>{history.name || history.symbol || "Unknown"}</span>
-                                                <span className="text-xs text-muted-foreground">({history.symbol})</span>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                                                    history.type === "SELL" 
-                                                        ? "bg-red-500/10 text-red-400 border border-red-500/20" 
-                                                        : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                                                }`}>
-                                                    {history.type === "SELL" ? "SELL" : "BUY"}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 font-mono">{history.amount}</td>
-                                            <td className={`p-4 font-bold ${history.type === "SELL" ? "text-red-400" : "text-emerald-400"}`}>
-                                                {history.price} SOL
-                                            </td>
-                                            <td className="p-4 text-muted-foreground">
-                                                {new Date(history.date).toLocaleString()}
-                                            </td>
-                                            <td className="p-4 font-mono text-xs text-blue-400">
-                                                <a 
-                                                    href={`https://solscan.io/tx/${history.signature}?cluster=devnet`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="hover:underline"
-                                                >
-                                                    {history.signature.slice(0, 8)}...{history.signature.slice(-8)}
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-10 italic bg-card/40 rounded-2xl border border-border">
-                        No token transaction history found.
-                    </div>
-                )}
-            </div>
+
 
             {/* Token Listing Modal */}
             <AnimatePresence>

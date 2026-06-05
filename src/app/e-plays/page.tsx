@@ -52,6 +52,29 @@ export default function EPlaysPage() {
   const { publicKey, sendTransaction, wallet } = useWallet();
   const anchorWallet = useAnchorWallet();
 
+  const logPredictionTransaction = (tx: {
+    marketId: string;
+    marketTitle: string;
+    side: "YES" | "NO";
+    amount: number;
+    shares: number;
+    price: number;
+    type: "BUY" | "CLAIM" | "CLEANUP";
+    signature: string;
+  }) => {
+    try {
+      const existing = JSON.parse(localStorage.getItem("street_sync_prediction_history") || "[]");
+      const newItem = {
+        ...tx,
+        date: Date.now()
+      };
+      localStorage.setItem("street_sync_prediction_history", JSON.stringify([newItem, ...existing]));
+      window.dispatchEvent(new Event("prediction_history_updated"));
+    } catch (e) {
+      console.error("Failed to log prediction transaction", e);
+    }
+  };
+
   const isDemo = wallet?.adapter.name === 'Street Sync Demo';
 
   const [activeTab, setActiveTab] = useState<'markets' | 'portfolio'>('markets');
@@ -308,6 +331,18 @@ export default function EPlaysPage() {
         setTxStatus({ type: 'success', message: 'Order Placed Successfully! (Demo Simulation Complete)' });
         toast.success("Trade executed locally!");
         
+        const sig = `sim-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        logPredictionTransaction({
+          marketId: selectedTrade.market.id,
+          marketTitle: selectedTrade.market.title,
+          side: selectedTrade.side.toUpperCase() as "YES" | "NO",
+          amount: amountNum,
+          shares: estimatedShares,
+          price: selectedTrade.side === 'yes' ? selectedTrade.market.yesPrice : selectedTrade.market.noPrice,
+          type: "BUY",
+          signature: sig
+        });
+
         // Update mock local state
         const sideSymbol = selectedTrade.side === 'yes' ? 'Yes' : 'No';
         const newPos: Position = {
@@ -396,6 +431,18 @@ export default function EPlaysPage() {
         const signature = await sendTransaction(tx, connection);
         setTxStatus({ type: 'success', message: `Order Placed Successfully! TX Hash: ${signature}` });
         toast.success("SOL Trade Executed!");
+        
+        logPredictionTransaction({
+          marketId: market.id,
+          marketTitle: market.title,
+          side: selectedTrade.side.toUpperCase() as "YES" | "NO",
+          amount: amountNum,
+          shares: estimatedShares,
+          price: currentPrice,
+          type: "BUY",
+          signature: signature
+        });
+
         setTradeAmount('');
         fetchMarketsAndPositions();
         
@@ -419,6 +466,19 @@ export default function EPlaysPage() {
       setTimeout(() => {
         setIsSubmitting(false);
         toast.success(`Claimed ◎ ${(pos.currentValue).toFixed(2)} SOL (2% Platform Fee Paid)`);
+        
+        const sig = `sim-claim-${Date.now()}`;
+        logPredictionTransaction({
+          marketId: pos.marketId,
+          marketTitle: pos.marketName,
+          side: pos.position.toUpperCase() as "YES" | "NO",
+          amount: pos.currentValue,
+          shares: pos.shares,
+          price: pos.avgPrice,
+          type: "CLAIM",
+          signature: sig
+        });
+
         setPositions(prev => prev.filter(p => p.id !== pos.id));
       }, 1200);
       return;
@@ -445,6 +505,18 @@ export default function EPlaysPage() {
           .rpc();
 
       toast.success(`Winnings claimed successfully! TX Hash: ${signature}`);
+      
+      logPredictionTransaction({
+        marketId: pos.marketId,
+        marketTitle: pos.marketName,
+        side: pos.position.toUpperCase() as "YES" | "NO",
+        amount: pos.currentValue,
+        shares: pos.shares,
+        price: pos.avgPrice,
+        type: "CLAIM",
+        signature: signature
+      });
+
       fetchMarketsAndPositions();
     } catch (e: any) {
       console.error("Claim winnings failed:", e);
@@ -461,6 +533,19 @@ export default function EPlaysPage() {
       setTimeout(() => {
         setIsSubmitting(false);
         toast.success(`Losing tokens closed. Reclaimed ◎ 0.002 SOL token account rent!`);
+        
+        const sig = `sim-cleanup-${Date.now()}`;
+        logPredictionTransaction({
+          marketId: pos.marketId,
+          marketTitle: pos.marketName,
+          side: pos.position.toUpperCase() as "YES" | "NO",
+          amount: 0.002,
+          shares: pos.shares,
+          price: pos.avgPrice,
+          type: "CLEANUP",
+          signature: sig
+        });
+
         setPositions(prev => prev.filter(p => p.id !== pos.id));
       }, 1200);
       return;
@@ -483,6 +568,18 @@ export default function EPlaysPage() {
           .rpc();
 
       toast.success(`Losing position cleaned! Reclaimed rent. TX Hash: ${signature}`);
+      
+      logPredictionTransaction({
+        marketId: pos.marketId,
+        marketTitle: pos.marketName,
+        side: pos.position.toUpperCase() as "YES" | "NO",
+        amount: 0.002,
+        shares: pos.shares,
+        price: pos.avgPrice,
+        type: "CLEANUP",
+        signature: signature
+      });
+
       fetchMarketsAndPositions();
     } catch (e: any) {
       console.error("Losing position cleanup failed:", e);

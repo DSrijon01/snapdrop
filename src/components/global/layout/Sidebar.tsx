@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket } from "lucide-react";
+import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search } from "lucide-react";
 import { UserAvatar } from "@/components/global/layout/UserAvatar";
 
 const NAV_ITEMS = [
   { label: "Market Data", href: "/market-data", icon: LineChart },
   { label: "Market News", href: "/market-news", icon: Newspaper },
+  { label: "SS Scan", href: "/ss-scan", icon: Search },
   { label: "E-plays", href: "/e-plays", icon: Zap },
   { label: "Openclaw T cal", href: "/openclaw", icon: Bot },
   { label: "SNBL", href: "/snbl", icon: PiggyBank },
