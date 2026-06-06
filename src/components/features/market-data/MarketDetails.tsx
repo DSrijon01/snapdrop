@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, LineChart as LucideLineChart } from 'lucide-react';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { 
     ResponsiveContainer, 
@@ -8,8 +8,68 @@ import {
     XAxis, 
     YAxis, 
     Tooltip as RechartsTooltip, 
-    ReferenceLine
+    ReferenceLine,
+    ComposedChart,
+    Bar
 } from 'recharts';
+
+// Custom SVG icon for Candlestick Chart toggle
+const CandlestickIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-4 h-4">
+    {/* Green candle */}
+    <line x1="5" y1="2" x2="5" y2="14" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect x="3.5" y="4" width="3" height="6" fill="#10b981" rx="0.5"/>
+    
+    {/* Red candle */}
+    <line x1="11" y1="2" x2="11" y2="14" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round"/>
+    <rect x="9.5" y="7" width="3" height="6" fill="#ef4444" rx="0.5"/>
+  </svg>
+);
+
+// Customized shape component to render candlesticks in Recharts Bar Chart
+const CustomCandlestick = (props: any) => {
+    const { x, y, width, height, payload } = props;
+    if (!payload) return null;
+
+    const { open, close, high, low } = payload;
+    const isUp = close >= open;
+    const color = isUp ? '#10b981' : '#ef4444'; // Green for up, Red for down
+
+    const priceDiff = Math.abs(open - close);
+    const scale = priceDiff > 0 ? (height / priceDiff) : 0;
+
+    const bodyMax = Math.max(open, close);
+    const bodyMin = Math.min(open, close);
+
+    const yHigh = y - (high - bodyMax) * scale;
+    const yLow = y + height + (bodyMin - low) * scale;
+
+    const wickX = x + width / 2;
+
+    return (
+        <g>
+            {/* High/Low Wick Line */}
+            <line 
+                x1={wickX} 
+                y1={yHigh} 
+                x2={wickX} 
+                y2={yLow} 
+                stroke={color} 
+                strokeWidth={1.5} 
+            />
+            {/* Open/Close Candle Body */}
+            <rect 
+                x={x} 
+                y={y} 
+                width={width} 
+                height={Math.max(height, 1.5)} // Ensure candle body is always visible
+                fill={color}
+                stroke={color}
+                strokeWidth={1.5}
+            />
+        </g>
+    );
+};
 
 interface DetailsProps {
     selectedCoin: string; // e.g. "BTC"
@@ -45,6 +105,7 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     const [ticker, setTicker] = useState<any>(null);
     const [chartData, setChartData] = useState<any[]>([]);
     const [currentTimeframe, setCurrentTimeframe] = useState(TIMEFRAMES[0]);
+    const [chartType, setChartType] = useState<'line' | 'candlestick'>('line');
     const [isLoadingChart, setIsLoadingChart] = useState(false);
     const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
@@ -85,17 +146,34 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                     const showYear = ['1Y', '2Y', '5Y', '10Y', 'ALL'].includes(tf);
                     const is1D = tf === '1D';
 
-                    // Mapping to { date, price }
-                    const mapped = data.map(candle => ({
-                        date: new Date(candle[0]).toLocaleDateString(undefined, { 
-                            month: 'short', 
-                            day: showYear && tf !== '1Y' ? undefined : 'numeric', 
-                            year: showYear ? 'numeric' : undefined,
-                            hour: is1D ? '2-digit' : undefined,
-                            minute: is1D ? '2-digit' : undefined 
-                        }),
-                        rawPrice: parseFloat(candle[4]) // Close price
-                    }));
+                    // Mapping to { date, price, open, high, low, close }
+                    const mapped = data.map(candle => {
+                        const open = parseFloat(candle[1]);
+                        const high = parseFloat(candle[2]);
+                        const low = parseFloat(candle[3]);
+                        let close = parseFloat(candle[4]);
+                        
+                        // Prevent division by zero in scaling calculations for Doji candles
+                        if (open === close) {
+                            close = open + (open * 0.0001 || 0.0001);
+                        }
+
+                        return {
+                            date: new Date(candle[0]).toLocaleDateString(undefined, { 
+                                month: 'short', 
+                                day: showYear && tf !== '1Y' ? undefined : 'numeric', 
+                                year: showYear ? 'numeric' : undefined,
+                                hour: is1D ? '2-digit' : undefined,
+                                minute: is1D ? '2-digit' : undefined 
+                            }),
+                            open,
+                            high,
+                            low,
+                            close,
+                            rawPrice: close,
+                            range: [open, close]
+                        };
+                    });
                     setChartData(mapped);
                 }
             } catch (e) {
@@ -127,14 +205,41 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     const strokeColor = chartIsPositive ? '#10b981' : '#ef4444'; // Apple Stocks Green/Red
     const baselinePrice = chartData.length > 0 ? chartData[0].rawPrice : currentPriceRaw;
 
-    // Custom Tooltip component for Recharts
+    // Custom Tooltip component for Recharts supporting Line & Candlestick modes
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
+            const dataItem = payload[0].payload;
+            
+            // Render detailed OHLC values in Candlestick mode
+            if (dataItem && typeof dataItem.open === 'number') {
+                return (
+                    <div className="bg-black/95 backdrop-blur-md text-white px-4 py-3 rounded-xl border border-border shadow-2xl text-xs space-y-1.5 font-mono">
+                        <div className="font-sans font-bold text-sm border-b border-border/40 pb-1 mb-1.5 text-muted-foreground">{label}</div>
+                        <div className="flex justify-between gap-6">
+                            <span className="text-muted-foreground">OPEN:</span>
+                            <span className="font-bold text-foreground">{formatPrice(dataItem.open, fiat)}</span>
+                        </div>
+                        <div className="flex justify-between gap-6">
+                            <span className="text-green-400">HIGH:</span>
+                            <span className="font-bold text-green-400">{formatPrice(dataItem.high, fiat)}</span>
+                        </div>
+                        <div className="flex justify-between gap-6">
+                            <span className="text-red-400">LOW:</span>
+                            <span className="font-bold text-red-400">{formatPrice(dataItem.low, fiat)}</span>
+                        </div>
+                        <div className="flex justify-between gap-6">
+                            <span className="text-muted-foreground">CLOSE:</span>
+                            <span className="font-bold text-foreground">{formatPrice(dataItem.close, fiat)}</span>
+                        </div>
+                    </div>
+                );
+            }
+
             const raw = payload[0].value;
             return (
-                <div className="bg-black/80 backdrop-blur-md text-white px-3 py-2 rounded-lg border border-border shadow-xl text-sm">
-                    <div className="font-medium">{label}</div>
-                    <div className="font-mono font-bold">{formatPrice(raw, fiat)}</div>
+                <div className="bg-black/90 backdrop-blur-md text-white px-3 py-2 rounded-xl border border-border shadow-xl text-sm">
+                    <div className="font-medium text-xs text-muted-foreground mb-1">{label}</div>
+                    <div className="font-mono font-bold text-foreground">{formatPrice(raw, fiat)}</div>
                 </div>
             );
         }
@@ -215,21 +320,48 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                 )}
             </div>
 
-            {/* Timeframe Toggles */}
-            <div className="flex gap-1 md:gap-2 mb-2 md:mb-4 overflow-x-auto pb-1 scrollbar-hide shrink-0">
-                {TIMEFRAMES.map((tf) => (
+            {/* Timeframe Toggles & Chart Style Toggle */}
+            <div className="flex items-center justify-between mb-2 md:mb-4 shrink-0 gap-4">
+                <div className="flex gap-1 md:gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                    {TIMEFRAMES.map((tf) => (
+                        <button
+                            key={tf.label}
+                            onClick={() => setCurrentTimeframe(tf)}
+                            className={`px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold transition-colors shrink-0
+                                ${currentTimeframe.label === tf.label 
+                                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20' 
+                                    : 'bg-transparent text-muted-foreground hover:bg-muted'
+                                }`}
+                        >
+                            {tf.label}
+                        </button>
+                    ))}
+                </div>
+
+                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border shrink-0">
                     <button
-                        key={tf.label}
-                        onClick={() => setCurrentTimeframe(tf)}
-                        className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-[10px] md:text-xs font-bold transition-colors shrink-0
-                            ${currentTimeframe.label === tf.label 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-transparent text-muted-foreground hover:bg-muted'
-                            }`}
+                        onClick={() => setChartType('line')}
+                        className={`p-1.5 rounded-lg transition-all ${
+                            chartType === 'line' 
+                                ? 'bg-background text-foreground shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Line Chart"
                     >
-                        {tf.label}
+                        <LucideLineChart className="w-4 h-4" />
                     </button>
-                ))}
+                    <button
+                        onClick={() => setChartType('candlestick')}
+                        className={`p-1.5 rounded-lg transition-all ${
+                            chartType === 'candlestick' 
+                                ? 'bg-background text-foreground shadow-sm' 
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                        title="Candlestick Chart"
+                    >
+                        <CandlestickIcon />
+                    </button>
+                </div>
             </div>
 
             {/* Main Interactive Chart */}
@@ -240,42 +372,77 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                     </div>
                 )}
                 <ResponsiveContainer width="99%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                        <XAxis 
-                            dataKey="date" 
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
-                            minTickGap={65}
-                            tickMargin={12}
-                        />
-                        <YAxis 
-                            domain={['dataMin', 'dataMax']} 
-                            orientation="right"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
-                            tickFormatter={(val) => {
-                                if (val >= 1000) {
-                                    return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
-                                }
-                                return Number.isInteger(val) ? val.toString() : val.toFixed(2);
-                            }}
-                            tickMargin={12}
-                            width={50}
-                        />
-                        <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
-                        <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
-                        <Line 
-                            type="monotone" 
-                            dataKey="rawPrice" 
-                            stroke={strokeColor} 
-                            strokeWidth={3} 
-                            dot={false}
-                            activeDot={{ r: 6, fill: strokeColor, stroke: '#fff', strokeWidth: 2 }} 
-                            isAnimationActive={false} // Immediate render for snappier feel
-                        />
-                    </LineChart>
+                    {chartType === 'line' ? (
+                        <LineChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                            <XAxis 
+                                dataKey="date" 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                minTickGap={65}
+                                tickMargin={12}
+                            />
+                            <YAxis 
+                                domain={['dataMin', 'dataMax']} 
+                                orientation="right"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                tickFormatter={(val) => {
+                                    if (val >= 1000) {
+                                        return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+                                    }
+                                    return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+                                }}
+                                tickMargin={12}
+                                width={50}
+                            />
+                            <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
+                            <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
+                            <Line 
+                                type="monotone" 
+                                dataKey="rawPrice" 
+                                stroke={strokeColor} 
+                                strokeWidth={3} 
+                                dot={false}
+                                activeDot={{ r: 6, fill: strokeColor, stroke: '#fff', strokeWidth: 2 }} 
+                                isAnimationActive={false} // Immediate render for snappier feel
+                            />
+                        </LineChart>
+                    ) : (
+                        <ComposedChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                            <XAxis 
+                                dataKey="date" 
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                minTickGap={65}
+                                tickMargin={12}
+                            />
+                            <YAxis 
+                                domain={['dataMin', 'dataMax']} 
+                                orientation="right"
+                                axisLine={false}
+                                tickLine={false}
+                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                tickFormatter={(val) => {
+                                    if (val >= 1000) {
+                                        return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+                                    }
+                                    return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+                                }}
+                                tickMargin={12}
+                                width={50}
+                            />
+                            <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
+                            <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
+                            <Bar 
+                                dataKey="range" 
+                                shape={<CustomCandlestick />} 
+                                isAnimationActive={false}
+                            />
+                        </ComposedChart>
+                    )}
                 </ResponsiveContainer>
             </div>
 
