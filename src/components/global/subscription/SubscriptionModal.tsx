@@ -38,7 +38,7 @@ export const SubscriptionModal: React.FC = () => {
   };
 
   const handleCancel = async () => {
-    if (confirm(`Are you sure you want to cancel your subscription to ${moduleName}? You will retain access until ${expiresAt || "the end of your billing cycle"}.`)) {
+    if (confirm(`WARNING: Unsubscribing will immediately terminate your ${moduleName} Pro access.\n\nYou will NOT receive any refund or SOL back for the remaining days of your plan.\n\nDo you want to proceed?`)) {
       setSubmitting(true);
       await cancelSubscription(activeModuleId);
       setSubmitting(false);
@@ -120,17 +120,9 @@ export const SubscriptionModal: React.FC = () => {
                     </div>
                     <div className="flex justify-between">
                       <span>Status:</span>
-                      <span className={isCancelled ? "text-amber-500 font-bold" : "text-emerald-500 font-bold"}>
-                        {isCancelled ? "Cancelled (Pending Expiry)" : "Active / Recurring"}
-                      </span>
+                      <span className="text-emerald-500 font-bold">Active / Recurring</span>
                     </div>
                   </div>
-                  {isCancelled && (
-                    <div className="flex gap-2 items-start bg-amber-500/5 border border-amber-500/20 p-2.5 rounded-lg text-[10px] text-amber-500 font-mono">
-                      <AlertCircle className="w-4 h-4 shrink-0" />
-                      <span>You have cancelled this subscription. You will lose access to pro features after {expiresAt}. You can resubscribe anytime.</span>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -171,19 +163,17 @@ export const SubscriptionModal: React.FC = () => {
                   </button>
                 ) : isSubscribed ? (
                   <div className="space-y-3">
-                    {!isCancelled && (
-                      <button
-                        onClick={handleCancel}
-                        className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-sm border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none"
-                      >
-                        Cancel Subscription
-                      </button>
-                    )}
+                    <button
+                      onClick={handleCancel}
+                      className="w-full py-4 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-sm border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none"
+                    >
+                      Unsubscribe from Plan
+                    </button>
                     <button
                       onClick={handleSubscribe}
                       className="w-full py-4 bg-primary text-primary-foreground hover:opacity-95 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-sm transition-all focus:outline-none shadow-lg shadow-primary/20"
                     >
-                      {isCancelled ? "Resubscribe / Extend" : "Extend Subscription (1 SOL)"}
+                      Extend Subscription (1 SOL)
                     </button>
                   </div>
                 ) : (

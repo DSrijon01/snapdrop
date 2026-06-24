@@ -189,7 +189,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  // Cancel subscription
+  // Cancel/Unsubscribe subscription immediately
   const cancelSubscription = async (moduleId: string): Promise<boolean> => {
     if (!publicKey) return false;
     
@@ -202,17 +202,20 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       const updatedDetails: Subscription = {
-        ...currentSub,
-        isCancelled: true,
+        moduleId,
+        isSubscribed: false,
+        expiresAt: null,
+        isCancelled: false,
+        txSignature: null,
       };
 
-      localStorage.setItem(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(updatedDetails));
+      localStorage.removeItem(`street_sync_sub_${walletKey}_${moduleId}`);
       setSubscriptions((prev) => ({ ...prev, [moduleId]: updatedDetails }));
-      toast.success(`Subscription to ${MODULE_NAMES[moduleId]} cancelled successfully. You retain access until expiration.`);
+      toast.success(`Unsubscribed from ${MODULE_NAMES[moduleId]} successfully. Access has been terminated.`);
       return true;
     } catch (e) {
-      console.error("Failed to cancel subscription:", e);
-      toast.error("Failed to cancel subscription.");
+      console.error("Failed to unsubscribe:", e);
+      toast.error("Failed to unsubscribe.");
       return false;
     }
   };
