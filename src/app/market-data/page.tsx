@@ -6,6 +6,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MarketSidebar } from '@/components/features/market-data/MarketSidebar';
 import { MarketDetails } from '@/components/features/market-data/MarketDetails';
 import { ArrowLeft } from 'lucide-react';
+import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
 
 const DEFAULT_FAVORITES = ['BTC', 'BNB', 'SOL', 'ETH', 'XRP'];
 
@@ -28,6 +29,14 @@ export default function MarketDataPage() {
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">
+            
+            {/* Local Page Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border/40 shrink-0">
+                <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight">
+                    Market Data
+                </h2>
+                <ModuleSubscriptionWidget moduleId="market-data" />
+            </div>
 
             <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
                 {/* Sidebar (Pane 1 - Top on mobile, Left on Desktop) */}

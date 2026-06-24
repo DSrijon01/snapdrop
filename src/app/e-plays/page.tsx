@@ -9,6 +9,7 @@ import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
+import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
 
 // === Types ===
 type Market = {
@@ -616,30 +617,33 @@ export default function EPlaysPage() {
           </p>
         </div>
         
-        <div className="flex bg-muted/60 p-1 border border-border/60 rounded-xl backdrop-blur-sm">
-          <button
-            onClick={() => setActiveTab('markets')}
-            className={`px-6 py-2.5 text-xs font-black transition-all uppercase tracking-wider rounded-lg ${
-              activeTab === 'markets' 
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
-            }`}
-          >
-            Active Markets
-          </button>
-          <button
-            onClick={() => setActiveTab('portfolio')}
-            className={`px-6 py-2.5 text-xs font-black transition-all uppercase tracking-wider rounded-lg flex items-center gap-2 ${
-              activeTab === 'portfolio' 
-                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
-                : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
-            }`}
-          >
-            My Positions
-            {positions.length > 0 && (
-              <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
-            )}
-          </button>
+        <div className="flex flex-col sm:flex-row items-center gap-4">
+          <ModuleSubscriptionWidget moduleId="e-plays" />
+          <div className="flex bg-muted/60 p-1 border border-border/60 rounded-xl backdrop-blur-sm">
+            <button
+              onClick={() => setActiveTab('markets')}
+              className={`px-6 py-2.5 text-xs font-black transition-all uppercase tracking-wider rounded-lg ${
+                activeTab === 'markets' 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
+              }`}
+            >
+              Active Markets
+            </button>
+            <button
+              onClick={() => setActiveTab('portfolio')}
+              className={`px-6 py-2.5 text-xs font-black transition-all uppercase tracking-wider rounded-lg flex items-center gap-2 ${
+                activeTab === 'portfolio' 
+                  ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' 
+                  : 'text-muted-foreground hover:text-foreground hover:bg-background/40'
+              }`}
+            >
+              My Positions
+              {positions.length > 0 && (
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping shrink-0" />
+              )}
+            </button>
+          </div>
         </div>
       </header>
 

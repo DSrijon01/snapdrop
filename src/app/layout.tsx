@@ -9,6 +9,8 @@ import { Footer } from "@/components/global/layout/Footer";
 import { WalletGate } from "@/components/global/wallet/WalletGate";
 import { WalletContextProvider } from "@/components/global/wallet/WalletContextProvider";
 import { Toaster } from "react-hot-toast";
+import { SubscriptionProvider } from "@/context/SubscriptionContext";
+import { SubscriptionModal } from "@/components/global/subscription/SubscriptionModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -44,22 +46,25 @@ export default function RootLayout({
       >
         <ThemeProvider defaultTheme="light">
           <WalletContextProvider>
-            <DevnetBanner />
-            <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
-              <GlobalHeader />
-              <div className="flex flex-1 overflow-hidden relative">
-                <Sidebar />
-                <main className="flex-1 overflow-y-auto relative w-full">
-                  <WalletGate>
-                    {children}
-                  </WalletGate>
-                </main>
-              </div>
+            <SubscriptionProvider>
+              <DevnetBanner />
+              <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
+                <GlobalHeader />
+                <div className="flex flex-1 overflow-hidden relative">
+                  <Sidebar />
+                  <main className="flex-1 overflow-y-auto relative w-full">
+                    <WalletGate>
+                      {children}
+                    </WalletGate>
+                  </main>
+                </div>
                 <Footer />
               </div>
               <Toaster position="bottom-right" />
-            </WalletContextProvider>
-          </ThemeProvider>
+              <SubscriptionModal />
+            </SubscriptionProvider>
+          </WalletContextProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Search, Database, Coins, Tag, TrendingUp, RefreshCw, ExternalLink, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
+import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
 
 // Types
 interface TokenTx {
@@ -328,7 +329,8 @@ export default function SSScanPage() {
         </div>
 
         {/* Sync Status / Action Button */}
-        <div className="relative z-10 shrink-0">
+        <div className="relative z-10 shrink-0 flex flex-col sm:flex-row items-center gap-3">
+          <ModuleSubscriptionWidget moduleId="ss-scan" />
           <button 
             onClick={handleRefresh}
             className="flex items-center gap-2 px-4 py-2.5 text-xs font-mono font-bold uppercase border border-border hover:bg-secondary/40 rounded-xl transition-all"
