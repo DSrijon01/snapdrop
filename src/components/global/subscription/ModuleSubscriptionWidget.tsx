@@ -52,7 +52,7 @@ export const ModuleSubscriptionWidget: React.FC<ModuleSubscriptionWidgetProps> =
       {/* Action Button */}
       {active ? (
         <Link
-          href={`/${moduleId}/pro`}
+          href={`/${moduleId}/${moduleId.replace(/-/g, "")}-pro`}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-primary hover:opacity-95 text-primary-foreground text-xs font-black uppercase tracking-wider transition-all duration-200 shadow-md shadow-primary/10 group"
         >
           <span>Go to Pro</span>
