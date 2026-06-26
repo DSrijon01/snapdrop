@@ -32,6 +32,11 @@ const spaceGrotesk = Space_Grotesk({
 export const metadata: Metadata = {
   title: "Street Sync | Sync Your Street",
   description: "The next generation of digital collectibles. Connect your wallet to access the marketplace.",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
