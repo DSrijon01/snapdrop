@@ -32,33 +32,52 @@ export function SessionsBoard() {
     setMounted(true);
     
     // Load from localStorage or set initial
-    const storedPosts = localStorage.getItem("sessions_posts");
-    const storedChat = localStorage.getItem("sessions_chat");
-
-    if (storedPosts) {
-      setPosts(JSON.parse(storedPosts));
-    } else {
+    try {
+      const storedPosts = localStorage.getItem("sessions_posts");
+      if (storedPosts) {
+        setPosts(JSON.parse(storedPosts).slice(0, 100));
+      } else {
+        setPosts(INITIAL_POSTS);
+        localStorage.setItem("sessions_posts", JSON.stringify(INITIAL_POSTS));
+      }
+    } catch (e) {
+      console.warn("Failed to load/initialize posts from localStorage:", e);
       setPosts(INITIAL_POSTS);
-      localStorage.setItem("sessions_posts", JSON.stringify(INITIAL_POSTS));
     }
 
-    if (storedChat) {
-      setChatMessages(JSON.parse(storedChat));
-    } else {
+    try {
+      const storedChat = localStorage.getItem("sessions_chat");
+      if (storedChat) {
+        setChatMessages(JSON.parse(storedChat).slice(-50));
+      } else {
+        setChatMessages(INITIAL_CHAT);
+        localStorage.setItem("sessions_chat", JSON.stringify(INITIAL_CHAT));
+      }
+    } catch (e) {
+      console.warn("Failed to load/initialize chat from localStorage:", e);
       setChatMessages(INITIAL_CHAT);
-      localStorage.setItem("sessions_chat", JSON.stringify(INITIAL_CHAT));
     }
   }, []);
 
-  // Helper to save state
+  // Helper to save state with safety boundaries
   const savePosts = (updatedPosts: Post[]) => {
-    setPosts(updatedPosts);
-    localStorage.setItem("sessions_posts", JSON.stringify(updatedPosts));
+    const limited = updatedPosts.slice(0, 100); // Keep max 100 posts
+    setPosts(limited);
+    try {
+      localStorage.setItem("sessions_posts", JSON.stringify(limited));
+    } catch (e) {
+      console.error("Failed to write sessions_posts to localStorage:", e);
+    }
   };
 
   const saveChat = (updatedChat: ChatMessage[]) => {
-    setChatMessages(updatedChat);
-    localStorage.setItem("sessions_chat", JSON.stringify(updatedChat));
+    const limited = updatedChat.slice(-50); // Keep max 50 chat messages
+    setChatMessages(limited);
+    try {
+      localStorage.setItem("sessions_chat", JSON.stringify(limited));
+    } catch (e) {
+      console.error("Failed to write sessions_chat to localStorage:", e);
+    }
   };
 
   // Real-time Chat Simulator & Post Simulator
@@ -80,7 +99,11 @@ export function SessionsBoard() {
 
       setChatMessages((prev) => {
         const updated = [...prev, newChat].slice(-50); // Keep last 50
-        localStorage.setItem("sessions_chat", JSON.stringify(updated));
+        try {
+          localStorage.setItem("sessions_chat", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to save simulated chat to localStorage:", e);
+        }
         return updated;
       });
     }, 4500 + Math.random() * 2000); // Every 4.5 to 6.5s
@@ -111,8 +134,12 @@ export function SessionsBoard() {
       };
 
       setPosts((prev) => {
-        const updated = [newPost, ...prev];
-        localStorage.setItem("sessions_posts", JSON.stringify(updated));
+        const updated = [newPost, ...prev].slice(0, 100); // Limit background post growth to 100 items
+        try {
+          localStorage.setItem("sessions_posts", JSON.stringify(updated));
+        } catch (e) {
+          console.error("Failed to save simulated posts to localStorage:", e);
+        }
         return updated;
       });
     }, 28000 + Math.random() * 7000); // Every 28 to 35s
