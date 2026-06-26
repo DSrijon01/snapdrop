@@ -64,7 +64,7 @@ export const SubscriptionModal: React.FC = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="absolute inset-0 bg-background/80 backdrop-blur-md"
+            className="absolute inset-0 bg-black/45 backdrop-blur-md"
           />
 
           {/* Modal Card */}
@@ -73,7 +73,7 @@ export const SubscriptionModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg bg-card/60 backdrop-blur-xl border border-border/80 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden font-sans"
+            className="relative w-full max-w-lg bg-card border border-border/80 rounded-3xl p-6 md:p-8 shadow-2xl overflow-hidden font-sans"
           >
             {/* Background Glows */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/20 rounded-full blur-2xl pointer-events-none" />
