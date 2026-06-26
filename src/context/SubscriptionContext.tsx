@@ -39,6 +39,43 @@ export const MODULE_NAMES: Record<string, string> = {
   "sessions": "Sessions Board",
 };
 
+// Helper to safely write to localStorage, clearing oversized simulated feed logs if quota is full
+const safeLocalStorageSet = (key: string, value: string) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error: any) {
+    if (
+      error.name === "QuotaExceededError" ||
+      error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      error.code === 22
+    ) {
+      console.warn("Storage quota exceeded! Clearing non-essential sessions feed cache to free space...");
+      try {
+        localStorage.removeItem("sessions_posts");
+        localStorage.removeItem("sessions_chat");
+        localStorage.setItem(key, value);
+        console.log("Successfully wrote subscription after clearing cache.");
+      } catch (retryError) {
+        console.error("Critical storage write failure even after pruning sessions feed cache:", retryError);
+        // Absolute fallback: Clear all items except other subscriptions
+        try {
+          const keys = Object.keys(localStorage);
+          keys.forEach((k) => {
+            if (!k.startsWith("street_sync_sub_")) {
+              localStorage.removeItem(k);
+            }
+          });
+          localStorage.setItem(key, value);
+        } catch (e) {
+          throw retryError;
+        }
+      }
+    } else {
+      throw error;
+    }
+  }
+};
+
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, wallet } = useWallet();
@@ -101,6 +138,20 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Sync state on mount or wallet connect
   useEffect(() => {
+    // Proactively clear oversized session log items if they are bloated
+    try {
+      const postsStr = localStorage.getItem("sessions_posts");
+      if (postsStr && postsStr.length > 30000) {
+        console.log("Proactively clearing oversized sessions_posts on mount");
+        localStorage.removeItem("sessions_posts");
+      }
+      const chatStr = localStorage.getItem("sessions_chat");
+      if (chatStr && chatStr.length > 10000) {
+        localStorage.removeItem("sessions_chat");
+      }
+    } catch (e) {
+      console.warn("Storage check skipped:", e);
+    }
     loadSubscriptions();
   }, [loadSubscriptions]);
 
@@ -127,12 +178,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
             txSignature: `sim-sub-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           };
 
-          localStorage.setItem(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
-          setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
-          
-          toast.dismiss(toastId);
-          toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]}! (Sandbox Demo)`);
-          resolve(true);
+          try {
+            safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
+            setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
+            toast.dismiss(toastId);
+            toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]}! (Sandbox Demo)`);
+            resolve(true);
+          } catch (err) {
+            toast.dismiss(toastId);
+            toast.error("Failed to save subscription status. Browser storage full.");
+            resolve(false);
+          }
         }, 1500);
       });
     }
@@ -175,7 +231,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         txSignature: signature,
       };
 
-      localStorage.setItem(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
+      safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
       setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
 
       toast.dismiss(toastId);

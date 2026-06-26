@@ -34,6 +34,9 @@ export const SubscriptionModal: React.FC = () => {
     setSubmitting(false);
     if (success) {
       closeSubscriptionModal();
+      // Redirect to the pro section immediately
+      const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+      window.location.href = proPath;
     }
   };
 
