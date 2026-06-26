@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Shield, Sparkles, Calendar, Zap, CreditCard, RefreshCw, AlertCircle } from "lucide-react";
 import { useSubscription, MODULE_NAMES } from "@/context/SubscriptionContext";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useRouter } from "next/navigation";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 
 export const SubscriptionModal: React.FC = () => {
@@ -18,6 +19,7 @@ export const SubscriptionModal: React.FC = () => {
   } = useSubscription();
 
   const { connected } = useWallet();
+  const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
 
   if (!activeModuleId) return null;
@@ -34,9 +36,9 @@ export const SubscriptionModal: React.FC = () => {
     setSubmitting(false);
     if (success) {
       closeSubscriptionModal();
-      // Redirect to the pro section immediately
+      // Redirect to the pro section immediately using Next.js router to support basePath
       const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
-      window.location.href = proPath;
+      router.push(proPath);
     }
   };
 

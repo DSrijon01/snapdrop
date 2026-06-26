@@ -29,7 +29,7 @@ export default function NotFoundPage() {
       }, 500);
     } catch (err) {
       console.error("Logout recovery failed:", err);
-      window.location.href = "/";
+      window.location.href = "/snapdrop/";
     }
   };
 
