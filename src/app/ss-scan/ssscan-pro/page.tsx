@@ -351,12 +351,12 @@ export default function SSScanProPage() {
   const access = hasAccess("ss-scan");
 
   return (
-    <div className="min-h-screen bg-[#07070a] text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
+    <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
       {/* Clean Background Grid */}
-      <div className="absolute inset-0 bg-[radial-gradient(#111116_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] pointer-events-none opacity-60" />
+      <div className="absolute inset-0 dark:bg-[radial-gradient(#111116_1px,transparent_1px)] bg-[radial-gradient(#e2e8f0_1px,transparent_1px)] bg-[size:1.5rem_1.5rem] pointer-events-none opacity-60" />
 
       {/* Header */}
-      <header className="w-full max-w-7xl px-6 pt-10 pb-6 flex items-center justify-between border-b border-border/20 relative z-10">
+      <header className="w-full max-w-7xl px-6 pt-10 pb-6 flex items-center justify-between border-b border-border relative z-10">
         <div className="flex items-center gap-4">
           <Link
             href="/ss-scan"
@@ -382,7 +382,7 @@ export default function SSScanProPage() {
         </div>
 
         {/* Chain selector tabs */}
-        <div className="flex items-center gap-1.5 bg-[#0d0d12] p-1 border border-border/30 rounded-xl">
+        <div className="flex items-center gap-1.5 bg-card p-1 border border-border rounded-xl">
           {Object.entries(CHAIN_PARAMS).map(([key, value]) => {
             const active = selectedChain === key;
             return (
@@ -391,7 +391,7 @@ export default function SSScanProPage() {
                 onClick={() => setSelectedChain(key)}
                 className={`px-3 py-1.5 rounded-lg text-[10px] font-mono uppercase transition-all cursor-pointer ${
                   active 
-                    ? "bg-card text-foreground border border-border/30" 
+                    ? "bg-background text-foreground border border-border" 
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
@@ -471,7 +471,7 @@ export default function SSScanProPage() {
               className="flex flex-col gap-6"
             >
               {/* Telemetry Stats Bar */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-[#0d0d12] border border-border/30 rounded-2xl p-4 shadow-md font-mono text-[10px] text-muted-foreground">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-card border border-border rounded-2xl p-4 shadow-md font-mono text-[10px] text-muted-foreground">
                 <div>
                   <span className="block uppercase text-muted-foreground/60 mb-0.5">Blockchain Network</span>
                   <span className="text-xs font-bold text-foreground uppercase">{CHAIN_PARAMS[selectedChain].name}</span>
@@ -497,7 +497,7 @@ export default function SSScanProPage() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-[#07070a]/90 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 border border-border/40"
+                    className="fixed inset-0 bg-background/95 backdrop-blur-md z-30 flex flex-col items-center justify-center text-center p-6 border border-border"
                   >
                     <div className="w-16 h-16 mb-4 flex items-center justify-center relative">
                       <div className="absolute inset-0 rounded-full border-2 border-muted border-t-primary animate-spin" />
@@ -522,7 +522,7 @@ export default function SSScanProPage() {
               </AnimatePresence>
 
               {/* Search Control & viewing badge */}
-              <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-[#0d0d12] border border-border/30 rounded-2xl p-4">
+              <div className="flex flex-col md:flex-row items-center gap-4 justify-between bg-card border border-border rounded-2xl p-4">
                 <form onSubmit={handleSearchSubmit} className="relative w-full md:max-w-md">
                   <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <input
@@ -530,7 +530,7 @@ export default function SSScanProPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search target wallet address..."
-                    className="w-full bg-[#111116] border border-border/40 focus:border-primary rounded-xl pl-9 pr-14 py-2 text-xs text-foreground placeholder-muted-foreground outline-none transition-all font-mono"
+                    className="w-full bg-muted border border-border focus:border-primary rounded-xl pl-9 pr-14 py-2 text-xs text-foreground placeholder-muted-foreground outline-none transition-all font-mono"
                   />
                   {searchQuery && (
                     <button
@@ -543,7 +543,7 @@ export default function SSScanProPage() {
                   )}
                 </form>
 
-                <div className="flex items-center gap-2 bg-[#111116] border border-border/40 px-3 py-1.5 rounded-xl font-mono text-[10px]">
+                <div className="flex items-center gap-2 bg-muted border border-border px-3 py-1.5 rounded-xl font-mono text-[10px]">
                   <span className="text-muted-foreground uppercase">VIEWING:</span>
                   <span className="text-primary font-bold">{inspectedWallet.label}</span>
                   <span className="text-muted-foreground">({sliceAddress(inspectedWallet.address)})</span>
@@ -561,7 +561,7 @@ export default function SSScanProPage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 
                 {/* LEFT: Visible trace nodes list manager */}
-                <div className="lg:col-span-4 bg-[#0d0d12] border border-border/30 rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+                <div className="lg:col-span-4 bg-card border border-border rounded-2xl p-5 shadow-lg flex flex-col gap-4">
                   <div className="border-b border-border/20 pb-3 flex flex-col gap-1">
                     <span className="text-[9px] font-mono text-muted-foreground uppercase tracking-widest">
                       Trace Manager
@@ -572,12 +572,12 @@ export default function SSScanProPage() {
                   </div>
 
                   {/* Manager selector sub-tabs */}
-                  <div className="grid grid-cols-2 bg-[#111116] p-0.5 border border-border/30 rounded-lg">
+                  <div className="grid grid-cols-2 bg-muted p-0.5 border border-border rounded-lg">
                     <button
                       onClick={() => setActiveManagerTab("inflows")}
                       className={`py-1.5 rounded text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
                         activeManagerTab === "inflows"
-                          ? "bg-card text-foreground"
+                          ? "bg-background text-foreground border border-border"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -587,7 +587,7 @@ export default function SSScanProPage() {
                       onClick={() => setActiveManagerTab("outflows")}
                       className={`py-1.5 rounded text-[10px] font-mono font-bold uppercase transition-all cursor-pointer ${
                         activeManagerTab === "outflows"
-                          ? "bg-card text-foreground"
+                          ? "bg-background text-foreground border border-border"
                           : "text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -624,8 +624,8 @@ export default function SSScanProPage() {
                                   onClick={() => toggleNodeTrace("inflow", node.address)}
                                   className={`px-2 py-1 rounded text-[9px] font-mono font-bold uppercase cursor-pointer border ${
                                     node.toggled
-                                      ? "bg-[#161622] text-primary border-primary/20"
-                                      : "bg-[#111116] text-muted-foreground border-border/40 hover:text-foreground"
+                                      ? "bg-primary/10 text-primary border-primary/20"
+                                      : "bg-muted text-muted-foreground border-border hover:text-foreground"
                                   }`}
                                 >
                                   {node.toggled ? "On" : "Off"}
@@ -651,8 +651,8 @@ export default function SSScanProPage() {
                                   onClick={() => toggleNodeTrace("outflow", node.address)}
                                   className={`px-2 py-1 rounded text-[9px] font-mono font-bold uppercase cursor-pointer border ${
                                     node.toggled
-                                      ? "bg-[#161622] text-primary border-primary/20"
-                                      : "bg-[#111116] text-muted-foreground border-border/40 hover:text-foreground"
+                                      ? "bg-primary/10 text-primary border-primary/20"
+                                      : "bg-muted text-muted-foreground border-border hover:text-foreground"
                                   }`}
                                 >
                                   {node.toggled ? "On" : "Off"}
@@ -667,10 +667,10 @@ export default function SSScanProPage() {
                 </div>
 
                 {/* CENTER & RIGHT: Clean structural branch canvas tracer */}
-                <div className="lg:col-span-8 bg-[#0d0d12] border border-border/30 rounded-2xl overflow-hidden relative shadow-lg min-h-[380px] flex items-center justify-center">
+                <div className="lg:col-span-8 bg-card border border-border rounded-2xl overflow-hidden relative shadow-lg min-h-[380px] flex items-center justify-center">
                   
                   {/* Floating canvas controls */}
-                  <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 bg-[#07070a]/80 backdrop-blur-md p-1 border border-border/30 rounded-xl font-mono text-[9px]">
+                  <div className="absolute bottom-4 left-4 z-10 flex items-center gap-1.5 bg-background/80 backdrop-blur-md p-1 border border-border rounded-xl font-mono text-[9px]">
                     <button 
                       onClick={() => {
                         if (triggerZoomResetRef.current) triggerZoomResetRef.current();
@@ -680,7 +680,7 @@ export default function SSScanProPage() {
                     >
                       <Maximize2 className="w-3 h-3" />
                     </button>
-                    <span className="px-1 text-muted-foreground border-l border-r border-border/20 font-bold uppercase">
+                    <span className="px-1 text-muted-foreground border-l border-r border-border font-bold uppercase">
                       {(canvasZoom * 100).toFixed(0)}% zoom
                     </span>
                   </div>
@@ -697,8 +697,8 @@ export default function SSScanProPage() {
               </div>
 
               {/* BOTTOM: Transaction Ledger Table */}
-              <div className="bg-[#0d0d12] border border-border/30 rounded-2xl p-5 shadow-lg flex flex-col gap-4">
-                <div className="flex items-center gap-2 border-b border-border/20 pb-3">
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-lg flex flex-col gap-4">
+                <div className="flex items-center gap-2 border-b border-border pb-3">
                   <Activity className="w-4 h-4 text-primary" />
                   <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-foreground">
                     On-Chain Transaction Ledger
@@ -708,7 +708,7 @@ export default function SSScanProPage() {
                 <div className="overflow-x-auto custom-scrollbar">
                   <table className="w-full text-left border-collapse text-[10px] font-mono">
                     <thead>
-                      <tr className="border-b border-border/30 bg-[#111116] text-[9px] text-muted-foreground uppercase">
+                      <tr className="border-b border-border bg-muted text-[9px] text-muted-foreground uppercase">
                         <th className="p-3 pl-4">Transaction Hash</th>
                         <th className="p-3">Sender Wallet</th>
                         <th className="p-3">Destination Wallet</th>
@@ -843,8 +843,20 @@ function TracerCanvas({
       view.panY += (view.targetPanY - view.panY) * 0.1;
       onZoomChange(view.zoom);
 
+      // Check if document has dark class (Next.js context)
+      const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+      
+      const canvasBg = isDark ? "#07070a" : "#ffffff";
+      const gridColor = isDark ? "#16161e" : "#f1f5f9";
+      const lineColor = isDark ? "#2b2b36" : "#cbd5e1";
+      const labelColor = isDark ? "#ffb347" : "#b45309"; // Muted gold/amber
+      const cardBg = isDark ? "#111116" : "#f8f9fa";
+      const cardBorderDefault = isDark ? "#2b2b36" : "#cbd5e1";
+      const textMain = isDark ? "#ffffff" : "#0f172a";
+      const textMuted = isDark ? "#8a8a9e" : "#64748b";
+
       // Clear
-      ctx.fillStyle = "#07070a";
+      ctx.fillStyle = canvasBg;
       ctx.fillRect(0, 0, w, h);
 
       ctx.save();
@@ -852,7 +864,7 @@ function TracerCanvas({
       ctx.scale(view.zoom, view.zoom);
 
       // A. Draw dot grid in background
-      ctx.fillStyle = "#16161e";
+      ctx.fillStyle = gridColor;
       const gridGap = 24;
       const limitX = (w / 2 + Math.abs(view.panX)) / view.zoom + 100;
       const limitY = (h / 2 + Math.abs(view.panY)) / view.zoom + 100;
@@ -893,7 +905,7 @@ function TracerCanvas({
       });
 
       // C. Draw connecting paths with arrowheads and value badges
-      ctx.strokeStyle = "#2b2b36";
+      ctx.strokeStyle = lineColor;
       ctx.lineWidth = 1;
 
       // Draw inflow lines
@@ -912,7 +924,7 @@ function TracerCanvas({
         // Draw arrow indicator at midpoint
         const midX = (startX + endX) / 2;
         const midY = (startY + endY) / 2;
-        ctx.fillStyle = "#8a8a9e";
+        ctx.fillStyle = textMuted;
         ctx.beginPath();
         ctx.moveTo(midX + 5, midY);
         ctx.lineTo(midX - 3, midY - 4);
@@ -923,7 +935,7 @@ function TracerCanvas({
         // Draw text label on line
         const labelText = `$${(node.amountUsd / 1000000).toFixed(1)}M (${node.txCount})`;
         ctx.font = "9px Courier New";
-        ctx.fillStyle = "#ffb347"; // Muted gold
+        ctx.fillStyle = labelColor; // Muted gold
         ctx.textAlign = "center";
         ctx.fillText(labelText, midX, midY - 8);
       });
@@ -942,7 +954,7 @@ function TracerCanvas({
 
         const midX = (startX + endX) / 2;
         const midY = (startY + endY) / 2;
-        ctx.fillStyle = "#8a8a9e";
+        ctx.fillStyle = textMuted;
         ctx.beginPath();
         ctx.moveTo(midX + 5, midY);
         ctx.lineTo(midX - 3, midY - 4);
@@ -952,7 +964,7 @@ function TracerCanvas({
 
         const labelText = `$${(node.amountUsd / 1000000).toFixed(1)}M (${node.txCount})`;
         ctx.font = "9px Courier New";
-        ctx.fillStyle = "#ffb347";
+        ctx.fillStyle = labelColor;
         ctx.textAlign = "center";
         ctx.fillText(labelText, midX, midY - 8);
       });
@@ -979,25 +991,25 @@ function TracerCanvas({
         ctx.quadraticCurveTo(x, y, x + rad, y);
         ctx.closePath();
 
-        ctx.fillStyle = "#111116";
+        ctx.fillStyle = cardBg;
         ctx.fill();
 
-        ctx.strokeStyle = isTarget ? chainColor : "#2b2b36";
+        ctx.strokeStyle = isTarget ? chainColor : cardBorderDefault;
         ctx.lineWidth = isTarget ? 2 : 1;
         ctx.stroke();
 
         // Labels
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = textMain;
         ctx.font = "bold 10px Courier New";
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
         ctx.fillText(label.length > 22 ? label.substring(0, 20) + "..." : label, x + 10, y + 10);
 
-        ctx.fillStyle = "#8a8a9e";
+        ctx.fillStyle = textMuted;
         ctx.font = "9px Courier New";
         ctx.fillText(sliceAddress(address), x + 10, y + 25);
 
-        ctx.fillStyle = isTarget ? chainColor : "#ffffff";
+        ctx.fillStyle = isTarget ? chainColor : textMain;
         ctx.font = "bold 10px Courier New";
         ctx.fillText(balanceText, x + 10, y + 40);
       };
@@ -1077,7 +1089,7 @@ function TracerCanvas({
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseUp}
       onWheel={handleWheel}
-      className="absolute inset-0 w-full h-full block bg-black cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 w-full h-full block bg-background cursor-grab active:cursor-grabbing"
     />
   );
 }
