@@ -1,3 +1,5 @@
+"use client";
+
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
 import { FC, useEffect, useState, useMemo } from 'react';
@@ -13,6 +15,8 @@ import { CreateMarketEvent } from './CreateMarketEvent';
 import { ResolveMarketEvent } from './ResolveMarketEvent';
 import { NFTStudio } from './NFTStudio';
 import { TreasuryNFTs } from './TreasuryNFTs';
+import { AdminPanel } from './AdminPanel';
+import { ShieldCheck } from 'lucide-react';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -30,7 +34,7 @@ export const AdminDashboard: FC = () => {
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [nfts, setNfts] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking'>('tokens');
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -208,6 +212,18 @@ export const AdminDashboard: FC = () => {
         }
     };
 
+    const isAdmin = publicKey?.toBase58() === ADMIN_WALLET;
+
+    if (!isAdmin) {
+        return (
+            <div className="flex flex-col items-center justify-center p-8 bg-card/30 border border-border/50 rounded-2xl backdrop-blur-sm mt-8 w-full max-w-4xl mx-auto min-h-[400px]">
+                <ShieldCheck className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
+                <h2 className="text-2xl font-bold font-display text-muted-foreground">Access Denied</h2>
+                <p className="text-muted-foreground mt-2">Only the Staking/Platform Authority can access this panel.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="p-6">
             <h2 className="text-3xl font-bold mb-6 text-foreground font-display uppercase italic">Admin Dashboard</h2>
@@ -283,6 +299,16 @@ export const AdminDashboard: FC = () => {
                 >
                     Resolve E-Plays
                 </button>
+                <button 
+                    onClick={() => setActiveTab('snbl-staking')}
+                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                        activeTab === 'snbl-staking' 
+                            ? 'bg-primary text-primary-foreground' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    SNBL Staking
+                </button>
             </div>
 
             {activeTab === 'tokens' ? (
@@ -313,6 +339,8 @@ export const AdminDashboard: FC = () => {
                 <CreateMarketEvent />
             ) : activeTab === 'treasury-nfts' ? (
                 <TreasuryNFTs nfts={nfts} />
+            ) : activeTab === 'snbl-staking' ? (
+                <AdminPanel />
             ) : (
                 <ResolveMarketEvent />
             )}

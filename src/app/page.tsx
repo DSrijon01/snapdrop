@@ -14,17 +14,12 @@ import { motion } from "framer-motion";
 import { useState } from "react";
 import Link from "next/link";
 
-const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
-import { AdminDashboard } from "@/components/features/one-click-launch/AdminDashboard";
-
 function StreetSyncContent() {
   const { connected, publicKey } = useWallet();
-  const [activeTab, setActiveTab] = useState<'stream' | 'for-sale' | 'marketplace' | 'sell-tokens' | 'admin'>('stream');
+  const [activeTab, setActiveTab] = useState<'stream' | 'for-sale' | 'marketplace' | 'sell-tokens'>('stream');
   const [subTab, setSubTab] = useState<'nfts' | 'tokens'>('nfts');
   const [refreshTrigger, setRefreshTrigger] = useState(0); // For gallery
   const [bgRefreshTrigger, setBgRefreshTrigger] = useState(0); // For background
-  
-  const isAdmin = publicKey?.toBase58() === ADMIN_WALLET;
 
   const handleMintSuccess = () => {
       // Trigger a refresh
@@ -94,20 +89,6 @@ function StreetSyncContent() {
                         />
                     )}
                 </button>
-                {isAdmin && (
-                    <button
-                        onClick={() => setActiveTab('admin')}
-                        className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap text-red-500 hover:text-red-400`}
-                    >
-                        One Click Launch
-                         {activeTab === 'admin' && (
-                            <motion.div 
-                                layoutId="activeTab"
-                                className="absolute bottom-0 left-0 right-0 h-[2px] bg-red-500 rounded-full"
-                            />
-                        )}
-                    </button>
-                )}
             </div>
         </div>
 
@@ -161,10 +142,6 @@ function StreetSyncContent() {
                     <Marketplace displayMode="real" />
                 ) : activeTab === 'sell-tokens' ? (
                     <SellTokens />
-                ) : activeTab === 'admin' ? (
-                    <div className="container mx-auto">
-                        <AdminDashboard />
-                    </div>
                 ) : (
                     <ForSale />
                 )}

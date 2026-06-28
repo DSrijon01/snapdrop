@@ -1,4 +1,6 @@
-import { AdminPanel } from "@/components/features/one-click-launch/AdminPanel";
+"use client";
+
+import { AdminDashboard } from "@/components/features/one-click-launch/AdminDashboard";
 
 export default function OneClickLaunchPage() {
   return (
@@ -10,7 +12,7 @@ export default function OneClickLaunchPage() {
         </p>
       </div>
       
-      <AdminPanel />
+      <AdminDashboard />
     </div>
   );
 }

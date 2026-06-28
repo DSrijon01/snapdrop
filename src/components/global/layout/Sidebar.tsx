@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search } from "lucide-react";
+import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search, ShieldCheck } from "lucide-react";
 import { UserAvatar } from "@/components/global/layout/UserAvatar";
 
 const NAV_ITEMS = [
@@ -20,7 +20,14 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const { connected } = useWallet();
+  const { connected, publicKey } = useWallet();
+
+  const isAdmin = publicKey?.toBase58() === "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
+
+  const navItems = [
+    ...NAV_ITEMS,
+    ...(isAdmin ? [{ label: "One Click Launch", href: "/one-click-launch", icon: ShieldCheck }] : []),
+  ];
 
   // Auto-close sidebar on mobile when navigating to a new route
   useEffect(() => {
@@ -63,7 +70,7 @@ export function Sidebar() {
 
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-hide">
-          {NAV_ITEMS.map((item) => {
+          {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
 
