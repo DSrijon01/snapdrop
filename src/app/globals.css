@@ -109,13 +109,31 @@
   * {
     @apply border-border;
   }
+  html,
   body {
     @apply bg-background text-foreground font-sans;
     font-feature-settings: "rlig" 1, "calt" 1;
+    scroll-behavior: smooth;
+  }
+  
+  /* Smooth scrolling & Webkit momentum scroll for active layers */
+  main,
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .custom-scrollbar {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
 @layer utilities {
+  .gpu-accelerate {
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+
   .text-shadow-glow {
     text-shadow: 0 0 10px rgba(32, 129, 226, 0.4), 0 0 20px rgba(32, 129, 226, 0.2);
   }

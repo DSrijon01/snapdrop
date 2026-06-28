@@ -42,8 +42,12 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setShuffledImages([...images].sort(() => Math.random() - 0.5));
 
+    // Limit particles on mobile screen sizes to reduce rendering weight
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
+    const particleCount = isMobile ? 6 : 20;
+
     // Generate random particles
-    const newParticles = Array.from({ length: 20 }).map((_, i) => ({
+    const newParticles = Array.from({ length: particleCount }).map((_, i) => ({
       id: i,
       width: Math.random() * 200 + 100,
       height: Math.random() * 200 + 100,
@@ -70,6 +74,10 @@ export const AnimatedBackground: React.FC<Props> = ({ refreshTrigger = 0 }) => {
             style={{
                 width: p.width,
                 height: p.height,
+                willChange: "transform, opacity",
+                transform: "translate3d(0, 0, 0)",
+                WebkitBackfaceVisibility: "hidden",
+                backfaceVisibility: "hidden",
             }}
             initial={{ opacity: 0, scale: 0.8, x: p.initialX, y: p.initialY }}
             animate={{

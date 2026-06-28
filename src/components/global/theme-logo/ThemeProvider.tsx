@@ -27,13 +27,13 @@ export function ThemeProvider({
   defaultTheme = "light",
   storageKey = "vite-ui-theme",
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(() => {
-    // Avoid accessing localStorage during SSR
-    if (typeof window !== "undefined") {
-        return (localStorage.getItem(storageKey) as Theme) || defaultTheme;
-    }
-    return defaultTheme;
-  });
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
+
+  useEffect(() => {
+    // Safely retrieve the theme value on mount to prevent SSR/hydration mismatches
+    const stored = (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+    setTheme(stored);
+  }, [storageKey, defaultTheme]);
 
   useEffect(() => {
     const root = window.document.documentElement;
