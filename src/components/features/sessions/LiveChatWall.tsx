@@ -40,7 +40,7 @@ export function LiveChatWall({ messages, onSendMessage }: LiveChatWallProps) {
   };
 
   return (
-    <div className="glass-card flex flex-col h-[500px] md:h-[600px] rounded-2xl border border-border shadow-lg overflow-hidden">
+    <div className="glass-card flex flex-col h-[320px] lg:h-[350px] rounded-2xl border border-border shadow-lg overflow-hidden">
       {/* Chat Header */}
       <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/10 shrink-0">
         <h3 className="text-md font-black font-display uppercase tracking-wider flex items-center gap-2 text-foreground">

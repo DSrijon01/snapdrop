@@ -464,7 +464,7 @@ export function SessionsBoard() {
         </div>
 
         {/* Right Column - Sidebar (1/3 width on desktop) */}
-        <div className="space-y-6 lg:sticky lg:top-[90px] lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:pr-2 custom-scrollbar">
+        <div className="space-y-6 lg:sticky lg:top-[90px]">
           
           {/* Trending Tickers */}
           <TrendingTickers 
