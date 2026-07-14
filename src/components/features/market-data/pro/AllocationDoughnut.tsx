@@ -22,7 +22,7 @@ export function AllocationDoughnut({ data, title = "YOUR CURRENT ALLOCATION" }: 
       <h4 className="text-[10px] font-mono text-muted-foreground uppercase font-black tracking-widest text-center">
         {title}
       </h4>
-      <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full">
+      <div className="flex flex-col items-center justify-center gap-6 w-full">
         {/* SVG Circle Segments */}
         <div className="relative w-36 h-36 shrink-0 flex items-center justify-center">
           <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
@@ -58,7 +58,7 @@ export function AllocationDoughnut({ data, title = "YOUR CURRENT ALLOCATION" }: 
         </div>
 
         {/* Legend */}
-        <div className="flex-1 space-y-2.5 w-full">
+        <div className="w-full pt-4 border-t border-border/40 space-y-2.5">
           {data.map((item, idx) => {
             const pct = ((item.value / total) * 100).toFixed(1);
             return (

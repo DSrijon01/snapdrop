@@ -44,7 +44,7 @@ export function MarketDataPro() {
   const { hasAccess, openSubscriptionModal, loading: subLoading } = useSubscription();
   const [isMounted, setIsMounted] = useState(false);
   const [activeView, setActiveView] = useState<"Advisor" | "Portfolio">("Advisor");
-  const [previewState, setPreviewState] = useState<"StateA" | "StateB" | "StateC">("StateB");
+  const [previewState, setPreviewState] = useState<"StateA" | "StateB">("StateB");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -87,6 +87,7 @@ export function MarketDataPro() {
 
   useEffect(() => {
     setIsMounted(true);
+    handleSwitchState("StateB");
   }, []);
 
   useEffect(() => {
@@ -104,8 +105,8 @@ export function MarketDataPro() {
   // Determine actual access (checks Context OR simulated unlock)
   const isSubscribed = hasAccess("market-data") || simulatedSubscribe;
   
-  // Apply State C paywall overlay if requested by state toggler, OR if the user doesn't have subscription access
-  const isPaywallLocked = previewState === "StateC" || !isSubscribed;
+  // Apply paywall overlay if the user doesn't have subscription access
+  const isPaywallLocked = !isSubscribed;
 
   // Handle Send message
   const handleSendMessage = (textToSend?: string) => {
@@ -209,8 +210,8 @@ export function MarketDataPro() {
     }, 1200);
   };
 
-  // Switch to specific preview states (A, B, C)
-  const handleSwitchState = (state: "StateA" | "StateB" | "StateC") => {
+  // Switch to specific states (A, B)
+  const handleSwitchState = (state: "StateA" | "StateB") => {
     setPreviewState(state);
     if (state === "StateA") {
       setMessages([]);
@@ -760,10 +761,8 @@ export function MarketDataPro() {
 
                     {/* Weightings Doughnut Card */}
                     <div className="space-y-5 lg:col-span-1">
-                      <div className="bg-card border border-border/85 rounded-2xl p-5 space-y-4 shadow-sm">
-                        <div className="flex justify-center">
-                          <AllocationDoughnut data={doughnutData} />
-                        </div>
+                      <div className="flex justify-center w-full">
+                        <AllocationDoughnut data={doughnutData} />
                       </div>
 
                       {/* Suggested move action card inside portfolio view */}
@@ -888,41 +887,7 @@ export function MarketDataPro() {
         </main>
       </div>
 
-      {/* -----------------------------------------
-          FLOATING STATE PREVIEW CONTROL PANEL
-          ----------------------------------------- */}
-      <div className="fixed bottom-14 right-4 bg-card/90 backdrop-blur-md border border-border/80 py-2 px-3.5 rounded-full flex items-center gap-2.5 shadow-lg z-50">
-        <span className="text-[9px] font-mono uppercase tracking-wider text-muted-foreground font-black">
-          Preview:
-        </span>
-        <button
-          onClick={() => {
-            setSimulatedSubscribe(true);
-            handleSwitchState("StateA");
-          }}
-          className={`py-1 px-2.5 rounded-full text-[9px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer ${previewState === "StateA" && !isPaywallLocked ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground'}`}
-        >
-          State A (Empty)
-        </button>
-        <button
-          onClick={() => {
-            setSimulatedSubscribe(true);
-            handleSwitchState("StateB");
-          }}
-          className={`py-1 px-2.5 rounded-full text-[9px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer ${previewState === "StateB" && !isPaywallLocked ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground'}`}
-        >
-          State B (Chat)
-        </button>
-        <button
-          onClick={() => {
-            setSimulatedSubscribe(false); // Forces lock trigger
-            handleSwitchState("StateC");
-          }}
-          className={`py-1 px-2.5 rounded-full text-[9px] font-mono font-black uppercase tracking-wider transition-all cursor-pointer ${isPaywallLocked ? 'bg-primary text-primary-foreground' : 'bg-secondary hover:bg-muted text-muted-foreground hover:text-foreground'}`}
-        >
-          State C (Locked)
-        </button>
-      </div>
+
 
     </div>
   );
