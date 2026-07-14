@@ -94,13 +94,7 @@ export function MarketDataPro() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  if (!isMounted || subLoading) {
-    return (
-      <div className="flex h-full w-full bg-background items-center justify-center text-muted-foreground animate-pulse font-mono uppercase tracking-widest text-xs">
-        Initializing Market Data Pro...
-      </div>
-    );
-  }
+
 
   // Determine actual access (checks Context OR simulated unlock)
   const isSubscribed = hasAccess("market-data") || simulatedSubscribe;
@@ -279,6 +273,14 @@ export function MarketDataPro() {
            item.ticker === "ETH" ? "#627EEA" :
            item.ticker === "JUP" ? "#19FB9B" : "#2775CA"
   })).filter(item => item.value > 0);
+
+  if (!isMounted || subLoading) {
+    return (
+      <div className="flex h-full w-full bg-background items-center justify-center text-muted-foreground animate-pulse font-mono uppercase tracking-widest text-xs">
+        Initializing Market Data Pro...
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col overflow-hidden bg-background text-foreground relative">
