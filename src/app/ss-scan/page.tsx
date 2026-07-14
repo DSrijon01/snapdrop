@@ -442,7 +442,7 @@ export default function SSScanPage() {
                                 : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                             }`}
                           >
-                            {tx.type}
+                            {tx.type || "BUY"}
                           </span>
                         </td>
                         <td className="p-4 text-right font-mono font-bold text-foreground">

@@ -272,7 +272,8 @@ export const SellTokens: FC = () => {
                 symbol: "SEC",
                 image: "",
                 date: Date.now(),
-                signature: tx
+                signature: tx,
+                type: "BUY"
             };
             const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
             localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));

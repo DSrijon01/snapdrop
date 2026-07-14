@@ -74,7 +74,8 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
                  symbol: metadata?.symbol || "UNK",
                  image: metadata?.image || "",
                  date: Date.now(),
-                 signature: ""
+                 signature: "",
+                 type: "BUY"
              };
 
              if (isFixedPrice) {
