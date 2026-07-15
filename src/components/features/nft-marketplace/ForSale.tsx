@@ -9,6 +9,7 @@ import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { X, CheckCircle, Copy, ExternalLink } from "lucide-react";
+import { checkSolBalance } from "@/utils/balanceCheck";
 
 // Metaplex Imports
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -127,6 +128,11 @@ export const ForSale: FC = () => {
             alert("Please connect your wallet!");
             return;
         }
+
+        const priceSol = Number(item.price);
+        const isBalanceOk = await checkSolBalance(wallet.publicKey, priceSol, connection);
+        if (!isBalanceOk) return;
+
         setIsBuying(item.id);
 
         try {

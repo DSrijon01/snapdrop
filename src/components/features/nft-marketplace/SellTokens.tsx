@@ -2,7 +2,8 @@
 
 import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { checkSolBalance } from "@/utils/balanceCheck";
 import { useLaunchpad, TokenListingAccount } from "@/hooks/useLaunchpad";
 import { useTokenMetadata } from "@/hooks/useTokenMetadata";
 import { BN } from "@coral-xyz/anchor";
@@ -201,8 +202,9 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
 };
 
 export const SellTokens: FC = () => {
+    const { connection } = useConnection();
+    const { connected, publicKey } = useWallet();
     const { tokenListings, fetchTokenListings, buyTokenSecondary, cancelTokenSecondary, loading } = useLaunchpad();
-    const { publicKey, connected } = useWallet();
     const [searchTerm, setSearchTerm] = useState("");
     const [activeOperationId, setActiveOperationId] = useState<string | null>(null);
     const [operationType, setOperationType] = useState<'buy' | 'cancel' | null>(null);
@@ -239,6 +241,11 @@ export const SellTokens: FC = () => {
             toast.error("Connect wallet first!");
             return;
         }
+
+        const priceSol = Number(listing.account.price) / 1e9;
+        const isBalanceOk = await checkSolBalance(publicKey, priceSol, connection);
+        if (!isBalanceOk) return;
+
         setActiveOperationId(listing.publicKey.toBase58());
         setOperationType('buy');
         try {

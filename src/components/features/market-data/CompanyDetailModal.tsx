@@ -6,6 +6,8 @@ import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { BN } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import toast from "react-hot-toast";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { checkSolBalance } from "@/utils/balanceCheck";
 
 interface CompanyDetailModalProps {
     isOpen: boolean;
@@ -14,6 +16,8 @@ interface CompanyDetailModalProps {
 }
 
 export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClose, curve }) => {
+    const { connection } = useConnection();
+    const { publicKey } = useWallet();
     const { metadata, loading: metadataLoading } = useTokenMetadata(curve?.account.mint || null);
     const { buyTokens, buyTokensFixedPrice, loading: programLoading } = useLaunchpad();
     const [amount, setAmount] = useState<number>(1);
@@ -62,7 +66,11 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
     }, [curve, amount, isFixedPrice]);
 
     const handleBuy = async () => {
-        if (!curve) return;
+        if (!curve || !publicKey) return;
+
+        const isBalanceOk = await checkSolBalance(publicKey, estimatedCost, connection);
+        if (!isBalanceOk) return;
+
         setIsBuying(true);
         try {
              let tx = "";

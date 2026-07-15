@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { SystemProgram, Transaction, PublicKey } from "@solana/web3.js";
 import toast from "react-hot-toast";
+import { checkSolBalance } from "@/utils/balanceCheck";
 
 const MERCHANT_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -194,6 +195,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     // Real Solana transaction flow
+    const isBalanceOk = await checkSolBalance(publicKey, 1.0, connection, () => {
+      // Re-trigger load to sync local state balances
+      loadSubscriptions();
+    });
+    if (!isBalanceOk) return false;
+
     const toastId = toast.loading(`Preparing subscription transaction for ${MODULE_NAMES[moduleId]}...`);
     try {
       const transaction = new Transaction().add(
