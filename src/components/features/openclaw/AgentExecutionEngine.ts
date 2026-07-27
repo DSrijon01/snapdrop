@@ -8,9 +8,14 @@ export interface TokenPrice {
 
 export interface AgentRule {
   id: string;
-  type: "grid" | "twap" | "rebalance";
+  type: "grid" | "twap" | "rebalance" | string;
   symbol: string;
   isActive: boolean;
+  model?: "DeepSeek" | "Kimi3" | "Claude" | "GPT 5.6";
+  modelName?: string;
+  strategyId?: string;
+  strategyName?: string;
+  howItWorks?: string;
   params: {
     // Grid params
     gridBasePrice?: number;
@@ -289,8 +294,11 @@ export class AgentExecutionEngine {
         const buyPrice = base * (1 - buyTrigger / 100);
         const sellPrice = base * (1 + sellTrigger / 100);
 
+        const modelLabel = rule.modelName || rule.model || "AI Agent";
+        const stratLabel = rule.strategyName || rule.type.toUpperCase();
+
         if (currentPrice <= buyPrice) {
-          this.addLog(`[Grid Agent ${rule.id}] Price target reached ($${currentPrice} <= $${buyPrice.toFixed(2)}). Triggering BUY.`, "info");
+          this.addLog(`[${modelLabel} | ${stratLabel}] Target reached ($${currentPrice} <= $${buyPrice.toFixed(2)}). Executing BUY order for ${tradeAmount} ${symbol}`, "info");
           const ok = this.executeTrade(true, symbol, tradeAmount);
           if (ok) {
             // Shift grid base price to current price
@@ -298,7 +306,7 @@ export class AgentExecutionEngine {
             saveNeeded = true;
           }
         } else if (currentPrice >= sellPrice) {
-          this.addLog(`[Grid Agent ${rule.id}] Price target reached ($${currentPrice} >= $${sellPrice.toFixed(2)}). Triggering SELL.`, "info");
+          this.addLog(`[${modelLabel} | ${stratLabel}] Target reached ($${currentPrice} >= $${sellPrice.toFixed(2)}). Executing SELL order for ${tradeAmount} ${symbol}`, "info");
           const ok = this.executeTrade(false, symbol, tradeAmount);
           if (ok) {
             rule.params.gridBasePrice = currentPrice;
