@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, 
@@ -43,6 +44,7 @@ const MOCK_PRO_SESSIONS_DATA = [
 
 export function SessionsPro() {
   const { hasAccess, openSubscriptionModal, loading } = useSubscription();
+  const { publicKey } = useWallet();
   const [isMounted, setIsMounted] = useState(false);
 
   // View state: 'sync-feed' | 'metrics'
@@ -59,6 +61,12 @@ export function SessionsPro() {
   const [activeFilterHandle, setActiveFilterHandle] = useState<string | null>(null);
 
   const [isComposerOpen, setIsComposerOpen] = useState(false);
+
+  // Active user seed
+  const userSeed = publicKey ? publicKey.toBase58() : "degen-pro-user";
+  const userAuthor = publicKey 
+    ? `User_${publicKey.toBase58().substring(0, 4).toUpperCase()}`
+    : "Guest_Degen";
 
   useEffect(() => {
     setIsMounted(true);
@@ -114,8 +122,8 @@ export function SessionsPro() {
       if (p.id !== postId) return p;
       const newComment = {
         id: `c-${Date.now()}`,
-        author: "Pro Subscriber",
-        avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100",
+        author: userAuthor,
+        avatarSeed: userSeed,
         text,
         time: "Just now",
       };
@@ -164,9 +172,9 @@ export function SessionsPro() {
   const handlePublishNewPost = (postData: { title: string; content: string; topic: string; mediaUrl?: string }) => {
     const newPost: SyncFeedPost = {
       id: `sync-post-user-${Date.now()}`,
-      author: "You (Pro Publisher)",
-      authorHandle: "you_pro",
-      authorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+      author: userAuthor,
+      authorHandle: userAuthor.toLowerCase(),
+      avatarSeed: userSeed,
       isVerified: true,
       timeAgo: "Just now",
       isSubscribed: true,
@@ -214,7 +222,7 @@ export function SessionsPro() {
   if (!isMounted || loading) {
     return (
       <div className="flex h-screen w-full bg-background items-center justify-center text-muted-foreground animate-pulse font-mono uppercase tracking-widest text-xs gap-2">
-        <RefreshCw className="animate-spin text-orange-500" size={18} />
+        <RefreshCw className="animate-spin text-primary" size={18} />
         <span>Loading Sync Feed Pro Environment...</span>
       </div>
     );
@@ -224,24 +232,24 @@ export function SessionsPro() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
-      {/* Background Neon glows */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-[30rem] h-[30rem] bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
+      {/* Background Neon glows in Red/Primary palette */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/4 left-1/4 w-[30rem] h-[30rem] bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
       <header className="w-full max-w-7xl px-4 md:px-6 pt-8 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/40 relative z-10">
         <div className="flex items-center gap-4">
           <Link
             href="/sessions"
-            className="flex items-center gap-2 text-xs font-mono tracking-widest font-bold uppercase text-muted-foreground hover:text-orange-500 transition-colors group px-3 py-2 -ml-3 rounded-lg hover:bg-muted/50"
+            className="flex items-center gap-2 text-xs font-mono tracking-widest font-bold uppercase text-muted-foreground hover:text-primary transition-colors group px-3 py-2 -ml-3 rounded-lg hover:bg-muted/50"
           >
             <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
             <span>Go Back</span>
           </Link>
           <div>
             <h1 className="text-2xl md:text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
-              <BookOpen className="w-7 h-7 text-orange-500 animate-pulse" />
-              Sessions Pro <span className="text-orange-500">Sync Feed Hub</span>
+              <BookOpen className="w-7 h-7 text-primary animate-pulse" />
+              Sessions Pro <span className="text-primary">Sync Feed Hub</span>
             </h1>
             <p className="text-muted-foreground text-xs uppercase tracking-wider font-mono mt-0.5">
               Exclusive research publication & subscriber network
@@ -256,7 +264,7 @@ export function SessionsPro() {
               onClick={() => setActiveViewMode("sync-feed")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-display uppercase transition-all ${
                 activeViewMode === "sync-feed"
-                  ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
+                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
@@ -290,9 +298,9 @@ export function SessionsPro() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="max-w-md mx-auto mt-12 bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl p-8 text-center shadow-2xl relative overflow-hidden"
             >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/10 rounded-full blur-xl pointer-events-none" />
+              <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-xl pointer-events-none" />
 
-              <div className="w-16 h-16 bg-orange-500/10 border border-orange-500/20 rounded-2xl flex items-center justify-center text-orange-500 mx-auto mb-6">
+              <div className="w-16 h-16 bg-primary/10 border border-primary/20 rounded-2xl flex items-center justify-center text-primary mx-auto mb-6">
                 <ShieldAlert size={32} />
               </div>
 
@@ -309,15 +317,15 @@ export function SessionsPro() {
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>Full Sync Feed Pro quantitative research feed</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>Exclusive publication & subscriber channel access</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />
+                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>Live cross-DEX arbitrage & geographic density metrics</span>
                   </li>
                 </ul>
@@ -326,7 +334,7 @@ export function SessionsPro() {
               <div className="space-y-3">
                 <button
                   onClick={() => openSubscriptionModal("sessions")}
-                  className="w-full py-4 bg-orange-500 text-white hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs font-mono shadow-lg shadow-orange-500/20"
+                  className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs font-mono shadow-md shadow-primary/20"
                 >
                   Subscribe for 1 SOL / 30 Days
                 </button>
@@ -355,16 +363,18 @@ export function SessionsPro() {
 
               {/* Center Column - Main Feed */}
               <div className="flex-1 space-y-6 w-full min-w-0">
-                {/* Composer Trigger Box ("What's on your mind?") */}
+                {/* Composer Trigger Box ("What's on your mind?") with Unified Bot Avatar */}
                 <div
                   onClick={() => setIsComposerOpen(true)}
-                  className="bg-card/45 backdrop-blur-md border border-border/80 rounded-2xl p-4 flex items-center gap-3.5 cursor-pointer hover:border-orange-500/50 transition-all shadow-md group"
+                  className="bg-card/45 backdrop-blur-md border border-border/80 rounded-2xl p-4 flex items-center gap-3.5 cursor-pointer hover:border-primary/50 transition-all shadow-md group"
                 >
-                  <img
-                    src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100"
-                    alt="User Avatar"
-                    className="w-10 h-10 rounded-full border border-border/80 shrink-0"
-                  />
+                  <div className="w-10 h-10 rounded-xl bg-secondary border border-border overflow-hidden shrink-0 flex items-center justify-center p-0.5 shadow-sm">
+                    <img
+                      src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(userSeed)}&backgroundColor=transparent`}
+                      alt="User Avatar"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
                   <div className="flex-1 bg-secondary/50 border border-border/60 rounded-xl px-4 py-2.5 text-xs text-muted-foreground font-sans group-hover:text-foreground transition-colors">
                     What&apos;s on your mind?
                   </div>
@@ -381,7 +391,7 @@ export function SessionsPro() {
                           onClick={() => setFeedCategory(category)}
                           className={`px-3 py-1.5 rounded-xl text-xs font-bold font-display uppercase whitespace-nowrap transition-all flex items-center gap-1 ${
                             isActive
-                              ? "bg-orange-500/15 text-orange-500 border border-orange-500/30"
+                              ? "bg-primary/15 text-primary border border-primary/30 shadow-sm"
                               : "text-muted-foreground hover:text-foreground hover:bg-secondary/40"
                           }`}
                         >
@@ -395,7 +405,7 @@ export function SessionsPro() {
                   {activeFilterHandle && (
                     <button
                       onClick={() => setActiveFilterHandle(null)}
-                      className="text-xs font-mono font-bold text-orange-500 hover:underline uppercase shrink-0"
+                      className="text-xs font-mono font-bold text-primary hover:underline uppercase shrink-0"
                     >
                       Reset Filter (@{activeFilterHandle})
                     </button>
@@ -406,7 +416,7 @@ export function SessionsPro() {
                 <div className="space-y-6">
                   {filteredPosts.length === 0 ? (
                     <div className="bg-card/45 border border-border rounded-2xl p-12 text-center space-y-3">
-                      <BookOpen size={36} className="mx-auto text-orange-500 opacity-60" />
+                      <BookOpen size={36} className="mx-auto text-primary opacity-60" />
                       <p className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wide">
                         No Sync Feed articles found matching this filter.
                       </p>
@@ -416,7 +426,7 @@ export function SessionsPro() {
                           setActiveFilterHandle(null);
                           setFeedCategory("For you");
                         }}
-                        className="px-4 py-2 bg-orange-500 text-white rounded-xl text-xs font-mono font-bold uppercase"
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-mono font-bold uppercase"
                       >
                         Reset All Filters
                       </button>

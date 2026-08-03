@@ -39,7 +39,7 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search Sync Feed..."
-          className="w-full bg-card/60 backdrop-blur-md border border-border/80 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-all"
+          className="w-full bg-card/60 backdrop-blur-md border border-border/80 focus:border-primary focus:ring-1 focus:ring-primary rounded-2xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-all"
         />
         {searchQuery && (
           <button
@@ -59,13 +59,13 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
           </h3>
           <button
             onClick={() => toast("Showing all active Sync Feed newsletters")}
-            className="text-xs font-mono font-bold text-muted-foreground hover:text-orange-500 transition-colors"
+            className="text-xs font-mono font-bold text-muted-foreground hover:text-primary transition-colors"
           >
             See all
           </button>
         </div>
 
-        {/* Circular Subscriptions Grid with Orange Badges */}
+        {/* Circular/Rounded Subscriptions Grid with DiceBear Bot Avatars & Red Badges */}
         <div className="grid grid-cols-4 gap-3 pt-1">
           {subscriptions.map((sub) => {
             const isSelected = activeFilterHandle === sub.handle;
@@ -74,16 +74,20 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
                 key={sub.id}
                 onClick={() => onFilterBySubscription(sub.handle)}
                 className={`flex flex-col items-center gap-1.5 group relative p-1 rounded-xl transition-all ${
-                  isSelected ? "bg-orange-500/10 ring-1 ring-orange-500/40" : ""
+                  isSelected ? "bg-primary/10 ring-1 ring-primary/40" : ""
                 }`}
               >
                 <div className="relative">
-                  <div className="w-12 h-12 rounded-full bg-secondary/80 border border-border/80 flex items-center justify-center text-xl group-hover:scale-105 transition-transform shadow-md">
-                    {sub.avatar}
+                  <div className="w-12 h-12 rounded-2xl bg-secondary/80 border border-border/80 flex items-center justify-center p-1 group-hover:scale-105 transition-transform shadow-sm overflow-hidden">
+                    <img
+                      src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(sub.avatarSeed || sub.name)}&backgroundColor=transparent`}
+                      alt={sub.name}
+                      className="w-full h-full object-contain"
+                    />
                   </div>
-                  {/* Orange Unread Badge Dot */}
+                  {/* Red Unread Badge Dot */}
                   {sub.hasUnread && (
-                    <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-orange-500 rounded-full border-2 border-card shadow-sm animate-pulse" />
+                    <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-primary rounded-full border-2 border-card shadow-sm animate-ping" />
                   )}
                 </div>
                 <span className="text-[10px] font-mono font-bold text-muted-foreground group-hover:text-foreground line-clamp-1 text-center w-full">
@@ -103,7 +107,7 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
           </h3>
           <button
             onClick={() => toast("Discovering new Sync Feed publications...")}
-            className="text-xs font-mono font-bold text-muted-foreground hover:text-orange-500 transition-colors"
+            className="text-xs font-mono font-bold text-muted-foreground hover:text-primary transition-colors"
           >
             See all
           </button>
@@ -116,8 +120,12 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
               className="flex items-center justify-between gap-3 group hover:bg-muted/30 p-2 rounded-xl transition-all"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-9 h-9 rounded-full bg-secondary border border-border/60 flex items-center justify-center text-base shrink-0">
-                  {creator.avatar}
+                <div className="w-9 h-9 rounded-xl bg-secondary border border-border/60 flex items-center justify-center p-0.5 shrink-0 overflow-hidden">
+                  <img
+                    src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(creator.avatarSeed || creator.name)}&backgroundColor=transparent`}
+                    alt={creator.name}
+                    className="w-full h-full object-contain"
+                  />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1">
@@ -125,7 +133,7 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
                       {creator.name}
                     </span>
                     {creator.isVerified && (
-                      <ShieldCheck size={13} className="text-orange-500 shrink-0" />
+                      <ShieldCheck size={13} className="text-primary shrink-0" />
                     )}
                   </div>
                   <p className="text-[11px] text-muted-foreground truncate font-mono">
@@ -140,7 +148,7 @@ export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
                   className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase transition-all flex items-center gap-1 ${
                     creator.isSubscribed
                       ? "bg-secondary text-muted-foreground border border-border/80"
-                      : "bg-orange-500/10 hover:bg-orange-500 text-orange-500 hover:text-white border border-orange-500/30"
+                      : "bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/30"
                   }`}
                 >
                   {creator.isSubscribed ? (

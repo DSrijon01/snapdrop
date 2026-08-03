@@ -2,7 +2,7 @@ export interface SyncFeedPost {
   id: string;
   author: string;
   authorHandle: string;
-  authorAvatar: string;
+  avatarSeed: string;
   isVerified?: boolean;
   timeAgo: string;
   isSubscribed?: boolean;
@@ -20,14 +20,14 @@ export interface SyncFeedPost {
   restacks: number;
   userLiked?: boolean;
   userRestacked?: boolean;
-  commentsList?: { id: string; author: string; avatar: string; text: string; time: string }[];
+  commentsList?: { id: string; author: string; avatarSeed: string; text: string; time: string }[];
 }
 
 export interface SyncFeedSubscription {
   id: string;
   name: string;
   handle: string;
-  avatar: string;
+  avatarSeed: string;
   unreadCount?: number;
   hasUnread?: boolean;
   category: string;
@@ -37,28 +37,28 @@ export interface RecommendedCreator {
   id: string;
   name: string;
   subtitle: string;
-  avatar: string;
+  avatarSeed: string;
   isVerified?: boolean;
   isSubscribed?: boolean;
 }
 
 export const INITIAL_SYNC_FEED_SUBSCRIPTIONS: SyncFeedSubscription[] = [
-  { id: "sub-1", name: "Cassandra", handle: "cassandra", avatar: "🎨", hasUnread: true, category: "Macro" },
-  { id: "sub-2", name: "Value Picks", handle: "valuepicks", avatar: "📈", hasUnread: true, category: "Stocks" },
-  { id: "sub-3", name: "AI In Financial", handle: "aifinance", avatar: "🤖", hasUnread: true, category: "AI & Quant" },
-  { id: "sub-4", name: "How They Build", handle: "howtheybuild", avatar: "🔀", hasUnread: true, category: "Engineering" },
-  { id: "sub-5", name: "AI Market Alpha", handle: "aimarket", avatar: "📉", hasUnread: true, category: "Alpha" },
-  { id: "sub-6", name: "Quality Stocks", handle: "qualitystocks", avatar: "🐷", hasUnread: true, category: "Investing" },
-  { id: "sub-7", name: "Principled Inv.", handle: "principled", avatar: "👨‍💼", hasUnread: false, category: "Wealth" },
-  { id: "sub-8", name: "Dividends Daily", handle: "dividends", avatar: "💵", hasUnread: true, category: "Income" },
+  { id: "sub-1", name: "Cassandra", handle: "cassandra", avatarSeed: "Cassandra_Bot", hasUnread: true, category: "Macro" },
+  { id: "sub-2", name: "Value Picks", handle: "valuepicks", avatarSeed: "ValuePicks_Bot", hasUnread: true, category: "Stocks" },
+  { id: "sub-3", name: "AI In Financial", handle: "aifinance", avatarSeed: "AIFinance_Bot", hasUnread: true, category: "AI & Quant" },
+  { id: "sub-4", name: "How They Build", handle: "howtheybuild", avatarSeed: "HowTheyBuild_Bot", hasUnread: true, category: "Engineering" },
+  { id: "sub-5", name: "AI Market Alpha", handle: "aimarket", avatarSeed: "AIMarket_Bot", hasUnread: true, category: "Alpha" },
+  { id: "sub-6", name: "Quality Stocks", handle: "qualitystocks", avatarSeed: "QualityStocks_Bot", hasUnread: true, category: "Investing" },
+  { id: "sub-7", name: "Principled Inv.", handle: "principled", avatarSeed: "Principled_Bot", hasUnread: false, category: "Wealth" },
+  { id: "sub-8", name: "Dividends Daily", handle: "dividends", avatarSeed: "Dividends_Bot", hasUnread: true, category: "Income" },
 ];
 
 export const INITIAL_RECOMMENDED_CREATORS: RecommendedCreator[] = [
-  { id: "rec-1", name: "Gut Health Digest", subtitle: "Gut Health Digest", avatar: "🥗", isVerified: false, isSubscribed: false },
-  { id: "rec-2", name: "Luke Cadell", subtitle: "Holistic Healing & Quant Mindset", avatar: "🧘‍♂️", isVerified: true, isSubscribed: false },
-  { id: "rec-3", name: "Jordan Schneider, MD", subtitle: "Jordan Schneider", avatar: "👨‍⚕️", isVerified: false, isSubscribed: false },
-  { id: "rec-4", name: "Nutritional Wellness", subtitle: "Nutritional Wellness", avatar: "🍃", isVerified: false, isSubscribed: false },
-  { id: "rec-5", name: "Daily Mindfulness", subtitle: "Daily Mindfulness & Trading State", avatar: "🧘", isVerified: true, isSubscribed: false },
+  { id: "rec-1", name: "Gut Health Digest", subtitle: "Gut Health Digest", avatarSeed: "GutHealth_Bot", isVerified: false, isSubscribed: false },
+  { id: "rec-2", name: "Luke Cadell", subtitle: "Holistic Healing & Quant Mindset", avatarSeed: "LukeCadell_Bot", isVerified: true, isSubscribed: false },
+  { id: "rec-3", name: "Jordan Schneider, MD", subtitle: "Jordan Schneider", avatarSeed: "JordanMD_Bot", isVerified: false, isSubscribed: false },
+  { id: "rec-4", name: "Nutritional Wellness", subtitle: "Nutritional Wellness", avatarSeed: "Wellness_Bot", isVerified: false, isSubscribed: false },
+  { id: "rec-5", name: "Daily Mindfulness", subtitle: "Daily Mindfulness & Trading State", avatarSeed: "Mindfulness_Bot", isVerified: true, isSubscribed: false },
 ];
 
 export const INITIAL_SYNC_FEED_POSTS: SyncFeedPost[] = [
@@ -66,7 +66,7 @@ export const INITIAL_SYNC_FEED_POSTS: SyncFeedPost[] = [
     id: "sync-post-1",
     author: "Dhruv Sahu",
     authorHandle: "dhruvsahu",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    avatarSeed: "DhruvSahu_Bot",
     isVerified: true,
     timeAgo: "7d",
     isSubscribed: false,
@@ -77,15 +77,15 @@ export const INITIAL_SYNC_FEED_POSTS: SyncFeedPost[] = [
     commentsCount: 4,
     restacks: 1,
     commentsList: [
-      { id: "c1", author: "Alex Rivers", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100", text: "Looking forward to this series! Great initiative Dhruv.", time: "6d" },
-      { id: "c2", author: "Elena Rostova", avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100", text: "Can you feature macro analysts as well?", time: "5d" }
+      { id: "c1", author: "Alex Rivers", avatarSeed: "AlexRivers_Bot", text: "Looking forward to this series! Great initiative Dhruv.", time: "6d" },
+      { id: "c2", author: "Elena Rostova", avatarSeed: "ElenaRostova_Bot", text: "Can you feature macro analysts as well?", time: "5d" }
     ]
   },
   {
     id: "sync-post-2",
     author: "Papers for Quant Traders",
     authorHandle: "quantpapers",
-    authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
+    avatarSeed: "QuantPapers_Bot",
     isVerified: true,
     timeAgo: "18h",
     isSubscribed: true,
@@ -101,14 +101,14 @@ export const INITIAL_SYNC_FEED_POSTS: SyncFeedPost[] = [
     commentsCount: 19,
     restacks: 8,
     commentsList: [
-      { id: "c3", author: "Dr. Satoshi", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100", text: "Fascinating derivation of fat-tail returns in trend strategies.", time: "12h" }
+      { id: "c3", author: "Dr. Satoshi", avatarSeed: "DrSatoshi_Bot", text: "Fascinating derivation of fat-tail returns in trend strategies.", time: "12h" }
     ]
   },
   {
     id: "sync-post-3",
     author: "AI In Financial Markets",
     authorHandle: "aifinance",
-    authorAvatar: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150&auto=format&fit=crop&q=80",
+    avatarSeed: "AIFinance_Bot",
     isVerified: true,
     timeAgo: "3h",
     isSubscribed: true,

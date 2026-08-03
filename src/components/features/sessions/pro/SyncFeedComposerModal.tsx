@@ -58,7 +58,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border/40 pb-4">
             <div className="flex items-center gap-2">
-              <Sparkles size={20} className="text-orange-500" />
+              <Sparkles size={20} className="text-primary" />
               <h2 className="text-xl font-black font-display uppercase tracking-tight text-foreground">
                 Publish to Sync Feed Pro
               </h2>
@@ -86,7 +86,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
 
             {/* Topic selector */}
             <div className="flex items-center gap-2">
-              <Hash size={14} className="text-orange-500" />
+              <Hash size={14} className="text-primary" />
               <select
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
@@ -107,7 +107,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
                 onChange={(e) => setContent(e.target.value)}
                 rows={5}
                 placeholder="What's on your mind? Share research, due diligence, or market notes..."
-                className="w-full bg-secondary/30 border border-border/60 focus:border-orange-500 rounded-2xl p-4 text-sm text-foreground placeholder-muted-foreground outline-none resize-none"
+                className="w-full bg-secondary/30 border border-border/60 focus:border-primary rounded-2xl p-4 text-sm text-foreground placeholder-muted-foreground outline-none resize-none"
               />
             </div>
 
@@ -137,7 +137,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowMediaInput(!showMediaInput)}
-                  className="flex items-center gap-1.5 text-xs font-mono font-bold hover:text-orange-500 transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-mono font-bold hover:text-primary transition-colors"
                 >
                   <Image size={16} />
                   <span>Attach Media</span>
@@ -145,7 +145,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
                 <button
                   type="button"
                   onClick={() => toast("Research PDF upload enabled for Pro subscribers.")}
-                  className="flex items-center gap-1.5 text-xs font-mono font-bold hover:text-orange-500 transition-colors"
+                  className="flex items-center gap-1.5 text-xs font-mono font-bold hover:text-primary transition-colors"
                 >
                   <FileText size={16} />
                   <span>Attach Research PDF</span>
@@ -162,7 +162,7 @@ export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-orange-500 text-white rounded-xl text-xs font-mono font-bold uppercase hover:bg-orange-600 shadow-lg shadow-orange-500/20 flex items-center gap-1.5"
+                  className="px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-xs font-mono font-bold uppercase hover:bg-primary-hover shadow-md shadow-primary/20 flex items-center gap-1.5"
                 >
                   <Send size={14} />
                   <span>Publish Note</span>

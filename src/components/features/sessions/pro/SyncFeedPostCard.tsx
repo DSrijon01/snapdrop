@@ -59,28 +59,30 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
       {/* Social Proof Header if present */}
       {post.socialProof && (
         <div className="flex items-center gap-2 text-xs font-mono font-bold text-muted-foreground pb-1 border-b border-border/30">
-          <Heart size={13} className="text-orange-500 fill-orange-500/20" />
+          <Heart size={13} className="text-primary fill-primary/20" />
           <span>{post.socialProof}</span>
         </div>
       )}
 
-      {/* Author Bar */}
+      {/* Author Bar with Unified Bot Avatar */}
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <img
-            src={post.authorAvatar}
-            alt={post.author}
-            className="w-10 h-10 rounded-full object-cover border border-border/60 shrink-0"
-          />
+          <div className="w-10 h-10 rounded-xl bg-secondary border border-border overflow-hidden shrink-0 flex items-center justify-center p-0.5 shadow-sm">
+            <img
+              src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(post.avatarSeed || post.author)}&backgroundColor=transparent`}
+              alt={post.author}
+              className="w-full h-full object-contain"
+            />
+          </div>
           <div>
             <div className="flex items-center gap-2">
               <span className="font-black font-display text-sm text-foreground hover:underline cursor-pointer">
                 {post.author}
               </span>
-              <span className="text-xs font-mono text-muted-foreground">{post.timeAgo}</span>
+              <span className="text-xs font-mono text-muted-foreground">• {post.timeAgo}</span>
             </div>
             {post.topic && (
-              <span className="text-[11px] font-mono text-orange-500 uppercase tracking-wider">
+              <span className="text-[11px] font-mono text-primary font-bold uppercase tracking-wider">
                 #{post.topic}
               </span>
             )}
@@ -94,7 +96,7 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
             className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase transition-all flex items-center gap-1 ${
               post.isSubscribed
                 ? "bg-secondary text-muted-foreground border border-border/80"
-                : "bg-orange-500/10 hover:bg-orange-500/20 text-orange-500 border border-orange-500/30"
+                : "bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30"
             }`}
           >
             {post.isSubscribed ? (
@@ -133,7 +135,7 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
 
         {/* Update / Highlight Box */}
         {post.callout && (
-          <div className="p-3.5 rounded-xl bg-orange-500/5 border-l-4 border-orange-500 text-xs italic text-foreground/80 leading-relaxed">
+          <div className="p-3.5 rounded-xl bg-primary/5 border-l-4 border-primary text-xs italic text-foreground/80 leading-relaxed">
             {post.callout}
           </div>
         )}
@@ -149,7 +151,7 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-3">
                 <span className="text-xs font-mono font-bold text-white flex items-center gap-1.5 line-clamp-1">
-                  <FileText size={14} className="text-orange-500" />
+                  <FileText size={14} className="text-primary" />
                   {post.mediaTitle1 || "Research Paper PDF Preview"}
                 </span>
               </div>
@@ -185,10 +187,10 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
           <button
             onClick={() => onToggleLike(post.id)}
             className={`flex items-center gap-1.5 transition-colors ${
-              post.userLiked ? "text-orange-500" : "hover:text-foreground"
+              post.userLiked ? "text-primary" : "hover:text-foreground"
             }`}
           >
-            <Heart size={16} className={post.userLiked ? "fill-orange-500 text-orange-500" : ""} />
+            <Heart size={16} className={post.userLiked ? "fill-primary text-primary" : ""} />
             <span>{post.likes}</span>
           </button>
 
@@ -236,7 +238,13 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
               <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
                 {post.commentsList.map((c) => (
                   <div key={c.id} className="bg-muted/40 p-2.5 rounded-xl flex items-start gap-2.5 text-xs">
-                    <img src={c.avatar} alt={c.author} className="w-6 h-6 rounded-full shrink-0" />
+                    <div className="w-6 h-6 rounded-lg bg-secondary border border-border overflow-hidden shrink-0 flex items-center justify-center p-0.5">
+                      <img
+                        src={`https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(c.avatarSeed || c.author)}&backgroundColor=transparent`}
+                        alt={c.author}
+                        className="w-full h-full object-contain"
+                      />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
                         <span className="font-bold text-foreground">{c.author}</span>
@@ -260,11 +268,11 @@ export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
                 value={newCommentText}
                 onChange={(e) => setNewCommentText(e.target.value)}
                 placeholder="Write a subscriber reply..."
-                className="flex-1 bg-secondary/50 border border-border focus:border-orange-500 rounded-xl px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground outline-none"
+                className="flex-1 bg-secondary/50 border border-border focus:border-primary rounded-xl px-3 py-1.5 text-xs text-foreground placeholder-muted-foreground outline-none"
               />
               <button
                 type="submit"
-                className="px-3 py-1.5 bg-orange-500 text-white rounded-xl text-xs font-mono font-bold uppercase flex items-center gap-1 hover:bg-orange-600 transition-all"
+                className="px-3 py-1.5 bg-primary text-primary-foreground rounded-xl text-xs font-mono font-bold uppercase flex items-center gap-1 hover:bg-primary-hover transition-all"
               >
                 <Send size={12} />
                 <span>Post</span>
