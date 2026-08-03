@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { SubstackPost } from "./SubstackMockData";
+import { SyncFeedPost } from "./SyncFeedMockData";
 import { 
   Heart, 
   MessageSquare, 
@@ -11,21 +11,20 @@ import {
   X, 
   Check, 
   Send,
-  FileText,
-  Bookmark
+  FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
-interface SubstackPostCardProps {
-  post: SubstackPost;
+interface SyncFeedPostCardProps {
+  post: SyncFeedPost;
   onToggleLike: (id: string) => void;
   onToggleRestack: (id: string) => void;
   onAddComment: (postId: string, text: string) => void;
   onToggleSubscribeCreator: (author: string) => void;
 }
 
-export const SubstackPostCard: React.FC<SubstackPostCardProps> = ({
+export const SyncFeedPostCard: React.FC<SyncFeedPostCardProps> = ({
   post,
   onToggleLike,
   onToggleRestack,
@@ -48,7 +47,7 @@ export const SubstackPostCard: React.FC<SubstackPostCardProps> = ({
     if (!newCommentText.trim()) return;
     onAddComment(post.id, newCommentText);
     setNewCommentText("");
-    toast.success("Comment published to Substack Pro!");
+    toast.success("Comment published to Sync Feed Pro!");
   };
 
   return (
@@ -139,7 +138,7 @@ export const SubstackPostCard: React.FC<SubstackPostCardProps> = ({
           </div>
         )}
 
-        {/* Dual Media Embed (Matching screenshot image previews) */}
+        {/* Dual Media Embed */}
         {post.mediaType === "images" && post.mediaUrl1 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
             <div className="relative rounded-xl overflow-hidden border border-border/60 group/img bg-muted/40 aspect-video md:aspect-auto h-48">

@@ -1,4 +1,4 @@
-export interface SubstackPost {
+export interface SyncFeedPost {
   id: string;
   author: string;
   authorHandle: string;
@@ -23,7 +23,7 @@ export interface SubstackPost {
   commentsList?: { id: string; author: string; avatar: string; text: string; time: string }[];
 }
 
-export interface SubstackSubscription {
+export interface SyncFeedSubscription {
   id: string;
   name: string;
   handle: string;
@@ -42,7 +42,7 @@ export interface RecommendedCreator {
   isSubscribed?: boolean;
 }
 
-export const INITIAL_SUBSTACK_SUBSCRIPTIONS: SubstackSubscription[] = [
+export const INITIAL_SYNC_FEED_SUBSCRIPTIONS: SyncFeedSubscription[] = [
   { id: "sub-1", name: "Cassandra", handle: "cassandra", avatar: "🎨", hasUnread: true, category: "Macro" },
   { id: "sub-2", name: "Value Picks", handle: "valuepicks", avatar: "📈", hasUnread: true, category: "Stocks" },
   { id: "sub-3", name: "AI In Financial", handle: "aifinance", avatar: "🤖", hasUnread: true, category: "AI & Quant" },
@@ -61,9 +61,9 @@ export const INITIAL_RECOMMENDED_CREATORS: RecommendedCreator[] = [
   { id: "rec-5", name: "Daily Mindfulness", subtitle: "Daily Mindfulness & Trading State", avatar: "🧘", isVerified: true, isSubscribed: false },
 ];
 
-export const INITIAL_SUBSTACK_POSTS: SubstackPost[] = [
+export const INITIAL_SYNC_FEED_POSTS: SyncFeedPost[] = [
   {
-    id: "sub-post-1",
+    id: "sync-post-1",
     author: "Dhruv Sahu",
     authorHandle: "dhruvsahu",
     authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
@@ -82,7 +82,7 @@ export const INITIAL_SUBSTACK_POSTS: SubstackPost[] = [
     ]
   },
   {
-    id: "sub-post-2",
+    id: "sync-post-2",
     author: "Papers for Quant Traders",
     authorHandle: "quantpapers",
     authorAvatar: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80",
@@ -105,7 +105,7 @@ export const INITIAL_SUBSTACK_POSTS: SubstackPost[] = [
     ]
   },
   {
-    id: "sub-post-3",
+    id: "sync-post-3",
     author: "AI In Financial Markets",
     authorHandle: "aifinance",
     authorAvatar: "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=150&auto=format&fit=crop&q=80",

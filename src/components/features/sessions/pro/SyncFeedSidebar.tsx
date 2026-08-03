@@ -5,24 +5,22 @@ import {
   Search, 
   Check, 
   X, 
-  Sparkles,
-  ArrowRight,
   ShieldCheck
 } from "lucide-react";
-import { SubstackSubscription, RecommendedCreator } from "./SubstackMockData";
+import { SyncFeedSubscription, RecommendedCreator } from "./SyncFeedMockData";
 import toast from "react-hot-toast";
 
-interface SubstackSidebarProps {
+interface SyncFeedSidebarProps {
   searchQuery: string;
   setSearchQuery: (q: string) => void;
-  subscriptions: SubstackSubscription[];
+  subscriptions: SyncFeedSubscription[];
   recommendedCreators: RecommendedCreator[];
   onToggleSubscribeCreator: (creatorId: string) => void;
   onFilterBySubscription: (handle: string) => void;
   activeFilterHandle: string | null;
 }
 
-export const SubstackSidebar: React.FC<SubstackSidebarProps> = ({
+export const SyncFeedSidebar: React.FC<SyncFeedSidebarProps> = ({
   searchQuery,
   setSearchQuery,
   subscriptions,
@@ -40,7 +38,7 @@ export const SubstackSidebar: React.FC<SubstackSidebarProps> = ({
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search Substack..."
+          placeholder="Search Sync Feed..."
           className="w-full bg-card/60 backdrop-blur-md border border-border/80 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 rounded-2xl pl-10 pr-4 py-2.5 text-sm text-foreground placeholder-muted-foreground outline-none transition-all"
         />
         {searchQuery && (
@@ -60,7 +58,7 @@ export const SubstackSidebar: React.FC<SubstackSidebarProps> = ({
             Subscriptions
           </h3>
           <button
-            onClick={() => toast("Showing all active Substack newsletters")}
+            onClick={() => toast("Showing all active Sync Feed newsletters")}
             className="text-xs font-mono font-bold text-muted-foreground hover:text-orange-500 transition-colors"
           >
             See all
@@ -104,7 +102,7 @@ export const SubstackSidebar: React.FC<SubstackSidebarProps> = ({
             Recommended for you
           </h3>
           <button
-            onClick={() => toast("Discovering new Substack finance publications...")}
+            onClick={() => toast("Discovering new Sync Feed publications...")}
             className="text-xs font-mono font-bold text-muted-foreground hover:text-orange-500 transition-colors"
           >
             See all

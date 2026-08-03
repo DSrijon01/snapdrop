@@ -7,10 +7,8 @@ import {
   ArrowLeft, 
   ShieldAlert, 
   Sparkles, 
-  Zap, 
   CheckCircle2, 
   BookOpen, 
-  Search, 
   ChevronDown, 
   BarChart2, 
   Layout,
@@ -20,17 +18,17 @@ import Link from "next/link";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 import { 
-  SubstackPost, 
-  INITIAL_SUBSTACK_POSTS, 
-  INITIAL_SUBSTACK_SUBSCRIPTIONS, 
+  SyncFeedPost, 
+  INITIAL_SYNC_FEED_POSTS, 
+  INITIAL_SYNC_FEED_SUBSCRIPTIONS, 
   INITIAL_RECOMMENDED_CREATORS,
-  SubstackSubscription,
+  SyncFeedSubscription,
   RecommendedCreator
-} from "./SubstackMockData";
-import { SubstackNav } from "./SubstackNav";
-import { SubstackPostCard } from "./SubstackPostCard";
-import { SubstackSidebar } from "./SubstackSidebar";
-import { SubstackComposerModal } from "./SubstackComposerModal";
+} from "./SyncFeedMockData";
+import { SyncFeedNav } from "./SyncFeedNav";
+import { SyncFeedPostCard } from "./SyncFeedPostCard";
+import { SyncFeedSidebar } from "./SyncFeedSidebar";
+import { SyncFeedComposerModal } from "./SyncFeedComposerModal";
 import toast from "react-hot-toast";
 
 // Mock live sessions data for network metrics tab
@@ -47,13 +45,13 @@ export function SessionsPro() {
   const { hasAccess, openSubscriptionModal, loading } = useSubscription();
   const [isMounted, setIsMounted] = useState(false);
 
-  // View state: 'substack' | 'metrics'
-  const [activeViewMode, setActiveViewMode] = useState<"substack" | "metrics">("substack");
+  // View state: 'sync-feed' | 'metrics'
+  const [activeViewMode, setActiveViewMode] = useState<"sync-feed" | "metrics">("sync-feed");
 
-  // Substack State
+  // Sync Feed State
   const [navTab, setNavTab] = useState("home");
-  const [posts, setPosts] = useState<SubstackPost[]>(INITIAL_SUBSTACK_POSTS);
-  const [subscriptions, setSubscriptions] = useState<SubstackSubscription[]>(INITIAL_SUBSTACK_SUBSCRIPTIONS);
+  const [posts, setPosts] = useState<SyncFeedPost[]>(INITIAL_SYNC_FEED_POSTS);
+  const [subscriptions, setSubscriptions] = useState<SyncFeedSubscription[]>(INITIAL_SYNC_FEED_SUBSCRIPTIONS);
   const [recommendedCreators, setRecommendedCreators] = useState<RecommendedCreator[]>(INITIAL_RECOMMENDED_CREATORS);
   
   const [searchQuery, setSearchQuery] = useState("");
@@ -64,23 +62,23 @@ export function SessionsPro() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Load persisted Substack posts if available
+    // Load persisted Sync Feed posts if available
     try {
-      const stored = localStorage.getItem("substack_pro_posts");
+      const stored = localStorage.getItem("sync_feed_pro_posts");
       if (stored) {
         setPosts(JSON.parse(stored));
       }
     } catch (e) {
-      console.warn("Failed to load substack_pro_posts from localStorage:", e);
+      console.warn("Failed to load sync_feed_pro_posts from localStorage:", e);
     }
   }, []);
 
-  const savePosts = (updated: SubstackPost[]) => {
+  const savePosts = (updated: SyncFeedPost[]) => {
     setPosts(updated);
     try {
-      localStorage.setItem("substack_pro_posts", JSON.stringify(updated.slice(0, 50)));
+      localStorage.setItem("sync_feed_pro_posts", JSON.stringify(updated.slice(0, 50)));
     } catch (e) {
-      console.error("Failed to write substack_pro_posts to localStorage:", e);
+      console.error("Failed to write sync_feed_pro_posts to localStorage:", e);
     }
   };
 
@@ -164,8 +162,8 @@ export function SessionsPro() {
   };
 
   const handlePublishNewPost = (postData: { title: string; content: string; topic: string; mediaUrl?: string }) => {
-    const newPost: SubstackPost = {
-      id: `sub-post-user-${Date.now()}`,
+    const newPost: SyncFeedPost = {
+      id: `sync-post-user-${Date.now()}`,
       author: "You (Pro Publisher)",
       authorHandle: "you_pro",
       authorAvatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
@@ -186,7 +184,7 @@ export function SessionsPro() {
     savePosts([newPost, ...posts]);
   };
 
-  // Filtered Substack Posts
+  // Filtered Sync Feed Posts
   const filteredPosts = React.useMemo(() => {
     return posts.filter((p) => {
       // Search query
@@ -217,7 +215,7 @@ export function SessionsPro() {
     return (
       <div className="flex h-screen w-full bg-background items-center justify-center text-muted-foreground animate-pulse font-mono uppercase tracking-widest text-xs gap-2">
         <RefreshCw className="animate-spin text-orange-500" size={18} />
-        <span>Loading Substack Pro Environment...</span>
+        <span>Loading Sync Feed Pro Environment...</span>
       </div>
     );
   }
@@ -243,7 +241,7 @@ export function SessionsPro() {
           <div>
             <h1 className="text-2xl md:text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
               <BookOpen className="w-7 h-7 text-orange-500 animate-pulse" />
-              Sessions Pro <span className="text-orange-500">Substack Hub</span>
+              Sessions Pro <span className="text-orange-500">Sync Feed Hub</span>
             </h1>
             <p className="text-muted-foreground text-xs uppercase tracking-wider font-mono mt-0.5">
               Exclusive research publication & subscriber network
@@ -251,19 +249,19 @@ export function SessionsPro() {
           </div>
         </div>
 
-        {/* View Switcher Tabs (Substack Feed vs Network Metrics) */}
+        {/* View Switcher Tabs (Sync Feed vs Network Metrics) */}
         {access && (
           <div className="flex items-center gap-1 bg-secondary/50 p-1.5 rounded-2xl border border-border/60 shrink-0">
             <button
-              onClick={() => setActiveViewMode("substack")}
+              onClick={() => setActiveViewMode("sync-feed")}
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold font-display uppercase transition-all ${
-                activeViewMode === "substack"
+                activeViewMode === "sync-feed"
                   ? "bg-orange-500 text-white shadow-md shadow-orange-500/20"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
               }`}
             >
               <Layout size={14} />
-              <span>Substack Feed</span>
+              <span>Sync Feed</span>
             </button>
             <button
               onClick={() => setActiveViewMode("metrics")}
@@ -299,7 +297,7 @@ export function SessionsPro() {
               </div>
 
               <h2 className="text-2xl font-black font-display uppercase tracking-tight text-foreground mb-2">
-                Substack Pro Locked
+                Sync Feed Pro Locked
               </h2>
               <p className="text-muted-foreground text-xs font-mono uppercase tracking-wide mb-6">
                 Subscription Required to Access Research Feed
@@ -312,7 +310,7 @@ export function SessionsPro() {
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />
-                    <span>Full Substack Pro quantitative research feed</span>
+                    <span>Full Sync Feed Pro quantitative research feed</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-orange-500 shrink-0" />
@@ -340,16 +338,16 @@ export function SessionsPro() {
                 </Link>
               </div>
             </motion.div>
-          ) : activeViewMode === "substack" ? (
-            /* SUBSTACK PRO PLATFORM ENVIRONMENT (MATCHING SCREENSHOT) */
+          ) : activeViewMode === "sync-feed" ? (
+            /* SYNC FEED PRO PLATFORM ENVIRONMENT */
             <motion.div
-              key="substack-view"
+              key="sync-feed-view"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               className="flex flex-col lg:flex-row gap-6 items-start"
             >
-              {/* Left Column - Substack Navigation Sidebar */}
-              <SubstackNav
+              {/* Left Column - Sync Feed Navigation Sidebar */}
+              <SyncFeedNav
                 activeTab={navTab}
                 setActiveTab={setNavTab}
                 onOpenComposer={() => setIsComposerOpen(true)}
@@ -404,13 +402,13 @@ export function SessionsPro() {
                   )}
                 </div>
 
-                {/* Substack Feed Items Stream */}
+                {/* Sync Feed Items Stream */}
                 <div className="space-y-6">
                   {filteredPosts.length === 0 ? (
                     <div className="bg-card/45 border border-border rounded-2xl p-12 text-center space-y-3">
                       <BookOpen size={36} className="mx-auto text-orange-500 opacity-60" />
                       <p className="font-display font-bold text-sm text-muted-foreground uppercase tracking-wide">
-                        No Substack articles found matching this filter.
+                        No Sync Feed articles found matching this filter.
                       </p>
                       <button
                         onClick={() => {
@@ -425,7 +423,7 @@ export function SessionsPro() {
                     </div>
                   ) : (
                     filteredPosts.map((post) => (
-                      <SubstackPostCard
+                      <SyncFeedPostCard
                         key={post.id}
                         post={post}
                         onToggleLike={handleToggleLike}
@@ -438,8 +436,8 @@ export function SessionsPro() {
                 </div>
               </div>
 
-              {/* Right Column - Substack Sidebar (Search, Subscriptions Grid, Recommended Creators) */}
-              <SubstackSidebar
+              {/* Right Column - Sync Feed Sidebar (Search, Subscriptions Grid, Recommended Creators) */}
+              <SyncFeedSidebar
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
                 subscriptions={subscriptions}
@@ -558,8 +556,8 @@ export function SessionsPro() {
         </AnimatePresence>
       </main>
 
-      {/* Substack Composer Modal */}
-      <SubstackComposerModal
+      {/* Sync Feed Composer Modal */}
+      <SyncFeedComposerModal
         isOpen={isComposerOpen}
         onClose={() => setIsComposerOpen(false)}
         onPublishPost={handlePublishNewPost}

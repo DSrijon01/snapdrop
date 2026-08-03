@@ -5,13 +5,13 @@ import { X, Send, Image, FileText, Sparkles, Hash } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 
-interface SubstackComposerModalProps {
+interface SyncFeedComposerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPublishPost: (postData: { title: string; content: string; topic: string; mediaUrl?: string }) => void;
 }
 
-export const SubstackComposerModal: React.FC<SubstackComposerModalProps> = ({
+export const SyncFeedComposerModal: React.FC<SyncFeedComposerModalProps> = ({
   isOpen,
   onClose,
   onPublishPost,
@@ -43,7 +43,7 @@ export const SubstackComposerModal: React.FC<SubstackComposerModalProps> = ({
     setMediaUrl("");
     setShowMediaInput(false);
     onClose();
-    toast.success("Substack Pro Article Published!");
+    toast.success("Sync Feed Pro Article Published!");
   };
 
   return (
@@ -60,7 +60,7 @@ export const SubstackComposerModal: React.FC<SubstackComposerModalProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles size={20} className="text-orange-500" />
               <h2 className="text-xl font-black font-display uppercase tracking-tight text-foreground">
-                Publish to Substack Pro
+                Publish to Sync Feed Pro
               </h2>
             </div>
             <button

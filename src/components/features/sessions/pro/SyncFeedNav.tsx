@@ -12,18 +12,17 @@ import {
   ChevronDown, 
   BookOpen, 
   MoreHorizontal,
-  Sparkles,
   Zap
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-interface SubstackNavProps {
+interface SyncFeedNavProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenComposer: () => void;
 }
 
-export const SubstackNav: React.FC<SubstackNavProps> = ({
+export const SyncFeedNav: React.FC<SyncFeedNavProps> = ({
   activeTab,
   setActiveTab,
   onOpenComposer
@@ -42,7 +41,7 @@ export const SubstackNav: React.FC<SubstackNavProps> = ({
   return (
     <aside className="w-full lg:w-64 shrink-0 flex flex-col justify-between py-6 px-4 border-r border-border/40 bg-card/35 backdrop-blur-md min-h-[calc(100vh-100px)] rounded-2xl">
       <div className="space-y-6">
-        {/* Substack Pro Logo Badge */}
+        {/* Sync Feed Pro Logo Badge */}
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-10 h-10 rounded-xl bg-orange-500/15 border border-orange-500/30 flex items-center justify-center text-orange-500 shrink-0 shadow-lg shadow-orange-500/10">
             <BookOpen className="w-5 h-5" />
@@ -50,7 +49,7 @@ export const SubstackNav: React.FC<SubstackNavProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-black font-display uppercase tracking-tight text-base text-foreground">
-                Substack
+                Sync Feed
               </span>
               <span className="bg-primary text-primary-foreground text-[10px] font-mono font-bold uppercase px-1.5 py-0.2 rounded">
                 PRO
