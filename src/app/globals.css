@@ -188,5 +188,29 @@
   *, *::before, *::after {
     font-family: var(--font-space-grotesk), "Inter", "sans-serif" !important;
   }
+
+  /* PWA Safe Area Insets for iOS & Android Gesture Bars */
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-left {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+
+  .safe-right {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+
+  /* Smooth Mobile Web App Touch Interactions */
+  body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
 }
+
 

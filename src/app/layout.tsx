@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { DevnetBanner } from "@/components/global/wallet/DevnetBanner";
@@ -11,6 +11,8 @@ import { WalletContextProvider } from "@/components/global/wallet/WalletContextP
 import { Toaster } from "react-hot-toast";
 import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { SubscriptionModal } from "@/components/global/subscription/SubscriptionModal";
+import { PWARegister } from "@/components/global/pwa/PWARegister";
+import { InstallPromptModal } from "@/components/global/pwa/InstallPromptModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,17 +27,30 @@ const geistMono = Geist_Mono({
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
-  // Loading as variable font to support all weights including 900 if available, 
-  // or at least allow browser synthesis without fallback
 });
+
+export const viewport: Viewport = {
+  themeColor: "#DA291C",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: "Street Sync | Sync Your Street",
   description: "The next generation of digital collectibles. Connect your wallet to access the marketplace.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Street Sync",
+  },
   icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
+    icon: "/pwa-192x192.png",
+    shortcut: "/pwa-192x192.png",
+    apple: "/apple-touch-icon.png",
   },
 };
 
@@ -46,12 +61,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Street Sync" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}
       >
         <ThemeProvider defaultTheme="light">
           <WalletContextProvider>
             <SubscriptionProvider>
+              <PWARegister />
               <DevnetBanner />
               <div className="flex flex-col h-[100dvh] overflow-hidden bg-background">
                 <GlobalHeader />
@@ -65,6 +87,7 @@ export default function RootLayout({
                 </div>
                 <Footer />
               </div>
+              <InstallPromptModal />
               <Toaster position="bottom-right" />
               <SubscriptionModal />
             </SubscriptionProvider>
@@ -74,4 +97,5 @@ export default function RootLayout({
     </html>
   );
 }
+
 
