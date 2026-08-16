@@ -4,29 +4,31 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search, ShieldCheck } from "lucide-react";
+import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { UserAvatar } from "@/components/global/layout/UserAvatar";
+import { useSubscription } from "@/context/SubscriptionContext";
 
 const NAV_ITEMS = [
-  { label: "Market Data", href: "/market-data", icon: LineChart },
-  { label: "Market News", href: "/market-news", icon: Newspaper },
-  { label: "SS Scan", href: "/ss-scan", icon: Search },
-  { label: "E-plays", href: "/e-plays", icon: Zap },
-  { label: "Openclaw T cal", href: "/openclaw", icon: Bot },
-  { label: "SNBL", href: "/snbl", icon: PiggyBank },
-  { label: "Sessions", href: "/sessions", icon: Activity },
+  { label: "Market Data", href: "/market-data", moduleId: "market-data", icon: LineChart },
+  { label: "Market News", href: "/market-news", moduleId: "market-news", icon: Newspaper },
+  { label: "SS Scan", href: "/ss-scan", moduleId: "ss-scan", icon: Search },
+  { label: "E-plays", href: "/e-plays", moduleId: "e-plays", icon: Zap },
+  { label: "Openclaw T cal", href: "/openclaw", moduleId: "openclaw", icon: Bot },
+  { label: "SNBL", href: "/snbl", moduleId: "snbl", icon: PiggyBank },
+  { label: "Sessions", href: "/sessions", moduleId: "sessions", icon: Activity },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const { connected, publicKey } = useWallet();
+  const { hasAccess } = useSubscription();
 
   const isAdmin = publicKey?.toBase58() === "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
   const navItems = [
     ...NAV_ITEMS,
-    ...(isAdmin ? [{ label: "One Click Launch", href: "/one-click-launch", icon: ShieldCheck }] : []),
+    ...(isAdmin ? [{ label: "One Click Launch", href: "/one-click-launch", moduleId: "launch", icon: ShieldCheck }] : []),
   ];
 
   // Auto-close sidebar on mobile when navigating to a new route
@@ -71,24 +73,39 @@ export function Sidebar() {
         {/* Navigation Links */}
         <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto overflow-x-hidden scrollbar-hide">
           {navItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
+            const isSubscribed = item.moduleId ? hasAccess(item.moduleId) : false;
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setIsOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group/item ${
+                className={`flex items-center justify-between px-4 py-3 rounded-lg transition-all duration-200 group/item relative ${
                   isActive
                     ? "bg-primary/10 text-primary font-bold shadow-[inset_4px_0_0_0_var(--brand-color)] md:shadow-[inset_4px_0_0_0_oklch(var(--primary))]"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
-                <Icon size={20} className={`shrink-0 ${isActive ? "text-primary" : "text-muted-foreground group-hover/item:text-foreground transition-colors"}`} />
-                <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden text-sm uppercase tracking-wide font-display whitespace-nowrap transition-all duration-300">
-                  {item.label}
-                </span>
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="relative shrink-0">
+                    <Icon size={20} className={`${isActive ? "text-primary" : "text-muted-foreground group-hover/item:text-foreground transition-colors"}`} />
+                    {isSubscribed && (
+                      <span className="md:group-hover:hidden absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary ring-2 ring-background animate-pulse" />
+                    )}
+                  </div>
+                  <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden text-sm uppercase tracking-wide font-display whitespace-nowrap transition-all duration-300">
+                    {item.label}
+                  </span>
+                </div>
+
+                {isSubscribed && (
+                  <span className="md:opacity-0 md:w-0 md:group-hover:opacity-100 md:group-hover:w-auto overflow-hidden transition-all duration-300 px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[9px] font-mono font-bold tracking-wider uppercase border border-primary/30 flex items-center gap-0.5 shrink-0 ml-1">
+                    <Sparkles className="w-2.5 h-2.5" />
+                    <span>PRO</span>
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -111,3 +128,4 @@ export function Sidebar() {
     </>
   );
 }
+

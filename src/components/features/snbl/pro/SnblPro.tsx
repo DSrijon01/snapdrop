@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, PiggyBank, Award, Calculator } from "lucide-react";
 import Link from "next/link";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 
 // Mock yield curves
 const MOCK_PRO_STAKING_DATA = [
@@ -65,7 +66,8 @@ export function SnblPro() {
       </header>
 
       {/* Main Content */}
-      <main className="w-full max-w-7xl px-6 py-8 flex-1 relative z-10">
+      <main className="w-full max-w-7xl px-6 py-6 flex-1 relative z-10">
+        <ProStatusBar moduleId="snbl" />
         <AnimatePresence mode="wait">
           {!access ? (
             /* LOCKED SCREEN */
@@ -91,7 +93,7 @@ export function SnblPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the SNBL Pro tier for <strong>1 SOL per 30 days</strong> to unlock:
+                  Subscribe to the SNBL Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -114,7 +116,7 @@ export function SnblPro() {
                   onClick={() => openSubscriptionModal("snbl")}
                   className="w-full py-4 bg-primary text-primary-foreground hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-sm shadow-lg shadow-primary/20"
                 >
-                  Subscribe for 1 SOL / 30 Days
+                  Choose Plan & Unlock Pro
                 </button>
                 <Link
                   href="/snbl"

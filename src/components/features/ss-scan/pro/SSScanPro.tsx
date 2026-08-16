@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import toast from "react-hot-toast";
+import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 
 // Data Models
 interface TraceNode {
@@ -403,6 +404,7 @@ export function SSScanPro() {
 
       {/* Main Portal */}
       <main className="w-full max-w-7xl px-6 py-6 flex-1 relative z-10 flex flex-col gap-6">
+        <ProStatusBar moduleId="ss-scan" />
         <AnimatePresence mode="wait">
           {!access ? (
             /* LOCKED GATING VIEW */
@@ -428,7 +430,7 @@ export function SSScanPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the SS Scan Pro tier for <strong>1 SOL per 30 days</strong> to unlock:
+                  Subscribe to the SS Scan Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -451,7 +453,7 @@ export function SSScanPro() {
                   onClick={() => openSubscriptionModal("ss-scan")}
                   className="w-full py-4 bg-primary text-primary-foreground hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-sm shadow-lg shadow-primary/20 cursor-pointer"
                 >
-                  Subscribe for 1 SOL / 30 Days
+                  Choose Plan & Unlock Pro
                 </button>
                 <Link
                   href="/ss-scan"

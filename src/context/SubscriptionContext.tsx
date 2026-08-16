@@ -8,18 +8,63 @@ import { checkSolBalance } from "@/utils/balanceCheck";
 
 const MERCHANT_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
+export type SubscriptionPlanId = "1day" | "7days" | "30days";
+
+export interface SubscriptionPlan {
+  id: SubscriptionPlanId;
+  name: string;
+  durationDays: number;
+  priceSol: number;
+  lamports: number;
+  description: string;
+  badge?: string;
+  popular?: boolean;
+}
+
+export const SUBSCRIPTION_PLANS: Record<SubscriptionPlanId, SubscriptionPlan> = {
+  "1day": {
+    id: "1day",
+    name: "1 Day Pass",
+    durationDays: 1,
+    priceSol: 0.1,
+    lamports: 100_000_000,
+    description: "Instant 24h Pro feature access",
+    badge: "Quick Access",
+  },
+  "7days": {
+    id: "7days",
+    name: "7 Days Pass",
+    durationDays: 7,
+    priceSol: 0.5,
+    lamports: 500_000_000,
+    description: "Weekly power-user pass",
+    badge: "Most Flexible",
+  },
+  "30days": {
+    id: "30days",
+    name: "30 Days Pro",
+    durationDays: 30,
+    priceSol: 1.0,
+    lamports: 1_000_000_000,
+    description: "Full monthly unconstrained access",
+    badge: "Best Value",
+    popular: true,
+  },
+};
+
 export interface Subscription {
   moduleId: string;
   isSubscribed: boolean;
   expiresAt: number | null;
   isCancelled: boolean;
   txSignature: string | null;
+  planId?: SubscriptionPlanId;
 }
 
 export interface SubscriptionContextType {
   subscriptions: Record<string, Subscription>;
   loading: boolean;
-  subscribe: (moduleId: string) => Promise<boolean>;
+  subscribe: (moduleId: string, planId?: SubscriptionPlanId) => Promise<boolean>;
   cancelSubscription: (moduleId: string) => Promise<boolean>;
   hasAccess: (moduleId: string) => boolean;
   showModal: boolean;
@@ -114,6 +159,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
               expiresAt: null,
               isCancelled: false,
               txSignature: null,
+              planId: parsed.planId,
             };
             localStorage.removeItem(`street_sync_sub_${walletKey}_${moduleId}`);
           } else {
@@ -156,58 +202,67 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     loadSubscriptions();
   }, [loadSubscriptions]);
 
-  // Subscribe function
-  const subscribe = async (moduleId: string): Promise<boolean> => {
+  // Subscribe function with selected plan
+  const subscribe = async (moduleId: string, planId: SubscriptionPlanId = "30days"): Promise<boolean> => {
     if (!publicKey) {
       toast.error("Please connect your wallet first.");
       return false;
     }
 
+    const selectedPlan = SUBSCRIPTION_PLANS[planId] || SUBSCRIPTION_PLANS["30days"];
+    const durationMs = selectedPlan.durationDays * 24 * 60 * 60 * 1000;
     const walletKey = publicKey.toBase58();
+    const currentSub = subscriptions[moduleId];
+
+    // If already active and extending, add on top of remaining time
+    const baseTime = (currentSub?.isSubscribed && currentSub.expiresAt && currentSub.expiresAt > Date.now())
+      ? currentSub.expiresAt
+      : Date.now();
+    const expiresAt = baseTime + durationMs;
 
     if (isDemo) {
       // Simulate transaction in Sandbox / Demo mode
       return new Promise((resolve) => {
-        const toastId = toast.loading("Simulating Solana Sandbox Transaction...");
+        const toastId = toast.loading(`Simulating ${selectedPlan.name} (${selectedPlan.priceSol} SOL) on Sandbox...`);
         setTimeout(() => {
-          const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
           const subDetails: Subscription = {
             moduleId,
             isSubscribed: true,
             expiresAt,
             isCancelled: false,
             txSignature: `sim-sub-tx-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            planId,
           };
 
           try {
             safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
             setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
             toast.dismiss(toastId);
-            toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]}! (Sandbox Demo)`);
+            toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]} (${selectedPlan.name})! (Sandbox Demo)`);
             resolve(true);
           } catch (err) {
             toast.dismiss(toastId);
             toast.error("Failed to save subscription status. Browser storage full.");
             resolve(false);
           }
-        }, 1500);
+        }, 1200);
       });
     }
 
     // Real Solana transaction flow
-    const isBalanceOk = await checkSolBalance(publicKey, 1.0, connection, () => {
+    const isBalanceOk = await checkSolBalance(publicKey, selectedPlan.priceSol, connection, () => {
       // Re-trigger load to sync local state balances
       loadSubscriptions();
     });
     if (!isBalanceOk) return false;
 
-    const toastId = toast.loading(`Preparing subscription transaction for ${MODULE_NAMES[moduleId]}...`);
+    const toastId = toast.loading(`Preparing ${selectedPlan.name} (${selectedPlan.priceSol} SOL) for ${MODULE_NAMES[moduleId]}...`);
     try {
       const transaction = new Transaction().add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
           toPubkey: new PublicKey(MERCHANT_WALLET),
-          lamports: 1_000_000_000, // 1 SOL
+          lamports: selectedPlan.lamports,
         })
       );
 
@@ -229,20 +284,20 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         "confirmed"
       );
 
-      const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30 days
       const subDetails: Subscription = {
         moduleId,
         isSubscribed: true,
         expiresAt,
         isCancelled: false,
         txSignature: signature,
+        planId,
       };
 
       safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
       setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
 
       toast.dismiss(toastId);
-      toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]}!`);
+      toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]} (${selectedPlan.name})!`);
       return true;
     } catch (error: any) {
       console.error("Subscription payment failed:", error);

@@ -15,6 +15,7 @@ import { Sparkline } from "./Sparkline";
 import { AllocationDoughnut, DoughnutItem } from "./AllocationDoughnut";
 import { ActionCard } from "./ActionCard";
 import toast from "react-hot-toast";
+import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 
 // ==========================================
 // CUSTOM CHAT MESSAGE TYPE
@@ -340,6 +341,10 @@ export function MarketDataPro() {
           <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" title="Feed Connected" />
         </div>
       </nav>
+
+      <div className="px-4 pt-3 shrink-0">
+        <ProStatusBar moduleId="market-data" className="mb-0" />
+      </div>
 
       {/* -----------------------------------------
           MAIN LAYOUT CONTENT
@@ -822,7 +827,7 @@ export function MarketDataPro() {
 
                   <div className="bg-secondary/40 border border-border/60 rounded-2xl p-5 mb-6 text-left space-y-3">
                     <p className="text-xs text-muted-foreground leading-relaxed">
-                      Upgrade to the <strong>Market Data Pro</strong> tier for <strong>1 SOL per 30 days</strong> to unlock these features:
+                      Upgrade to the <strong>Market Data Pro</strong> tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock these features:
                     </p>
                     <ul className="space-y-3.5 text-xs font-mono uppercase text-foreground/80 font-black">
                       <li className="flex items-center gap-3">
@@ -860,7 +865,7 @@ export function MarketDataPro() {
                       }}
                       className="w-full py-4 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] transition-all rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-primary/20 cursor-pointer"
                     >
-                      Subscribe for 1 SOL / 30 Days
+                      Choose Plan & Unlock Pro
                     </button>
                     
                     <button

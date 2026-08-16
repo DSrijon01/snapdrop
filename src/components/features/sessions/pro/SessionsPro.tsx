@@ -31,6 +31,7 @@ import { SyncFeedPostCard } from "./SyncFeedPostCard";
 import { SyncFeedSidebar } from "./SyncFeedSidebar";
 import { SyncFeedComposerModal } from "./SyncFeedComposerModal";
 import toast from "react-hot-toast";
+import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 
 // Mock live sessions data for network metrics tab
 const MOCK_PRO_SESSIONS_DATA = [
@@ -288,6 +289,7 @@ export function SessionsPro() {
 
       {/* Main Content Area */}
       <main className="w-full max-w-7xl px-4 md:px-6 py-6 flex-1 relative z-10">
+        <ProStatusBar moduleId="sessions" />
         <AnimatePresence mode="wait">
           {!access ? (
             /* LOCKED GATEWAY SCREEN */
@@ -313,7 +315,7 @@ export function SessionsPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the Sessions Pro tier for <strong>1 SOL per 30 days</strong> to unlock:
+                  Subscribe to the Sessions Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -336,7 +338,7 @@ export function SessionsPro() {
                   onClick={() => openSubscriptionModal("sessions")}
                   className="w-full py-4 bg-primary text-primary-foreground hover:bg-primary-hover hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-xs font-mono shadow-md shadow-primary/20"
                 >
-                  Subscribe for 1 SOL / 30 Days
+                  Choose Plan & Unlock Pro
                 </button>
                 <Link
                   href="/sessions"

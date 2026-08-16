@@ -20,6 +20,7 @@ import {
 import Link from "next/link";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import toast from "react-hot-toast";
+import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 
 // 7-day Sentiment scoring matching Image 2 exactly
 const SENTIMENT_CHART_DATA = [
@@ -291,7 +292,8 @@ export function MarketNewsPro() {
       </header>
 
       {/* Main Content */}
-      <main className="w-full max-w-7xl px-6 py-8 flex-1 relative z-10">
+      <main className="w-full max-w-7xl px-6 py-6 flex-1 relative z-10">
+        <ProStatusBar moduleId="market-news" />
         <AnimatePresence mode="wait">
           {!access ? (
             /* LOCKED SCREEN (Unauthorized) */
@@ -317,7 +319,7 @@ export function MarketNewsPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the Market News Pro tier for <strong>1 SOL per 30 days</strong> to unlock:
+                  Subscribe to the Market News Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -340,7 +342,7 @@ export function MarketNewsPro() {
                   onClick={() => openSubscriptionModal("market-news")}
                   className="w-full py-4 bg-primary text-primary-foreground hover:scale-[1.02] active:scale-[0.98] transition-all rounded-xl font-bold uppercase tracking-wider text-sm shadow-lg shadow-primary/20"
                 >
-                  Subscribe for 1 SOL / 30 Days
+                  Choose Plan & Unlock Pro
                 </button>
                 <Link
                   href="/market-news"
