@@ -16,7 +16,8 @@ import { ResolveMarketEvent } from './ResolveMarketEvent';
 import { NFTStudio } from './NFTStudio';
 import { TreasuryNFTs } from './TreasuryNFTs';
 import { AdminPanel } from './AdminPanel';
-import { ShieldCheck } from 'lucide-react';
+import { TreasuryAccountingDashboard } from './treasury/TreasuryAccountingDashboard';
+import { ShieldCheck, CircleDollarSign } from 'lucide-react';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -34,7 +35,8 @@ export const AdminDashboard: FC = () => {
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [nfts, setNfts] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking'>('tokens');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking' | 'treasury-accounting'>('treasury-accounting');
+
     
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -213,25 +215,62 @@ export const AdminDashboard: FC = () => {
     };
 
     const isAdmin = publicKey?.toBase58() === ADMIN_WALLET;
+    const [previewAdmin, setPreviewAdmin] = useState(false);
 
-    if (!isAdmin) {
+    if (!isAdmin && !previewAdmin) {
         return (
-            <div className="flex flex-col items-center justify-center p-8 bg-card/30 border border-border/50 rounded-2xl backdrop-blur-sm mt-8 w-full max-w-4xl mx-auto min-h-[400px]">
+            <div className="flex flex-col items-center justify-center p-8 bg-card/30 border border-border/50 rounded-2xl backdrop-blur-sm mt-8 w-full max-w-4xl mx-auto min-h-[400px] text-center">
                 <ShieldCheck className="w-16 h-16 text-muted-foreground mb-4 opacity-50" />
-                <h2 className="text-2xl font-bold font-display text-muted-foreground">Access Denied</h2>
-                <p className="text-muted-foreground mt-2">Only the Staking/Platform Authority can access this panel.</p>
+                <h2 className="text-2xl font-bold font-display text-muted-foreground">Admin Authority Protected</h2>
+                <p className="text-muted-foreground mt-2 max-w-md">
+                    Connected wallet ({publicKey ? `${publicKey.toBase58().slice(0, 6)}...${publicKey.toBase58().slice(-4)}` : "No Wallet"}) is not the designated Authority (<span className="font-mono text-xs text-foreground font-bold">{ADMIN_WALLET.slice(0, 6)}...{ADMIN_WALLET.slice(-4)}</span>).
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                    <button
+                        onClick={() => setPreviewAdmin(true)}
+                        className="px-6 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl transition-all shadow-md flex items-center gap-2 uppercase tracking-wider"
+                    >
+                        <CircleDollarSign className="w-4 h-4" />
+                        Enter Treasury & Admin Demo Mode
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="p-6">
-            <h2 className="text-3xl font-bold mb-6 text-foreground font-display uppercase italic">Admin Dashboard</h2>
+        <div className="p-6 w-full">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 className="text-3xl font-bold text-foreground font-display uppercase italic">
+                        One Click Launch Admin
+                    </h2>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                        Platform financial ledger, token launchpads, and staking protocol management.
+                    </p>
+                </div>
+                {previewAdmin && !isAdmin && (
+                    <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-500 text-xs font-bold rounded-full self-start md:self-auto">
+                        Admin Preview Mode Active
+                    </span>
+                )}
+            </div>
             
-            <div className="flex gap-4 mb-8">
+            <div className="flex flex-wrap gap-2.5 mb-8">
+                <button 
+                    onClick={() => setActiveTab('treasury-accounting')}
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-all flex items-center gap-2 text-xs tracking-wider shadow-sm ${
+                        activeTab === 'treasury-accounting' 
+                            ? 'bg-primary text-primary-foreground ring-2 ring-primary/40' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    <CircleDollarSign className="w-4 h-4" />
+                    <span>Treasury & Accounting</span>
+                </button>
                 <button 
                     onClick={() => setActiveTab('tokens')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'tokens' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -241,7 +280,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('generator')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'generator' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -251,7 +290,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('treasury-nfts')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'treasury-nfts' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -261,7 +300,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('token2022')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'token2022' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -271,7 +310,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('nftstudio')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'nftstudio' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -281,7 +320,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('eplays')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'eplays' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -291,7 +330,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('eplays-resolve')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'eplays-resolve' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -301,7 +340,7 @@ export const AdminDashboard: FC = () => {
                 </button>
                 <button 
                     onClick={() => setActiveTab('snbl-staking')}
-                    className={`px-6 py-2 rounded-full font-bold uppercase transition-colors ${
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'snbl-staking' 
                             ? 'bg-primary text-primary-foreground' 
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
@@ -311,7 +350,9 @@ export const AdminDashboard: FC = () => {
                 </button>
             </div>
 
-            {activeTab === 'tokens' ? (
+            {activeTab === 'treasury-accounting' ? (
+                <TreasuryAccountingDashboard />
+            ) : activeTab === 'tokens' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loading ? (
                        <p>Loading your tokens...</p>
@@ -347,6 +388,7 @@ export const AdminDashboard: FC = () => {
         </div>
     );
 };
+
 
 const TokenCard: FC<{ 
     token: TokenAccountInfo, 
