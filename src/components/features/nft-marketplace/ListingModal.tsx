@@ -3,10 +3,11 @@
 import { FC, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
-import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
+import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { X } from "lucide-react";
 
 // NOTE: Since we don't have the Anchor Provider fully wired up with IDL in this snippet,
@@ -46,7 +47,7 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                 const [escrowPDA] = findEscrowAddress(mintPubkey, wallet.publicKey);
                 const sellerTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
 
-                const provider = new AnchorProvider(connection, wallet, {});
+                const provider = createConfirmedProvider(connection, wallet);
                 
                 // DEBUG: Log values to identify undefined
                 console.log("IDL:", IDL);
@@ -61,27 +62,33 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                 const TREASURY_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
                 const LISTING_FEE = new BN(0.01 * LAMPORTS_PER_SOL);
 
-                const signature = await program.methods
-                    .listNft(listingPrice)
-                    .accounts({
-                        seller: wallet.publicKey,
-                        mint: mintPubkey,
-                        sellerTokenAccount: sellerTokenAccount,
-                        listingAccount: listingPDA,
-                        escrowTokenAccount: escrowPDA,
-                        systemProgram: SystemProgram.programId,
-                        tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // Standard Token Program
-                    })
-                    .preInstructions([
-                        SystemProgram.transfer({
-                            fromPubkey: wallet.publicKey,
-                            toPubkey: TREASURY_WALLET,
-                            lamports: LISTING_FEE.toNumber(),
+                const signature = await withSolanaRetry(async () => {
+                    return await program.methods
+                        .listNft(listingPrice)
+                        .accounts({
+                            seller: wallet.publicKey,
+                            mint: mintPubkey,
+                            sellerTokenAccount: sellerTokenAccount,
+                            listingAccount: listingPDA,
+                            escrowTokenAccount: escrowPDA,
+                            systemProgram: SystemProgram.programId,
+                            tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"), // Standard Token Program
+                            rent: SYSVAR_RENT_PUBKEY,
                         })
-                    ])
-                    .rpc();
+                        .preInstructions([
+                            SystemProgram.transfer({
+                                fromPubkey: wallet.publicKey,
+                                toPubkey: TREASURY_WALLET,
+                                lamports: LISTING_FEE.toNumber(),
+                            })
+                        ])
+                        .rpc();
+                });
                 
                 await connection.confirmTransaction(signature, "confirmed");
+
+                // Dispatch global update event
+                window.dispatchEvent(new Event('nft_listings_updated'));
 
                 // Pass the signature so UI can update
                 onListComplete(priceNum, signature);

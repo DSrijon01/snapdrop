@@ -9,6 +9,7 @@ import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
 import { motion, AnimatePresence } from "framer-motion";
 import { ListingModal } from "./ListingModal";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
+import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
@@ -111,8 +112,8 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         try {
             const mintPubkey = new PublicKey(nft.mint);
             
-            // Use AnchorProvider with anchorWallet
-            const provider = new AnchorProvider(connection, anchorWallet, {});
+            // Use Confirmed AnchorProvider with anchorWallet
+            const provider = createConfirmedProvider(connection, anchorWallet);
             const program = new Program(IDL as any, provider as any);
             
             // Use shared utils for PDA derivation
@@ -123,16 +124,16 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
             // --- CRITICAL FIX: Ensure Seller ATA exists ---
             const sellerTokenAccountInfo = await connection.getAccountInfo(sellerTokenAccount);
-            const preInstructions = [];
+            const preInstructions: any[] = [];
 
             if (!sellerTokenAccountInfo) {
                 console.log("Seller ATA missing. Recreating...");
                 // Import this at top if missing: import { createAssociatedTokenAccountInstruction } from "@solana/spl-token";
                 preInstructions.push(
                     createAssociatedTokenAccountInstruction(
-                        wallet.publicKey,
+                        anchorWallet.publicKey,
                         sellerTokenAccount,
-                        wallet.publicKey,
+                        anchorWallet.publicKey,
                         mintPubkey
                     )
                 );
@@ -140,25 +141,27 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
              console.log("Canceling listing for:", {
                 mint: mintPubkey.toBase58(),
-                seller: wallet.publicKey.toBase58(),
+                seller: anchorWallet.publicKey.toBase58(),
                 listingPDA: listingPDA.toBase58(),
                 escrowPDA: escrowPDA.toBase58(),
                 sellerTokenAccount: sellerTokenAccount.toBase58()
              });
 
-             const signature = await program.methods
-                .cancelListing()
-                .accounts({
-                    seller: wallet.publicKey,
-                    mint: mintPubkey,
-                    listingAccount: listingPDA,
-                    escrowTokenAccount: escrowPDA,
-                    sellerTokenAccount: sellerTokenAccount,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                })
-                .preInstructions(preInstructions)
-                .rpc();
+             const signature = await withSolanaRetry(async () => {
+                return await program.methods
+                    .cancelListing()
+                    .accounts({
+                        seller: anchorWallet.publicKey,
+                        mint: mintPubkey,
+                        listingAccount: listingPDA,
+                        escrowTokenAccount: escrowPDA,
+                        sellerTokenAccount: sellerTokenAccount,
+                        systemProgram: SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                    })
+                    .preInstructions(preInstructions)
+                    .rpc();
+             });
             
             console.log("Cancel signature:", signature);
             await connection.confirmTransaction(signature, "confirmed");
@@ -166,6 +169,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
             
             // Refresh
             window.dispatchEvent(new Event('storage')); // Trigger refresh
+            window.dispatchEvent(new Event('nft_listings_updated')); // Trigger marketplace refresh
             // Manually update local state
             setNfts(prev => prev.filter(n => n.mint !== nft.mint)); // Remove from listed view (it will reappear in owned view on refresh)
 
@@ -228,7 +232,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 }));
 
                 // 2. Fetch "My Listings" (Items in Escrow)
-                const provider = new AnchorProvider(connection, wallet as any, {});
+                const provider = createConfirmedProvider(connection, wallet as any);
                 const program = new Program(IDL as any, provider as any);
                 
                 // Fetch all listings

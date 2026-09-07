@@ -7,6 +7,7 @@ import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
+import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { X, CheckCircle, Copy, ExternalLink } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
@@ -47,11 +48,11 @@ export const ForSale: FC = () => {
         const fetchListings = async (isInitial = false) => {
              if (isInitial) setIsLoading(true);
              try {
-                // 1. Setup Anchor Provider (Read-Only is fine if wallet not connected, but let's assume connected or read-only provider)
-                // If wallet is null, we can't use AnchorProvider standard constructor easily without a mock wallet.
-                // For public view, we need a read-only provider.
-                const provider = new AnchorProvider(connection, wallet || { publicKey: PublicKey.default, signTransaction: async () => {}, signAllTransactions: async () => {} } as any, {});
-                
+                // 1. Setup Confirmed Anchor Provider (Read-Only is fine if wallet not connected)
+                const provider = createConfirmedProvider(
+                    connection,
+                    wallet || { publicKey: PublicKey.default, signTransaction: async () => {}, signAllTransactions: async () => {} } as any
+                );
                 
                 // Use imported constants
                 const program = new Program(IDL as any, provider as any);
@@ -106,9 +107,18 @@ export const ForSale: FC = () => {
 
         fetchListings(true);
         
-        // Poll every 10 seconds for updates silently in the background
-        const interval = setInterval(() => fetchListings(false), 10000);
-        return () => clearInterval(interval);
+        // Gentle background sync (60s) + instant event-driven refresh
+        const interval = setInterval(() => fetchListings(false), 60000);
+        
+        const handleRefresh = () => fetchListings(false);
+        window.addEventListener('nft_listings_updated', handleRefresh);
+        window.addEventListener('storage', handleRefresh);
+
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('nft_listings_updated', handleRefresh);
+            window.removeEventListener('storage', handleRefresh);
+        };
 
     }, [connection, wallet, umi]);
 
@@ -139,8 +149,7 @@ export const ForSale: FC = () => {
             const mintPubkey = new PublicKey(item.mint);
             const sellerPubkey = new PublicKey(item.seller); 
             
-            const provider = new AnchorProvider(connection, wallet, {});
-            
+            const provider = createConfirmedProvider(connection, wallet);
             
             // Use imported constants
             const program = new Program(IDL as any, provider as any);
@@ -161,7 +170,7 @@ export const ForSale: FC = () => {
             
             // Check if ATA exists
             const buyerTokenAccountInfo = await connection.getAccountInfo(buyerTokenAccount);
-            const preInstructions = [];
+            const preInstructions: any[] = [];
             
             if (!buyerTokenAccountInfo) {
                 console.log("Creating Buyer ATA...");
@@ -177,21 +186,23 @@ export const ForSale: FC = () => {
 
             const TREASURY_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
 
-            const signature = await program.methods
-                .buyNft()
-                .accounts({
-                    buyer: wallet.publicKey,
-                    seller: sellerPubkey,
-                    treasury: TREASURY_WALLET,
-                    mint: mintPubkey,
-                    listingAccount: listingPDA,
-                    escrowTokenAccount: escrowPDA,
-                    buyerTokenAccount: buyerTokenAccount,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-                })
-                .preInstructions(preInstructions)
-                .rpc();
+            const signature = await withSolanaRetry(async () => {
+                return await program.methods
+                    .buyNft()
+                    .accounts({
+                        buyer: wallet.publicKey,
+                        seller: sellerPubkey,
+                        treasury: TREASURY_WALLET,
+                        mint: mintPubkey,
+                        listingAccount: listingPDA,
+                        escrowTokenAccount: escrowPDA,
+                        buyerTokenAccount: buyerTokenAccount,
+                        systemProgram: SystemProgram.programId,
+                        tokenProgram: new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
+                    })
+                    .preInstructions(preInstructions)
+                    .rpc();
+            });
 
             await connection.confirmTransaction(signature, "confirmed");
             
@@ -207,8 +218,9 @@ export const ForSale: FC = () => {
             const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
             localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
 
-            // Dispatch event to update Gallery
+            // Dispatch event to update Gallery & Listings immediately
             window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new Event('nft_listings_updated'));
 
             // Show custom success modal with signature
             setSuccessTx({

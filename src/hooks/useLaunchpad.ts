@@ -3,6 +3,7 @@ import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, ComputeBudgetProgram, Keypair } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, ExtensionType, getExtensionTypes } from '@solana/spl-token';
+import { withSolanaRetry } from '@/utils/solanaRetry';
 import idl from '../idl/launchpad.json';
 
 const PROGRAM_ID = new PublicKey("5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV");
@@ -71,6 +72,7 @@ export const useLaunchpad = () => {
     const provider = useMemo(() => {
         if (wallet) {
             return new AnchorProvider(connection, wallet, {
+                commitment: 'confirmed',
                 preflightCommitment: 'confirmed',
             });
         } else {
@@ -403,19 +405,21 @@ export const useLaunchpad = () => {
         const atomicAmount = new BN(Math.floor(amount * Math.pow(10, decimals)));
         const priceLamports = new BN(priceSol * 1_000_000_000);
 
-        const tx = await program.methods
-            .listTokenSecondary(uniqueId, atomicAmount, priceLamports)
-            .accounts({
-                seller: wallet.publicKey,
-                mint: mint,
-                sellerTokenAccount: sellerTokenAccount,
-                listingAccount: listingPda,
-                escrowTokenAccount: escrowAta,
-                tokenProgram: tokenProgramId,
-                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
-            })
-            .rpc();
+        const tx = await withSolanaRetry(async () => {
+            return await program.methods
+                .listTokenSecondary(uniqueId, atomicAmount, priceLamports)
+                .accounts({
+                    seller: wallet.publicKey,
+                    mint: mint,
+                    sellerTokenAccount: sellerTokenAccount,
+                    listingAccount: listingPda,
+                    escrowTokenAccount: escrowAta,
+                    tokenProgram: tokenProgramId,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+        });
 
         return tx;
     };
@@ -442,21 +446,23 @@ export const useLaunchpad = () => {
             tokenProgramId
         );
 
-        const tx = await program.methods
-            .buyTokenSecondary(listing.account.uniqueId)
-            .accounts({
-                buyer: wallet.publicKey,
-                seller: listing.account.seller,
-                treasury: TREASURY_WALLET,
-                mint: mint,
-                listingAccount: listing.publicKey,
-                escrowTokenAccount: escrowAta,
-                buyerTokenAccount: buyerTokenAccount,
-                tokenProgram: tokenProgramId,
-                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
-            })
-            .rpc();
+        const tx = await withSolanaRetry(async () => {
+            return await program.methods
+                .buyTokenSecondary(listing.account.uniqueId)
+                .accounts({
+                    buyer: wallet.publicKey,
+                    seller: listing.account.seller,
+                    treasury: TREASURY_WALLET,
+                    mint: mint,
+                    listingAccount: listing.publicKey,
+                    escrowTokenAccount: escrowAta,
+                    buyerTokenAccount: buyerTokenAccount,
+                    tokenProgram: tokenProgramId,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .rpc();
+        });
 
         return tx;
     };
