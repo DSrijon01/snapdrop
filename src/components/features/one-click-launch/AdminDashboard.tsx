@@ -1,7 +1,7 @@
 "use client";
 
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { PublicKey, SystemProgram, ComputeBudgetProgram } from '@solana/web3.js';
 import { FC, useEffect, useState, useMemo } from 'react';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
@@ -18,7 +18,7 @@ import { TreasuryNFTs } from './TreasuryNFTs';
 import { AdminPanel } from './AdminPanel';
 import { TreasuryAccountingDashboard } from './treasury/TreasuryAccountingDashboard';
 import { ShieldCheck, CircleDollarSign } from 'lucide-react';
-import { createConfirmedProvider } from '@/utils/solanaRetry';
+import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -146,19 +146,25 @@ export const AdminDashboard: FC = () => {
                     vaultAta: vaultAta.toBase58(),
                 });
 
-                const tx = await program.methods
-                    .initializeFixedPriceVault(pricePerTokenLamports, totalLaunchSupply)
-                    .accounts({
-                        vaultAccount: vaultPda,
-                        creator: publicKey,
-                        mint: mint,
-                        vault: vaultAta,
-                        creatorTokenAccount: creatorTokenAccount,
-                        tokenProgram: token.programId,
-                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                        systemProgram: SystemProgram.programId,
-                    })
-                    .rpc();
+                const tx = await withSolanaRetry(async () => {
+                    return await program.methods
+                        .initializeFixedPriceVault(pricePerTokenLamports, totalLaunchSupply)
+                        .accounts({
+                            vaultAccount: vaultPda,
+                            creator: publicKey,
+                            mint: mint,
+                            vault: vaultAta,
+                            creatorTokenAccount: creatorTokenAccount,
+                            tokenProgram: token.programId,
+                            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                            systemProgram: SystemProgram.programId,
+                        })
+                        .preInstructions([
+                            ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                        ])
+                        .rpc({ skipPreflight: true });
+                }, 2);
 
                 toast.success(`Fixed-Price Vault Initialized successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
                 fetchWalletTokens();
@@ -189,19 +195,25 @@ export const AdminDashboard: FC = () => {
                 // Flat 30 SOL for now, or could scale? keeping 30 SOL is fine for devnet.
                 const virtualSol = new BN(30 * 1_000_000_000);
 
-                const tx = await program.methods
-                    .initializeCurve(virtualSol, virtualToken, realToken)
-                    .accounts({
-                        curve: curvePda,
-                        creator: publicKey,
-                        mint: mint,
-                        vault: vaultPda,
-                        creatorTokenAccount: creatorTokenAccount,
-                        tokenProgram: token.programId,
-                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                        systemProgram: SystemProgram.programId,
-                    })
-                    .rpc();
+                const tx = await withSolanaRetry(async () => {
+                    return await program.methods
+                        .initializeCurve(virtualSol, virtualToken, realToken)
+                        .accounts({
+                            curve: curvePda,
+                            creator: publicKey,
+                            mint: mint,
+                            vault: vaultPda,
+                            creatorTokenAccount: creatorTokenAccount,
+                            tokenProgram: token.programId,
+                            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                            systemProgram: SystemProgram.programId,
+                        })
+                        .preInstructions([
+                            ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                        ])
+                        .rpc({ skipPreflight: true });
+                }, 2);
                 
                 toast.success(`Token Listed Successfully! TX: ${tx.slice(0, 8)}...${tx.slice(-8)}`);
                 fetchWalletTokens();

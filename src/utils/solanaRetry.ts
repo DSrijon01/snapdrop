@@ -22,6 +22,22 @@ export async function withSolanaRetry<T>(
                 (typeof err === "string" ? err : JSON.stringify(err) || "")
             ).toLowerCase();
 
+            const isUserRejection = errorStr.includes("user rejected") ||
+                                    errorStr.includes("rejected the request") ||
+                                    errorStr.includes("transaction cancelled") ||
+                                    errorStr.includes("user denied");
+            if (isUserRejection) {
+                throw err;
+            }
+
+            const isTimeout = errorStr.includes("not confirmed in") || 
+                              errorStr.includes("transactionexpiredtimeouterror");
+
+            // Prevent infinite or lengthy timeout loops
+            if (isTimeout && attempt > 1) {
+                throw err;
+            }
+
             const isRateLimit = errorStr.includes("429") || 
                                 errorStr.includes("rate limit") || 
                                 errorStr.includes("too many requests");
@@ -30,9 +46,7 @@ export async function withSolanaRetry<T>(
                                      errorStr.includes("transaction simulation failed") ||
                                      errorStr.includes("block height exceeded") ||
                                      errorStr.includes("expired") ||
-                                     errorStr.includes("not confirmed in") ||
-                                     errorStr.includes("transactionexpiredtimeouterror") ||
-                                     errorStr.includes("timeout");
+                                     isTimeout;
             const isNetworkIssue = errorStr.includes("failed to fetch") ||
                                    errorStr.includes("err_name_not_resolved") ||
                                    errorStr.includes("network error") ||
