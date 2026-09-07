@@ -84,13 +84,6 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                         ])
                         .rpc({ skipPreflight: true });
                 });
-                
-                const latestBlockhash = await connection.getLatestBlockhash("confirmed");
-                await connection.confirmTransaction({
-                    signature,
-                    blockhash: latestBlockhash.blockhash,
-                    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-                }, "confirmed");
 
                 // Dispatch global update event
                 window.dispatchEvent(new Event('nft_listings_updated'));

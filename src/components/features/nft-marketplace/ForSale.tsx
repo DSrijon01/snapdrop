@@ -203,13 +203,6 @@ export const ForSale: FC = () => {
                     .preInstructions(preInstructions)
                     .rpc({ skipPreflight: true });
             });
-
-            const latestBlockhash = await connection.getLatestBlockhash("confirmed");
-            await connection.confirmTransaction({
-                signature,
-                blockhash: latestBlockhash.blockhash,
-                lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-            }, "confirmed");
             
             // --- STATE UPDATE: Add to Purchases (for the buyer) ---
             // We still use localStorage for "My Purchases" history as we don't have an indexer

@@ -1,5 +1,5 @@
 import { FC, useState } from 'react';
-import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from '@solana/web3.js';
+import { PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from '@solana/web3.js';
 import { useWallet, useConnection } from '@solana/wallet-adapter-react';
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -129,15 +129,13 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
                             tokenProgram: TOKEN_PROGRAM_ID,
                             rent: SYSVAR_RENT_PUBKEY,
                         } as any)
+                        .preInstructions([
+                            ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                        ])
                         .rpc({ skipPreflight: true });
                 });
-
-                const latestBh = await connection.getLatestBlockhash("confirmed");
-                await connection.confirmTransaction({
-                    signature: txSig,
-                    blockhash: latestBh.blockhash,
-                    lastValidBlockHeight: latestBh.lastValidBlockHeight,
-                }, "confirmed");
+                console.log(`Listed NFT ${mintPubkey.toBase58()} successfully:`, txSig);
             }
 
             const nftsData = await Promise.all(selectedNfts.map(async (nft) => {
