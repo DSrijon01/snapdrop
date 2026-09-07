@@ -4,7 +4,7 @@ import { FC, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useAnchorWallet } from "@solana/wallet-adapter-react";
-import { SystemProgram, PublicKey, LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL, SYSVAR_RENT_PUBKEY, ComputeBudgetProgram } from "@solana/web3.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
@@ -82,6 +82,8 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                             rent: SYSVAR_RENT_PUBKEY,
                         })
                         .preInstructions([
+                            ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                            ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
                             SystemProgram.transfer({
                                 fromPubkey: wallet.publicKey,
                                 toPubkey: TREASURY_WALLET,

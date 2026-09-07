@@ -16,20 +16,28 @@ export async function withSolanaRetry<T>(
             return await operation();
         } catch (err: any) {
             attempt++;
-            const errorMessage = (err?.message || JSON.stringify(err) || "").toLowerCase();
-            const isRateLimit = errorMessage.includes("429") || 
-                                errorMessage.includes("rate limit") || 
-                                errorMessage.includes("too many requests");
-            const isBlockhashIssue = errorMessage.includes("blockhash not found") || 
-                                     errorMessage.includes("blockhash") ||
-                                     errorMessage.includes("transaction simulation failed") ||
-                                     errorMessage.includes("block height exceeded") ||
-                                     errorMessage.includes("expired");
-            const isNetworkIssue = errorMessage.includes("failed to fetch") ||
-                                   errorMessage.includes("err_name_not_resolved") ||
-                                   errorMessage.includes("network error") ||
-                                   errorMessage.includes("fetch failed") ||
-                                   errorMessage.includes("connection refused");
+            const errorStr = (
+                (err?.name || "") + " " +
+                (err?.message || "") + " " +
+                (typeof err === "string" ? err : JSON.stringify(err) || "")
+            ).toLowerCase();
+
+            const isRateLimit = errorStr.includes("429") || 
+                                errorStr.includes("rate limit") || 
+                                errorStr.includes("too many requests");
+            const isBlockhashIssue = errorStr.includes("blockhash not found") || 
+                                     errorStr.includes("blockhash") ||
+                                     errorStr.includes("transaction simulation failed") ||
+                                     errorStr.includes("block height exceeded") ||
+                                     errorStr.includes("expired") ||
+                                     errorStr.includes("not confirmed in") ||
+                                     errorStr.includes("transactionexpiredtimeouterror") ||
+                                     errorStr.includes("timeout");
+            const isNetworkIssue = errorStr.includes("failed to fetch") ||
+                                   errorStr.includes("err_name_not_resolved") ||
+                                   errorStr.includes("network error") ||
+                                   errorStr.includes("fetch failed") ||
+                                   errorStr.includes("connection refused");
 
             if ((isRateLimit || isBlockhashIssue || isNetworkIssue) && attempt <= maxRetries) {
                 const delay = baseDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);

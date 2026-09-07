@@ -11,7 +11,7 @@ import { ListingModal } from "./ListingModal";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey, SystemProgram, ComputeBudgetProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 
@@ -124,7 +124,10 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
             // --- CRITICAL FIX: Ensure Seller ATA exists ---
             const sellerTokenAccountInfo = await connection.getAccountInfo(sellerTokenAccount);
-            const preInstructions: any[] = [];
+            const preInstructions: any[] = [
+                ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+                ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+            ];
 
             if (!sellerTokenAccountInfo) {
                 console.log("Seller ATA missing. Recreating...");
@@ -160,11 +163,10 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         tokenProgram: TOKEN_PROGRAM_ID,
                     })
                     .preInstructions(preInstructions)
-                    .rpc();
+                    .rpc({ skipPreflight: true });
              });
             
             console.log("Cancel signature:", signature);
-            await connection.confirmTransaction(signature, "confirmed");
             alert("Delisted successfully (Listing Cancelled)!");
             
             // Refresh

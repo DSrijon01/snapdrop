@@ -8,7 +8,7 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey, SystemProgram, ComputeBudgetProgram as SolanaComputeBudgetProgram } from "@solana/web3.js";
 import { withSolanaRetry } from "@/utils/solanaRetry";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
@@ -293,19 +293,25 @@ export const StackedNFTGallery = () => {
 
             setStatus("Confirm Transaction...");
             
-            await program.methods.buyNft()
-                .accounts({
-                    buyer: wallet.publicKey,
-                    admin: adminPubkey,
-                    mint: mintPubkey,
-                    listingAccount: listingPda,
-                    escrowTokenAccount: escrowPda,
-                    buyerTokenAccount: buyerTokenAccount,
-                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                    systemProgram: SystemProgram.programId,
-                    tokenProgram: TOKEN_PROGRAM_ID,
-                } as any)
-                .rpc();
+            await withSolanaRetry(async () => {
+                return await program.methods.buyNft()
+                    .accounts({
+                        buyer: wallet.publicKey,
+                        admin: adminPubkey,
+                        mint: mintPubkey,
+                        listingAccount: listingPda,
+                        escrowTokenAccount: escrowPda,
+                        buyerTokenAccount: buyerTokenAccount,
+                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                        systemProgram: SystemProgram.programId,
+                        tokenProgram: TOKEN_PROGRAM_ID,
+                    } as any)
+                    .preInstructions([
+                        SolanaComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                        SolanaComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                    ])
+                    .rpc({ skipPreflight: true });
+            });
 
             setStatus("Purchase successful!");
 

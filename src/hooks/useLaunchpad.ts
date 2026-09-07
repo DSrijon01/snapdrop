@@ -297,6 +297,7 @@ export const useLaunchpad = () => {
             .buyTokens(atomicAmount)
             .preInstructions([
                 ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
             ])
             .accounts({
                 curve: curve.publicKey,
@@ -345,6 +346,7 @@ export const useLaunchpad = () => {
             .buyTokensFixedPrice(atomicAmount)
             .preInstructions([
                 ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
             ])
             .accounts({
                 vaultAccount: vault.publicKey,
@@ -413,6 +415,10 @@ export const useLaunchpad = () => {
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
+                .preInstructions([
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                ])
                 .rpc({ skipPreflight: true });
         });
 
@@ -456,6 +462,10 @@ export const useLaunchpad = () => {
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
+                .preInstructions([
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                ])
                 .rpc({ skipPreflight: true });
         });
 
@@ -484,19 +494,25 @@ export const useLaunchpad = () => {
             tokenProgramId
         );
 
-        const tx = await program.methods
-            .cancelTokenSecondary(listing.account.uniqueId)
-            .accounts({
-                seller: wallet.publicKey,
-                mint: mint,
-                listingAccount: listing.publicKey,
-                escrowTokenAccount: escrowAta,
-                sellerTokenAccount: sellerTokenAccount,
-                tokenProgram: tokenProgramId,
-                associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
-            })
-            .rpc({ skipPreflight: true });
+        const tx = await withSolanaRetry(async () => {
+            return await program.methods
+                .cancelTokenSecondary(listing.account.uniqueId)
+                .accounts({
+                    seller: wallet.publicKey,
+                    mint: mint,
+                    listingAccount: listing.publicKey,
+                    escrowTokenAccount: escrowAta,
+                    sellerTokenAccount: sellerTokenAccount,
+                    tokenProgram: tokenProgramId,
+                    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+                    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                ])
+                .rpc({ skipPreflight: true });
+        });
 
         return tx;
     };

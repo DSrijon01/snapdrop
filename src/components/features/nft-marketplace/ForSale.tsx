@@ -3,7 +3,7 @@
 import { FC, useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useConnection, useAnchorWallet, useWallet } from "@solana/wallet-adapter-react";
-import { SystemProgram, PublicKey, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { SystemProgram, PublicKey, LAMPORTS_PER_SOL, ComputeBudgetProgram } from "@solana/web3.js";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
@@ -170,7 +170,10 @@ export const ForSale: FC = () => {
             
             // Check if ATA exists
             const buyerTokenAccountInfo = await connection.getAccountInfo(buyerTokenAccount);
-            const preInstructions: any[] = [];
+            const preInstructions: any[] = [
+                ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+            ];
             
             if (!buyerTokenAccountInfo) {
                 console.log("Creating Buyer ATA...");
