@@ -39,12 +39,13 @@ export async function withSolanaRetry<T>(
 }
 
 /**
- * Creates an AnchorProvider with cluster-wide 'confirmed' commitment,
+ * Creates an AnchorProvider with cluster-wide 'confirmed' commitment and skipPreflight,
  * eliminating "Blockhash not found" simulation mismatches across devnet nodes.
  */
 export function createConfirmedProvider(connection: Connection, wallet: any): AnchorProvider {
     return new AnchorProvider(connection, wallet, {
         commitment: "confirmed",
         preflightCommitment: "confirmed",
+        skipPreflight: true,
     });
 }

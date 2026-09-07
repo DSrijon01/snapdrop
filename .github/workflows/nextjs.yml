@@ -85,6 +85,7 @@ jobs:
         env:
           NEXT_PUBLIC_CANDY_MACHINE_ID: DdU4yDWH7UgAboiEYe8D5ZQm5z7ES2n5wvgNKNYxQMF1
           NEXT_PUBLIC_CANDY_GUARD_ID: 7K2opq28esRjAxjpyyPnhRCZzjdBJh8S2Cha1XgRW4DV
+          NEXT_PUBLIC_SOLANA_RPC_URL: https://devnet.helius-rpc.com/?api-key=7adb5466-7650-4c74-919f-5a6b9b7c01cd
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
