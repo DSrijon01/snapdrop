@@ -93,7 +93,7 @@ export function InstallPromptModal() {
 
       {/* iOS or Info Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in">
           <div className="relative w-full max-w-sm bg-card border border-border rounded-2xl p-6 shadow-2xl text-card-foreground">
             <button
               onClick={() => setShowModal(false)}

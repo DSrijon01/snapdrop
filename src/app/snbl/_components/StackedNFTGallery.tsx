@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
@@ -380,7 +381,7 @@ export const StackedNFTGallery = () => {
     }
 
     return (
-        <div className="w-full flex flex-col items-center justify-center min-h-[280px] md:min-h-[320px] py-4 relative overflow-hidden bg-card/30 rounded-3xl border border-border">
+        <div className="w-full flex flex-col items-center justify-center min-h-[280px] md:min-h-[320px] py-4 relative overflow-hidden bg-card/30 rounded-3xl border border-border isolate">
             
             <div className="text-center mb-2 relative z-10">
                 <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground mb-0.5">
@@ -397,14 +398,14 @@ export const StackedNFTGallery = () => {
                     <>
                         <button 
                             onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length); }}
-                            className="absolute left-2 sm:left-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                            className="absolute left-2 sm:left-6 z-20 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>
                         </button>
                         
                         <button 
                             onClick={(e) => { e.stopPropagation(); setCurrentIndex((prev) => (prev + 1) % cards.length); }}
-                            className="absolute right-2 sm:right-6 z-50 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
+                            className="absolute right-2 sm:right-6 z-20 p-2 md:p-3 rounded-full bg-black/40 hover:bg-primary text-white backdrop-blur-md transition-all border border-white/10 hover:scale-110"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
                         </button>
@@ -433,7 +434,7 @@ export const StackedNFTGallery = () => {
                                 animate={{
                                     x: `${displayOffset * 105}%`,
                                     scale: absOffset === 0 ? 1 : absOffset === 1 ? 0.85 : 0.7,
-                                    zIndex: 50 - absOffset,
+                                    zIndex: 10 - absOffset,
                                     opacity: absOffset >= 2 ? 0 : 1 - absOffset * 0.4,
                                     filter: `blur(${absOffset * 2}px)`,
                                     visibility: absOffset >= 2 ? "hidden" : "visible",
@@ -514,15 +515,16 @@ export const StackedNFTGallery = () => {
             )}
 
             {/* Expanded Modal */}
-            <AnimatePresence>
-                {expandedCard && (
-                    <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-2xl"
-                        onClick={() => setExpandedCard(null)}
-                    >
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {expandedCard && (
+                        <motion.div 
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-2xl"
+                            onClick={() => setExpandedCard(null)}
+                        >
                         <motion.div
                             initial={{ scale: 0.95, y: 30 }}
                             animate={{ scale: 1, y: 0 }}
@@ -722,7 +724,9 @@ export const StackedNFTGallery = () => {
                         </motion.div>
                     </motion.div>
                 )}
-            </AnimatePresence>
+            </AnimatePresence>,
+            document.body
+        )}
         </div>
     );
 };

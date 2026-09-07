@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { FC } from "react";
+import { FC, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface Props {
   isOpen: boolean;
@@ -9,25 +10,44 @@ interface Props {
 }
 
 export const MobileSyncModal: FC<Props> = ({ isOpen, onClose }) => {
-  return (
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
-        <>
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md"
           />
           
-          {/* Modal */}
+          {/* Modal Card */}
           <motion.div
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-sm p-6"
+            className="relative z-10 w-full max-w-sm"
           >
             <div className="bg-card border border-border rounded-3xl shadow-2xl overflow-hidden relative">
                 {/* Glow Effect */}
@@ -52,15 +72,16 @@ export const MobileSyncModal: FC<Props> = ({ isOpen, onClose }) => {
                     
                     <button 
                         onClick={onClose}
-                        className="w-full py-3 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-xl transition-colors font-display uppercase tracking-wide"
+                        className="w-full py-3 bg-muted hover:bg-muted/80 text-foreground font-bold rounded-xl transition-colors font-display uppercase tracking-wide cursor-pointer"
                     >
                         Close
                     </button>
                 </div>
             </div>
           </motion.div>
-        </>
+        </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
