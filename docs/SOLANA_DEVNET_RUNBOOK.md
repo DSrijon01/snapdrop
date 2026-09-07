@@ -23,7 +23,20 @@ Because Solana Devnet is an active testbed with frequent slot skips, validator r
 
 ---
 
-## 2. Issue Catalog & Solutions
+## 2. Recurring Issues Master Matrix
+
+| # | Error / Symptom | Trigger Point | Root Cause | Solution & Code Fix |
+|---|---|---|---|---|
+| **#1** | `400 Confirmed tx not found` (Irys/Arweave) | Uploading assets in One-Click Launch | Asset file size >= 100 KiB requires Devnet funding tx; Irys bundler nodes lag behind Solana | Pass all uploads through `compressImageForDevnet()` to ensure < 100 KiB (free uploads, 0 funding tx needed) |
+| **#2** | `Simulation failed: Blockhash not found` | Transaction submission across apps | Stale blockhash or out-of-sync public RPC endpoints | Use dedicated Helius Devnet RPC, set `createConfirmedProvider`, wrap calls in `withSolanaRetry()` |
+| **#3** | `Simulation failed: Blockhash not found` (preflight drop) | Anchor `.rpc()` / Metaplex `sendAndConfirm()` | Preflight simulation on client tries to simulate state before accounts are indexed | Add `{ skipPreflight: true }` to Anchor `.rpc()` and `{ send: { skipPreflight: true } }` to Metaplex |
+| **#4** | `Transaction was not confirmed in 30.00 seconds` | Listing stacks / state changes | Duplicate confirmation watchdog (`connection.confirmTransaction`) after Anchor `.rpc()` | Remove redundant `confirmTransaction()`, attach `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })` |
+| **#5** | `You are currently in Testnet Mode` | Phantom wallet banner | Phantom defaults developer mode to Testnet instead of Devnet | Settings ⚙️ ➔ Developer Settings ➔ Change Network ➔ Select **Solana Devnet** |
+| **#6** | `TransactionExpiredBlockheightExceededError: block height exceeded` | Direct Minting & Candy Machine Minting | 0 priority fee with 800k CU request; transaction expires past 150 slots (~60-90s) | Prepend `setComputeUnitPrice(umi, { microLamports: 100_000 })`, set CU limit to 400k, pass `maxRetries: 5`, wrap in `withSolanaRetry` |
+
+---
+
+## 3. Detailed Issue Catalog & Solutions
 
 ### Issue #1: Irys / Arweave Bundler `400 Confirmed tx not found`
 
