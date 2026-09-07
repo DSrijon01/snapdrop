@@ -137,7 +137,7 @@ export const NFTStudio: FC = () => {
                 },
                 updateAuthority: umi.identity.publicKey,
                 tokenOwner: umi.identity.publicKey,
-            }).sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
+            }).sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
 
             // Introduce a short delay to allow the RPC nodes to index the newly created collection NFT metadata
             await new Promise(resolve => setTimeout(resolve, 3000));
@@ -171,7 +171,7 @@ export const NFTStudio: FC = () => {
             await transactionBuilder()
                 .add(setComputeUnitLimit(umi, { units: 800_000 }))
                 .add(createCmBuilder)
-                .sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
+                .sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
 
             setStatus("5/5: Adding Config Lines to Candy Machine...");
             await transactionBuilder()
@@ -181,7 +181,7 @@ export const NFTStudio: FC = () => {
                     index: 0,
                     configLines: jsonUris.map((uri, i) => ({ name: assets[i].name, uri })),
                 }))
-                .sendAndConfirm(umi, { confirm: { commitment: "finalized" } });
+                .sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
             
             // Wire it to the Gallery using Arweave URI
             const newGalleryCard: CarouselItem = {
@@ -244,7 +244,10 @@ export const NFTStudio: FC = () => {
                     sellerFeeBasisPoints: percentAmount(parseFloat(directRoyalties)),
                 });
                 builder = builder.prepend(setComputeUnitLimit(umi, { units: 800_000 }));
-                await builder.sendAndConfirm(umi);
+                await builder.sendAndConfirm(umi, {
+                    send: { skipPreflight: true },
+                    confirm: { commitment: 'confirmed' }
+                });
                 mints.push(mint.publicKey.toString());
             }
             

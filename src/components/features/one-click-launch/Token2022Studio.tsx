@@ -552,7 +552,9 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             setStatus('Sending Token-2022 Creation Transaction...');
             
             const signature = await wallet.sendTransaction(transaction, connection, {
-                signers: [mintKeypair]
+                signers: [mintKeypair],
+                skipPreflight: true,
+                preflightCommitment: 'confirmed',
             });
             
             // Wait for confirmation

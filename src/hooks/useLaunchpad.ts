@@ -71,10 +71,7 @@ export const useLaunchpad = () => {
 
     const provider = useMemo(() => {
         if (wallet) {
-            return new AnchorProvider(connection, wallet, {
-                commitment: 'confirmed',
-                preflightCommitment: 'confirmed',
-            });
+            return createConfirmedProvider(connection, wallet);
         } else {
             // Read-only provider
             const dummyWallet = {
@@ -82,9 +79,7 @@ export const useLaunchpad = () => {
                 signTransaction: async (tx: any) => tx,
                 signAllTransactions: async (txs: any[]) => txs,
             };
-            return new AnchorProvider(connection, dummyWallet, {
-                preflightCommitment: 'confirmed',
-            });
+            return createConfirmedProvider(connection, dummyWallet);
         }
     }, [connection, wallet]);
 
@@ -315,7 +310,7 @@ export const useLaunchpad = () => {
                 systemProgram: SystemProgram.programId,
             })
             // .signers([]) // wallet signs automatically
-            .rpc();
+            .rpc({ skipPreflight: true });
         
         return tx;
     };
@@ -362,7 +357,7 @@ export const useLaunchpad = () => {
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
             })
-            .rpc();
+            .rpc({ skipPreflight: true });
 
         return tx;
     };
@@ -418,7 +413,7 @@ export const useLaunchpad = () => {
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
-                .rpc();
+                .rpc({ skipPreflight: true });
         });
 
         return tx;
@@ -461,7 +456,7 @@ export const useLaunchpad = () => {
                     associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                     systemProgram: SystemProgram.programId,
                 })
-                .rpc();
+                .rpc({ skipPreflight: true });
         });
 
         return tx;
@@ -501,7 +496,7 @@ export const useLaunchpad = () => {
                 associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
                 systemProgram: SystemProgram.programId,
             })
-            .rpc();
+            .rpc({ skipPreflight: true });
 
         return tx;
     };

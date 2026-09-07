@@ -172,7 +172,8 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
                     },
                 }))
                 .sendAndConfirm(umi, {
-                    confirm: { commitment: "finalized" }
+                    send: { skipPreflight: true },
+                    confirm: { commitment: "confirmed" }
                 });
 
 

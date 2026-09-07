@@ -236,7 +236,8 @@ export const StackedNFTGallery = () => {
                     },
                 }))
                 .sendAndConfirm(umi, {
-                    confirm: { commitment: "finalized" }
+                    send: { skipPreflight: true },
+                    confirm: { commitment: "confirmed" }
                 });
 
             setStatus("Mint successful!");

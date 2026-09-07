@@ -82,10 +82,15 @@ export const ListingModal: FC<Props> = ({ isOpen, onClose, nft, onListComplete }
                                 lamports: LISTING_FEE.toNumber(),
                             })
                         ])
-                        .rpc();
+                        .rpc({ skipPreflight: true });
                 });
                 
-                await connection.confirmTransaction(signature, "confirmed");
+                const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+                await connection.confirmTransaction({
+                    signature,
+                    blockhash: latestBlockhash.blockhash,
+                    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+                }, "confirmed");
 
                 // Dispatch global update event
                 window.dispatchEvent(new Event('nft_listings_updated'));
