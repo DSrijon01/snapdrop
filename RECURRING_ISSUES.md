@@ -16,6 +16,7 @@ For complete in-depth implementation patterns, architecture diagrams, and checkl
 | **4** | `Transaction was not confirmed in 30.00 seconds` | Listing stacks / state changes | Duplicate confirmation watchdog (`connection.confirmTransaction`) after `.rpc()` | Remove redundant `confirmTransaction()` call (`.rpc()` already confirms), and attach `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })`. |
 | **5** | `You are currently in Testnet Mode` | Phantom wallet banner | Phantom defaults developer mode to Testnet instead of Devnet | In Phantom: Settings ⚙️ ➔ Developer Settings ➔ Change Network ➔ Select **Solana Devnet**. |
 | **6** | `TransactionExpiredBlockheightExceededError: block height exceeded` | Direct Minting & Candy Machine Minting | 0 priority fee with high Compute Units (800k); transaction sits in validator queue past 150 slots (~60–90s) | Prepend `setComputeUnitPrice(umi, { microLamports: 100_000 })`, lower CU limit to 400k, pass `maxRetries: 5`, and wrap in `withSolanaRetry()`. |
+| **7** | `WalletSendTransactionError: Unexpected error` | Module Subscription / SOL transfers | Phantom simulates and sends via its internal public RPC rather than app's dedicated Helius RPC; also missing `skipPreflight` | Use `signTransaction()` for approval, then broadcast signed bytes directly through app's RPC via `connection.sendRawTransaction(rawTx, { skipPreflight: true, maxRetries: 5 })`. Ensure Phantom is set to **Devnet**. |
 
 ---
 

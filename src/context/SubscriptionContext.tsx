@@ -2,9 +2,10 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { SystemProgram, Transaction, PublicKey } from "@solana/web3.js";
+import { SystemProgram, Transaction, PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
 import toast from "react-hot-toast";
 import { checkSolBalance } from "@/utils/balanceCheck";
+import { withSolanaRetry } from "@/utils/solanaRetry";
 
 const MERCHANT_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -124,7 +125,7 @@ const safeLocalStorageSet = (key: string, value: string) => {
 
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, wallet } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, wallet } = useWallet();
   const [subscriptions, setSubscriptions] = useState<Record<string, Subscription>>({});
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -258,13 +259,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     const toastId = toast.loading(`Preparing ${selectedPlan.name} (${selectedPlan.priceSol} SOL) for ${MODULE_NAMES[moduleId]}...`);
     try {
-      const transaction = new Transaction().add(
-        SystemProgram.transfer({
-          fromPubkey: publicKey,
-          toPubkey: new PublicKey(MERCHANT_WALLET),
-          lamports: selectedPlan.lamports,
-        })
-      );
+      const transaction = new Transaction()
+        .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 100_000 }))
+        .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }))
+        .add(
+          SystemProgram.transfer({
+            fromPubkey: publicKey,
+            toPubkey: new PublicKey(MERCHANT_WALLET),
+            lamports: selectedPlan.lamports,
+          })
+        );
 
       // Fetch fresh blockhash
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
@@ -272,7 +276,28 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       transaction.feePayer = publicKey;
 
       toast.loading("Awaiting wallet approval...", { id: toastId });
-      const signature = await sendTransaction(transaction, connection);
+
+      let signature: string;
+      if (signTransaction) {
+        // Preferred path: Request wallet signature only, then broadcast via dedicated Helius Devnet RPC.
+        // This avoids Phantom's internal public RPC simulation failures and 'Unexpected error'.
+        const signedTx = await signTransaction(transaction);
+        signature = await withSolanaRetry(async () => {
+          return await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            maxRetries: 5,
+            preflightCommitment: "confirmed",
+          });
+        });
+      } else {
+        // Fallback for wallets without signTransaction
+        signature = await withSolanaRetry(async () => {
+          return await sendTransaction(transaction, connection, {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+          });
+        });
+      }
 
       toast.loading("Confirming transaction on Solana Devnet...", { id: toastId });
       await connection.confirmTransaction(

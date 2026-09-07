@@ -7,6 +7,7 @@ import {
   Transaction,
   Keypair,
   SYSVAR_RENT_PUBKEY,
+  ComputeBudgetProgram,
 } from "@solana/web3.js";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
@@ -149,9 +150,15 @@ export function useStaking() {
         } as any)
         .instruction();
 
+      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
       tx.add(initIx);
 
-      const signature = await sendTransaction(tx, connection, { signers: [ssMintKeypair] });
+      const signature = await sendTransaction(tx, connection, {
+        signers: [ssMintKeypair],
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+      });
       await connection.confirmTransaction(signature, "confirmed");
       toast.success(`LST Pool Initialized!`);
       refreshData();
@@ -180,6 +187,8 @@ export function useStaking() {
       }
 
       const tx = new Transaction();
+      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
 
       // Check if ATA exists, if not, create it
       const ataInfo = await connection.getAccountInfo(userAta);
@@ -201,7 +210,10 @@ export function useStaking() {
 
       tx.add(stakeIx);
 
-      const signature = await sendTransaction(tx, connection);
+      const signature = await sendTransaction(tx, connection, {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+      });
       await connection.confirmTransaction(signature, "confirmed");
       toast.success("Successfully Staked! Received ssSOL.");
       refreshData();
@@ -222,6 +234,8 @@ export function useStaking() {
       const userAta = await getAssociatedTokenAddress(liquidPool.ssMint, publicKey);
 
       const tx = new Transaction();
+      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
 
       const unstakeIx = await program.methods
         .unstake(new BN(amountSsLamports))
@@ -237,7 +251,10 @@ export function useStaking() {
 
       tx.add(unstakeIx);
 
-      const signature = await sendTransaction(tx, connection);
+      const signature = await sendTransaction(tx, connection, {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+      });
       await connection.confirmTransaction(signature, "confirmed");
       toast.success("Unstaked successfully! Received Native SOL.");
       refreshData();
@@ -257,6 +274,8 @@ export function useStaking() {
       const poolAddress = findLiquidPoolAddress(STAKING_PROGRAM_ID);
 
       const tx = new Transaction();
+      tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }));
+      tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
 
       const depositIx = await program.methods
         .depositRewards(new BN(amountLamports))
@@ -269,7 +288,10 @@ export function useStaking() {
 
       tx.add(depositIx);
 
-      const signature = await sendTransaction(tx, connection);
+      const signature = await sendTransaction(tx, connection, {
+        skipPreflight: true,
+        preflightCommitment: "confirmed",
+      });
       await connection.confirmTransaction(signature, "confirmed");
       toast.success("Rewards Deposited! ssSOL value increased.");
       refreshData();

@@ -33,6 +33,7 @@ Because Solana Devnet is an active testbed with frequent slot skips, validator r
 | **#4** | `Transaction was not confirmed in 30.00 seconds` | Listing stacks / state changes | Duplicate confirmation watchdog (`connection.confirmTransaction`) after Anchor `.rpc()` | Remove redundant `confirmTransaction()`, attach `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })` |
 | **#5** | `You are currently in Testnet Mode` | Phantom wallet banner | Phantom defaults developer mode to Testnet instead of Devnet | Settings ⚙️ ➔ Developer Settings ➔ Change Network ➔ Select **Solana Devnet** |
 | **#6** | `TransactionExpiredBlockheightExceededError: block height exceeded` | Direct Minting & Candy Machine Minting | 0 priority fee with 800k CU request; transaction expires past 150 slots (~60-90s) | Prepend `setComputeUnitPrice(umi, { microLamports: 100_000 })`, set CU limit to 400k, pass `maxRetries: 5`, wrap in `withSolanaRetry` |
+| **#7** | `WalletSendTransactionError: Unexpected error` | Module Subscription / Direct Transfers | Phantom executes preflight simulation & broadcasts via its own internal RPC; also missing `skipPreflight` | Use `wallet.signTransaction` for user approval, then broadcast signed bytes via `connection.sendRawTransaction` on dedicated Helius RPC with `skipPreflight: true`. Verify Phantom network is set to Devnet. |
 
 ---
 
@@ -230,13 +231,56 @@ TransactionExpiredBlockheightExceededError: Signature <SIG> has expired: block h
 
 ---
 
-## 3. Quick Checklist for Adding New Transaction Flows
+### Issue #7: Wallet Preflight Rejection (`WalletSendTransactionError: Unexpected error`)
+
+#### Symptom:
+During module subscription payment, direct transfers, or staking, the wallet fails with:
+```text
+Subscription payment failed: WalletSendTransactionError: Unexpected error
+    at tA.sendTransaction
+```
+
+#### Root Cause:
+1. **Wallet Internal RPC vs App RPC**:
+   When using `wallet.sendTransaction(tx, connection)`, the Solana wallet adapter invokes Phantom's internal method. Phantom attempts to simulate and broadcast the transaction using Phantom's internal public Devnet RPC node (often `https://api.devnet.solana.com`). When Phantom's internal node rate-limits or fails simulation, Phantom throws `Unexpected error`.
+2. **Missing `skipPreflight: true`**:
+   Without `skipPreflight: true`, Phantom executes client-side simulation on its own node before opening the approval popup or finalizing submission.
+3. **Phantom Network Misconfiguration**:
+   If Phantom's Developer Settings have "Testnet" selected instead of "Devnet", the blockhash from the dApp (fetched from Devnet) does not exist on Testnet, causing an immediate rejection.
+
+#### Permanent Code Pattern:
+Use `signTransaction` to request the user's signature only, then serialize and broadcast directly through our dedicated Helius Devnet RPC via `connection.sendRawTransaction`:
+```typescript
+let signature: string;
+if (signTransaction) {
+    const signedTx = await signTransaction(transaction);
+    signature = await withSolanaRetry(async () => {
+        return await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: true,
+            maxRetries: 5,
+            preflightCommitment: "confirmed",
+        });
+    });
+} else {
+    signature = await withSolanaRetry(async () => {
+        return await sendTransaction(transaction, connection, {
+            skipPreflight: true,
+            preflightCommitment: "confirmed",
+        });
+    });
+}
+```
+
+---
+
+## 4. Quick Checklist for Adding New Transaction Flows
 
 Before pushing any new Solana contract interaction to this codebase, verify:
 - [ ] Is image upload passing through `compressImageForDevnet()`? (< 100 KiB)
 - [ ] Is the Anchor provider created via `createConfirmedProvider(connection, wallet)`?
 - [ ] Does every `.rpc()` call have `{ skipPreflight: true }`?
 - [ ] Does every Metaplex `sendAndConfirm()` call have `{ send: { skipPreflight: true, maxRetries: 5 }, confirm: { commitment: "confirmed" } }`?
+- [ ] For raw Web3/SPL transactions, is `signTransaction` + `sendRawTransaction` used with `skipPreflight: true`?
 - [ ] Are priority fees attached via `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })` or `setComputeUnitPrice(umi, { microLamports: 100_000 })`?
 - [ ] Are transactions wrapped in `withSolanaRetry(...)` where applicable?
 - [ ] Is there **NO** redundant `connection.confirmTransaction` call after `.rpc()`?
