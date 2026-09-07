@@ -8,6 +8,8 @@ import { create, mplCandyMachine, addConfigLines } from "@metaplex-foundation/mp
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
+import { compressImageForDevnet } from '@/utils/imageCompressor';
+import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
 
 interface NFTAsset {
     id: string;
@@ -38,10 +40,15 @@ export const NFTStudio: FC = () => {
     const [coverPreview, setCoverPreview] = useState<string | null>(null);
 
     const umi = useMemo(() => {
-        const u = createUmi(connection.rpcEndpoint)
+        const endpoint = connection.rpcEndpoint || HELIUS_DEVNET_RPC;
+        const u = createUmi(endpoint)
             .use(mplTokenMetadata())
             .use(mplCandyMachine())
-            .use(irysUploader({ address: 'https://devnet.irys.xyz' }));
+            .use(irysUploader({ 
+                address: 'https://devnet.irys.xyz',
+                providerUrl: endpoint,
+                timeout: 60000,
+            }));
             
         if (wallet.wallet?.adapter) {
             u.use(walletAdapterIdentity(wallet.wallet.adapter));
@@ -85,15 +92,17 @@ export const NFTStudio: FC = () => {
         if (!coverImage) return setStatus("Please provide a Collection Cover Image.");
         
         setIsLoading(true);
-        setStatus("1/5: Uploading Cover and Assets to Arweave...");
+        setStatus("1/5: Optimizing images (<100KB) & uploading to Arweave...");
         try {
-            // Upload Cover and all inner assets
-            const coverBuffer = await coverImage.arrayBuffer();
-            const coverGeneric = createGenericFile(new Uint8Array(coverBuffer), coverImage.name, { contentType: coverImage.type });
+            // Compress Cover and all inner assets to stay strictly under Irys 100 KiB free limit
+            const compressedCover = await compressImageForDevnet(coverImage);
+            const coverBuffer = await compressedCover.arrayBuffer();
+            const coverGeneric = createGenericFile(new Uint8Array(coverBuffer), compressedCover.name, { contentType: compressedCover.type });
             
             const genericFiles = await Promise.all(assets.map(async (a) => {
-                const buffer = await a.file.arrayBuffer();
-                return createGenericFile(new Uint8Array(buffer), a.file.name, { contentType: a.file.type });
+                const compressedAsset = await compressImageForDevnet(a.file);
+                const buffer = await compressedAsset.arrayBuffer();
+                return createGenericFile(new Uint8Array(buffer), compressedAsset.name, { contentType: compressedAsset.type });
             }));
             
             const allUris = await umi.uploader.upload([coverGeneric, ...genericFiles]);
@@ -209,11 +218,12 @@ export const NFTStudio: FC = () => {
         if (assets.length === 0) return setStatus("Please add at least one image asset.");
         
         setIsLoading(true);
-        setStatus(`1/3: Uploading ${assets.length} Images to Arweave...`);
+        setStatus(`1/3: Optimizing images (<100KB) & uploading ${assets.length} Assets to Arweave...`);
         try {
             const genericFiles = await Promise.all(assets.map(async (a) => {
-                const buffer = await a.file.arrayBuffer();
-                return createGenericFile(new Uint8Array(buffer), a.file.name, { contentType: a.file.type });
+                const compressedAsset = await compressImageForDevnet(a.file);
+                const buffer = await compressedAsset.arrayBuffer();
+                return createGenericFile(new Uint8Array(buffer), compressedAsset.name, { contentType: compressedAsset.type });
             }));
             const imageUris = await umi.uploader.upload(genericFiles);
 

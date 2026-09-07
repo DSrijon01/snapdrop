@@ -34,6 +34,8 @@ import { umi } from '../../../utils/umi';
 import { createGenericFile } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
+import { compressImageForDevnet } from '@/utils/imageCompressor';
+import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
 
 // Define the global wallet address
 const GLOBAL_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
@@ -163,14 +165,20 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
             setCreatedToken(null);
             
             // Note: Umi setup for IPFS/Arweave upload using standard methods
+            const endpoint = connection.rpcEndpoint || HELIUS_DEVNET_RPC;
             umi.use(walletAdapterIdentity(wallet))
-               .use(irysUploader({ address: 'https://devnet.irys.xyz' }));
+               .use(irysUploader({ 
+                   address: 'https://devnet.irys.xyz',
+                   providerUrl: endpoint,
+                   timeout: 60000,
+               }));
 
-            // 1. Upload Image
-            setStatus('Uploading image to Arweave...');
-            const imageBuffer = await imageFile.arrayBuffer();
-            const genericFile = createGenericFile(new Uint8Array(imageBuffer), imageFile.name, {
-                contentType: imageFile.type,
+            // 1. Upload Image (Optimized to stay under 100 KiB)
+            setStatus('Optimizing and uploading image to Arweave...');
+            const compressedFile = await compressImageForDevnet(imageFile);
+            const imageBuffer = await compressedFile.arrayBuffer();
+            const genericFile = createGenericFile(new Uint8Array(imageBuffer), compressedFile.name, {
+                contentType: compressedFile.type,
             });
             const [imageUri] = await umi.uploader.upload([genericFile]);
 
