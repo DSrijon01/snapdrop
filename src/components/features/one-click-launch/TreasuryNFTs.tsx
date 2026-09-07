@@ -9,6 +9,7 @@ import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { umi } from '@/utils/umi';
 import { findMetadataPda, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { publicKey } from '@metaplex-foundation/umi';
+import { withSolanaRetry } from '@/utils/solanaRetry';
 
 export type TokenAccountInfo = {
     mint: PublicKey;
@@ -116,18 +117,27 @@ export const TreasuryNFTs: FC<TreasuryNFTsProps> = ({ nfts }) => {
 
                 const adminTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
 
-                await program.methods.listNft(priceLamports)
-                    .accounts({
-                        admin: wallet.publicKey,
-                        mint: mintPubkey,
-                        adminTokenAccount: adminTokenAccount,
-                        listingAccount: listingPda,
-                        escrowTokenAccount: escrowPda,
-                        systemProgram: SystemProgram.programId,
-                        tokenProgram: TOKEN_PROGRAM_ID,
-                        rent: SYSVAR_RENT_PUBKEY,
-                    } as any)
-                    .rpc();
+                const txSig = await withSolanaRetry(async () => {
+                    return await program.methods.listNft(priceLamports)
+                        .accounts({
+                            admin: wallet.publicKey,
+                            mint: mintPubkey,
+                            adminTokenAccount: adminTokenAccount,
+                            listingAccount: listingPda,
+                            escrowTokenAccount: escrowPda,
+                            systemProgram: SystemProgram.programId,
+                            tokenProgram: TOKEN_PROGRAM_ID,
+                            rent: SYSVAR_RENT_PUBKEY,
+                        } as any)
+                        .rpc({ skipPreflight: true });
+                });
+
+                const latestBh = await connection.getLatestBlockhash("confirmed");
+                await connection.confirmTransaction({
+                    signature: txSig,
+                    blockhash: latestBh.blockhash,
+                    lastValidBlockHeight: latestBh.lastValidBlockHeight,
+                }, "confirmed");
             }
 
             const nftsData = await Promise.all(selectedNfts.map(async (nft) => {

@@ -1,7 +1,8 @@
 import { FC, useState, useEffect } from 'react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
-import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
+import { Program, Idl } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram } from '@solana/web3.js';
+import { createConfirmedProvider } from '@/utils/solanaRetry';
 import idl from '../../../idl/e_plays.json';
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
@@ -36,7 +37,7 @@ export const ResolveMarketEvent: FC = () => {
                 signAllTransactions: async () => { throw new Error('Not implemented') },
             };
             
-            const provider = new AnchorProvider(connection, (window as any).solana || dummyWallet, { preflightCommitment: 'confirmed' });
+            const provider = createConfirmedProvider(connection, (window as any).solana || dummyWallet);
             const program = new Program(idl as Idl, provider);
 
             const allMarkets = await (program.account as any).marketState.all();
@@ -81,7 +82,7 @@ export const ResolveMarketEvent: FC = () => {
             setResolvingId(marketPubkey.toBase58());
             setStatus(null);
 
-            const provider = new AnchorProvider(connection, anchorWallet, { preflightCommitment: 'confirmed' });
+            const provider = createConfirmedProvider(connection, anchorWallet);
             const program = new Program(idl as Idl, provider);
 
             const signature = await (program.methods as any).resolveMarket(isYes)
@@ -90,7 +91,7 @@ export const ResolveMarketEvent: FC = () => {
                     marketState: marketPubkey,
                     systemProgram: SystemProgram.programId,
                 })
-                .rpc();
+                .rpc({ skipPreflight: true });
 
             setStatus({ type: 'success', message: `Market successfully resolved as ${isYes ? 'YES' : 'NO'}! TX: ${signature}` });
             

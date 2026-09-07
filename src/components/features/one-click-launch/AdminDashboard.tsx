@@ -18,6 +18,7 @@ import { TreasuryNFTs } from './TreasuryNFTs';
 import { AdminPanel } from './AdminPanel';
 import { TreasuryAccountingDashboard } from './treasury/TreasuryAccountingDashboard';
 import { ShieldCheck, CircleDollarSign } from 'lucide-react';
+import { createConfirmedProvider } from '@/utils/solanaRetry';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -37,13 +38,10 @@ export const AdminDashboard: FC = () => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking' | 'treasury-accounting'>('treasury-accounting');
 
-    
     // Anchor Program Setup
     const provider = useMemo(() => {
         if (!anchorWallet) return null;
-        return new AnchorProvider(connection, anchorWallet, {
-            preflightCommitment: 'confirmed',
-        });
+        return createConfirmedProvider(connection, anchorWallet);
     }, [connection, anchorWallet]);
 
     const program = useMemo(() => {
