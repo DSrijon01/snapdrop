@@ -3,7 +3,7 @@ import { useConnection, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, ComputeBudgetProgram, Keypair } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getAssociatedTokenAddressSync, getMint, ExtensionType, getExtensionTypes } from '@solana/spl-token';
-import { withSolanaRetry } from '@/utils/solanaRetry';
+import { withSolanaRetry, createConfirmedProvider } from '@/utils/solanaRetry';
 import idl from '../idl/launchpad.json';
 
 const PROGRAM_ID = new PublicKey("5k5WjHFfW8WUY3VXaJKKyuiFSwt4fowY78gnNJHeE1eV");
