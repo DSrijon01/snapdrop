@@ -5,8 +5,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, Loader2, Coins, ArrowUpRight, Award, Trash2, ShieldAlert } from 'lucide-react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
-import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token';
+import { createConfirmedProvider } from '@/utils/solanaRetry';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
@@ -381,6 +382,8 @@ export default function EPlaysPage() {
         const userTokenAccount = getAssociatedTokenAddressSync(targetMint, publicKey, false);
 
         const tx = new Transaction();
+        tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
+        tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
 
         // Inject Idempotent ATA creation instruction in case they've never bought this token side
         tx.add(
@@ -429,7 +432,7 @@ export default function EPlaysPage() {
             throw new Error(`${parsedError}`);
         }
 
-        const signature = await sendTransaction(tx, connection);
+        const signature = await sendTransaction(tx, connection, { skipPreflight: true, preflightCommitment: 'confirmed' });
         setTxStatus({ type: 'success', message: `Order Placed Successfully! TX Hash: ${signature}` });
         toast.success("SOL Trade Executed!");
         
@@ -487,7 +490,7 @@ export default function EPlaysPage() {
 
     try {
       setIsSubmitting(true);
-      const provider = new AnchorProvider(connection, anchorWallet!, { preflightCommitment: 'confirmed' });
+      const provider = createConfirmedProvider(connection, anchorWallet!);
       const program = new Program(idl as Idl, provider);
 
       const PLATFORM_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
@@ -503,7 +506,11 @@ export default function EPlaysPage() {
               tokenProgram: TOKEN_PROGRAM_ID,
               systemProgram: SystemProgram.programId,
           })
-          .rpc();
+          .preInstructions([
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+          ])
+          .rpc({ skipPreflight: true });
 
       toast.success(`Winnings claimed successfully! TX Hash: ${signature}`);
       
@@ -554,7 +561,7 @@ export default function EPlaysPage() {
 
     try {
       setIsSubmitting(true);
-      const provider = new AnchorProvider(connection, anchorWallet!, { preflightCommitment: 'confirmed' });
+      const provider = createConfirmedProvider(connection, anchorWallet!);
       const program = new Program(idl as Idl, provider);
 
       const signature = await (program.methods as any)
@@ -566,7 +573,11 @@ export default function EPlaysPage() {
               mint: pos.mintPubkey,
               tokenProgram: TOKEN_PROGRAM_ID,
           })
-          .rpc();
+          .preInstructions([
+              ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+          ])
+          .rpc({ skipPreflight: true });
 
       toast.success(`Losing position cleaned! Reclaimed rent. TX Hash: ${signature}`);
       

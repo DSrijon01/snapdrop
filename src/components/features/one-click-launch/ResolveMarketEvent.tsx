@@ -1,8 +1,8 @@
 import { FC, useState, useEffect } from 'react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, Idl } from '@coral-xyz/anchor';
-import { PublicKey, SystemProgram } from '@solana/web3.js';
-import { createConfirmedProvider } from '@/utils/solanaRetry';
+import { PublicKey, SystemProgram, ComputeBudgetProgram } from '@solana/web3.js';
+import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
 import idl from '../../../idl/e_plays.json';
 import { Loader2, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
@@ -85,13 +85,19 @@ export const ResolveMarketEvent: FC = () => {
             const provider = createConfirmedProvider(connection, anchorWallet);
             const program = new Program(idl as Idl, provider);
 
-            const signature = await (program.methods as any).resolveMarket(isYes)
-                .accounts({
-                    admin: publicKey,
-                    marketState: marketPubkey,
-                    systemProgram: SystemProgram.programId,
-                })
-                .rpc({ skipPreflight: true });
+            const signature = await withSolanaRetry(async () => {
+                return await (program.methods as any).resolveMarket(isYes)
+                    .accounts({
+                        admin: publicKey,
+                        marketState: marketPubkey,
+                        systemProgram: SystemProgram.programId,
+                    })
+                    .preInstructions([
+                        ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+                        ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                    ])
+                    .rpc({ skipPreflight: true });
+            });
 
             setStatus({ type: 'success', message: `Market successfully resolved as ${isYes ? 'YES' : 'NO'}! TX: ${signature}` });
             

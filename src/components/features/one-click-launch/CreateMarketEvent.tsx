@@ -1,9 +1,9 @@
 import { FC, useState } from 'react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, Idl, BN } from '@coral-xyz/anchor';
-import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
+import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
-import { createConfirmedProvider } from '@/utils/solanaRetry';
+import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
 import idl from '../../../idl/e_plays.json';
 import { Text, Calendar, Loader2 } from 'lucide-react';
 
@@ -110,9 +110,16 @@ export const CreateMarketEvent: FC = () => {
                 })
                 .instruction();
 
-            const tx = new Transaction().add(ix1).add(ix2).add(ix3);
+            const tx = new Transaction()
+                .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 600_000 }))
+                .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }))
+                .add(ix1)
+                .add(ix2)
+                .add(ix3);
             
-            const signature = await provider.sendAndConfirm(tx, [], { commitment: 'confirmed', skipPreflight: true });
+            const signature = await withSolanaRetry(async () => {
+                return await provider.sendAndConfirm(tx, [], { commitment: 'confirmed', skipPreflight: true });
+            });
 
             setStatus({ type: 'success', message: `Market Created Successfully! TX: ${signature}` });
             setTitle('');

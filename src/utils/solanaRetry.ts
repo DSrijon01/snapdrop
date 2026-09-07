@@ -7,7 +7,7 @@ import { AnchorProvider } from "@coral-xyz/anchor";
  */
 export async function withSolanaRetry<T>(
     operation: () => Promise<T>,
-    maxRetries: number = 3,
+    maxRetries: number = 4,
     baseDelayMs: number = 1500
 ): Promise<T> {
     let attempt = 0;
@@ -22,12 +22,20 @@ export async function withSolanaRetry<T>(
                                 errorMessage.includes("too many requests");
             const isBlockhashIssue = errorMessage.includes("blockhash not found") || 
                                      errorMessage.includes("blockhash") ||
-                                     errorMessage.includes("transaction simulation failed");
+                                     errorMessage.includes("transaction simulation failed") ||
+                                     errorMessage.includes("block height exceeded") ||
+                                     errorMessage.includes("expired");
+            const isNetworkIssue = errorMessage.includes("failed to fetch") ||
+                                   errorMessage.includes("err_name_not_resolved") ||
+                                   errorMessage.includes("network error") ||
+                                   errorMessage.includes("fetch failed") ||
+                                   errorMessage.includes("connection refused");
 
-            if ((isRateLimit || isBlockhashIssue) && attempt <= maxRetries) {
+            if ((isRateLimit || isBlockhashIssue || isNetworkIssue) && attempt <= maxRetries) {
                 const delay = baseDelayMs * Math.pow(2, attempt - 1) + Math.floor(Math.random() * 400);
+                const reason = isRateLimit ? "Rate limit (429)" : isNetworkIssue ? "Transient network/DNS drop" : "Blockhash/slot sync";
                 console.warn(
-                    `[Solana RPC] ${isRateLimit ? "Rate limit (429)" : "Blockhash sync"} detected. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`,
+                    `[Solana RPC] ${reason} detected. Retrying attempt ${attempt}/${maxRetries} in ${delay}ms...`,
                     err
                 );
                 await new Promise((resolve) => setTimeout(resolve, delay));
