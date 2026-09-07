@@ -10,6 +10,7 @@ import { BN } from "@coral-xyz/anchor";
 import { TokenBadge } from "../../global/wallet/TokenBadge";
 import toast from "react-hot-toast";
 import { PublicKey } from "@solana/web3.js";
+import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
 
 const SecondaryListingItem = ({ 
     listing, 
@@ -257,7 +258,8 @@ export const SellTokens: FC = () => {
             let tokenSymbol = "UNK";
             let tokenImage = "";
             try {
-                const mintInfo = await fetch(`https://api.devnet.solana.com`, {
+                const rpcEndpoint = connection.rpcEndpoint || process.env.NEXT_PUBLIC_SOLANA_RPC_URL || HELIUS_DEVNET_RPC;
+                const mintInfo = await fetch(rpcEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

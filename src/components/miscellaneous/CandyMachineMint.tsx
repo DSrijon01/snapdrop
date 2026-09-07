@@ -9,6 +9,7 @@ import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } f
 import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
 import { mplTokenMetadata, fetchAllDigitalAssetByOwner } from "@metaplex-foundation/mpl-token-metadata";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
 
 interface Props {
     onMintSuccess?: () => void;
@@ -25,7 +26,8 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
     // Initialize Umi
     const umi = useMemo(() => {
-        const u = createUmi("https://api.devnet.solana.com")
+        const endpoint = connection.rpcEndpoint || process.env.NEXT_PUBLIC_SOLANA_RPC_URL || HELIUS_DEVNET_RPC;
+        const u = createUmi(endpoint)
             .use(mplCandyMachine())
             .use(mplTokenMetadata());
         

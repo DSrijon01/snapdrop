@@ -15,6 +15,8 @@ import { clusterApiUrl } from "@solana/web3.js";
 // Default styles that can be overridden by your app
 import "@solana/wallet-adapter-react-ui/styles.css";
 
+import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
+
 export const WalletContextProvider: FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -23,7 +25,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
 
   // You can also provide a custom RPC endpoint.
   const endpoint = useMemo(
-    () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL || clusterApiUrl(network),
+    () => process.env.NEXT_PUBLIC_SOLANA_RPC_URL || HELIUS_DEVNET_RPC || clusterApiUrl(network),
     [network]
   );
 
