@@ -6,10 +6,11 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, some, generateSigner } from "@metaplex-foundation/umi";
-import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
+import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
 import { mplTokenMetadata, fetchAllDigitalAssetByOwner } from "@metaplex-foundation/mpl-token-metadata";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
+import { withSolanaRetry } from "@/utils/solanaRetry";
 
 interface Props {
     onMintSuccess?: () => void;
@@ -158,23 +159,26 @@ export const CandyMachineMint: FC<Props> = ({ onMintSuccess }) => {
 
             const nftMint = generateSigner(umi);
 
-            const tx = await transactionBuilder()
-                .add(setComputeUnitLimit(umi, { units: 800_000 }))
-                .add(mintV2(umi, {
-                    candyMachine: candyMachine.publicKey,
-                    candyGuard: candyMachine.mintAuthority,
-                    collectionMint: candyMachine.collectionMint,
-                    collectionUpdateAuthority: candyMachine.authority,
-                    nftMint,
-                    tokenStandard: candyMachine.tokenStandard,
-                    mintArgs: {
-                        solPayment: { destination: paymentDestination },
-                    },
-                }))
-                .sendAndConfirm(umi, {
-                    send: { skipPreflight: true },
-                    confirm: { commitment: "confirmed" }
-                });
+            const tx = await withSolanaRetry(async () => {
+                return await transactionBuilder()
+                    .add(setComputeUnitPrice(umi, { microLamports: 100_000 }))
+                    .add(setComputeUnitLimit(umi, { units: 800_000 }))
+                    .add(mintV2(umi, {
+                        candyMachine: candyMachine.publicKey,
+                        candyGuard: candyMachine.mintAuthority,
+                        collectionMint: candyMachine.collectionMint,
+                        collectionUpdateAuthority: candyMachine.authority,
+                        nftMint,
+                        tokenStandard: candyMachine.tokenStandard,
+                        mintArgs: {
+                            solPayment: { destination: paymentDestination },
+                        },
+                    }))
+                    .sendAndConfirm(umi, {
+                        send: { skipPreflight: true, maxRetries: 5 },
+                        confirm: { commitment: "confirmed" }
+                    });
+            });
 
 
             console.log("Mint successful!", tx);

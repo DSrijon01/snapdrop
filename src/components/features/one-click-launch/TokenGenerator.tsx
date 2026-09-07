@@ -9,8 +9,10 @@ import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-ad
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
 import { compressImageForDevnet } from '@/utils/imageCompressor';
 import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
+import { withSolanaRetry } from '@/utils/solanaRetry';
 
 type TokenGeneratorProps = {
     onListNow: (tokenAccountInfo: any) => void;
@@ -110,10 +112,16 @@ export const TokenGenerator: React.FC<TokenGeneratorProps> = ({ onListNow }) => 
                 tokenStandard: TokenStandard.Fungible, // Fungible Token Standard
             });
 
+            let finalBuilder = builder
+                .prepend(setComputeUnitLimit(umi, { units: 400_000 }))
+                .prepend(setComputeUnitPrice(umi, { microLamports: 100_000 }));
+
             try {
-                const { signature } = await builder.sendAndConfirm(umi, {
-                    send: { skipPreflight: true },
-                    confirm: { commitment: 'confirmed' }
+                const { signature } = await withSolanaRetry(async () => {
+                    return await finalBuilder.sendAndConfirm(umi, {
+                        send: { skipPreflight: true, maxRetries: 5 },
+                        confirm: { commitment: 'confirmed' }
+                    });
                 });
                 console.log("Token Created Signature:", signature);
                 setStatus('Token creation successful!');

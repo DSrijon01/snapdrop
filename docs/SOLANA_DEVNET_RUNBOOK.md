@@ -180,13 +180,51 @@ Phantom displays a yellow banner: `You are currently in Testnet Mode`.
 
 ---
 
+### Issue #6: Transaction Blockheight Expiry (`TransactionExpiredBlockheightExceededError: Signature ... has expired: block height exceeded`)
+
+#### Symptom:
+During direct minting or Candy Machine deployment/minting:
+```text
+TransactionExpiredBlockheightExceededError: Signature <SIG> has expired: block height exceeded.
+    at rk.confirmTransactionUsingBlockHeightExceedanceStrategy
+    at async rk.confirmTransaction
+    at async o.sendAndConfirm
+```
+
+#### Root Cause:
+1. **0 Priority Fee with High Compute Unit Requests**: Transactions requesting large compute unit limits (e.g. 800,000 CUs) with 0 priority fees are heavily deprioritized or dropped by leader validators during Devnet load.
+2. **Blockhash Lifetime Exceeded**: A Solana blockhash is valid for approximately 150 slots (~60–90 seconds). If slot skips or validator queues delay the transaction beyond the blockhash's `lastValidBlockHeight`, the transaction expires on-chain and is discarded.
+3. **No Retries / Rebroadcasting**: Without `maxRetries: 5` and retry wrappers (`withSolanaRetry`), the RPC will not rebroadcast across consecutive leader slots, causing single slot misses to fail permanently.
+
+#### Permanent Code Pattern:
+1. **Prepend both `setComputeUnitPrice` and reasonable `setComputeUnitLimit`**:
+   ```typescript
+   import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
+
+   builder = builder
+       .prepend(setComputeUnitLimit(umi, { units: 400_000 }))
+       .prepend(setComputeUnitPrice(umi, { microLamports: 100_000 }));
+   ```
+2. **Always include `maxRetries: 5` in Metaplex `sendAndConfirm`**:
+   ```typescript
+   await withSolanaRetry(async () => {
+       await builder.sendAndConfirm(umi, {
+           send: { skipPreflight: true, maxRetries: 5 },
+           confirm: { commitment: 'confirmed' }
+       });
+   });
+   ```
+
+---
+
 ## 3. Quick Checklist for Adding New Transaction Flows
 
 Before pushing any new Solana contract interaction to this codebase, verify:
 - [ ] Is image upload passing through `compressImageForDevnet()`? (< 100 KiB)
 - [ ] Is the Anchor provider created via `createConfirmedProvider(connection, wallet)`?
 - [ ] Does every `.rpc()` call have `{ skipPreflight: true }`?
-- [ ] Does every Metaplex `sendAndConfirm()` call have `{ send: { skipPreflight: true }, confirm: { commitment: "confirmed" } }`?
-- [ ] Are priority fees attached via `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })`?
+- [ ] Does every Metaplex `sendAndConfirm()` call have `{ send: { skipPreflight: true, maxRetries: 5 }, confirm: { commitment: "confirmed" } }`?
+- [ ] Are priority fees attached via `ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 })` or `setComputeUnitPrice(umi, { microLamports: 100_000 })`?
+- [ ] Are transactions wrapped in `withSolanaRetry(...)` where applicable?
 - [ ] Is there **NO** redundant `connection.confirmTransaction` call after `.rpc()`?
 - [ ] Does `npx tsc --noEmit` pass with **0 errors**?

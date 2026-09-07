@@ -5,11 +5,12 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 import { generateSigner, percentAmount, some, none, publicKey as umiPublicKey, sol, createGenericFile, transactionBuilder } from "@metaplex-foundation/umi";
 import { createNft, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { create, mplCandyMachine, addConfigLines } from "@metaplex-foundation/mpl-candy-machine";
-import { setComputeUnitLimit } from "@metaplex-foundation/mpl-toolbox";
+import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
 import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { compressImageForDevnet } from '@/utils/imageCompressor';
 import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
+import { withSolanaRetry } from '@/utils/solanaRetry';
 
 interface NFTAsset {
     id: string;
@@ -124,7 +125,7 @@ export const NFTStudio: FC = () => {
 
             setStatus("3/5: Initializing Base Collection NFT...");
             const collectionMint = generateSigner(umi);
-            await createNft(umi, {
+            let collBuilder = createNft(umi, {
                 mint: collectionMint,
                 name: cmCollectionName,
                 symbol: cmSymbol,
@@ -137,7 +138,17 @@ export const NFTStudio: FC = () => {
                 },
                 updateAuthority: umi.identity.publicKey,
                 tokenOwner: umi.identity.publicKey,
-            }).sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
+            });
+            collBuilder = collBuilder
+                .prepend(setComputeUnitLimit(umi, { units: 400_000 }))
+                .prepend(setComputeUnitPrice(umi, { microLamports: 100_000 }));
+
+            await withSolanaRetry(async () => {
+                await collBuilder.sendAndConfirm(umi, {
+                    send: { skipPreflight: true, maxRetries: 5 },
+                    confirm: { commitment: "confirmed" }
+                });
+            });
 
             // Introduce a short delay to allow the RPC nodes to index the newly created collection NFT metadata
             await new Promise(resolve => setTimeout(resolve, 3000));
@@ -168,20 +179,32 @@ export const NFTStudio: FC = () => {
                 }
             });
 
-            await transactionBuilder()
-                .add(setComputeUnitLimit(umi, { units: 800_000 }))
-                .add(createCmBuilder)
-                .sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
+            await withSolanaRetry(async () => {
+                await transactionBuilder()
+                    .add(setComputeUnitPrice(umi, { microLamports: 100_000 }))
+                    .add(setComputeUnitLimit(umi, { units: 800_000 }))
+                    .add(createCmBuilder)
+                    .sendAndConfirm(umi, {
+                        send: { skipPreflight: true, maxRetries: 5 },
+                        confirm: { commitment: "confirmed" }
+                    });
+            });
 
             setStatus("5/5: Adding Config Lines to Candy Machine...");
-            await transactionBuilder()
-                .add(setComputeUnitLimit(umi, { units: 800_000 }))
-                .add(addConfigLines(umi, {
-                    candyMachine: candyMachine.publicKey,
-                    index: 0,
-                    configLines: jsonUris.map((uri, i) => ({ name: assets[i].name, uri })),
-                }))
-                .sendAndConfirm(umi, { send: { skipPreflight: true }, confirm: { commitment: "confirmed" } });
+            await withSolanaRetry(async () => {
+                await transactionBuilder()
+                    .add(setComputeUnitPrice(umi, { microLamports: 100_000 }))
+                    .add(setComputeUnitLimit(umi, { units: 400_000 }))
+                    .add(addConfigLines(umi, {
+                        candyMachine: candyMachine.publicKey,
+                        index: 0,
+                        configLines: jsonUris.map((uri, i) => ({ name: assets[i].name, uri })),
+                    }))
+                    .sendAndConfirm(umi, {
+                        send: { skipPreflight: true, maxRetries: 5 },
+                        confirm: { commitment: "confirmed" }
+                    });
+            });
             
             // Wire it to the Gallery using Arweave URI
             const newGalleryCard: CarouselItem = {
@@ -236,6 +259,7 @@ export const NFTStudio: FC = () => {
             setStatus("3/3: Minting Direct 1-of-1 NFTs to Treasury...");
             const mints: string[] = [];
             for (let i = 0; i < assets.length; i++) {
+                setStatus(`3/3: Minting Direct 1-of-1 NFT (${i + 1}/${assets.length}) to Treasury...`);
                 const mint = generateSigner(umi);
                 let builder = createNft(umi, {
                     mint,
@@ -243,10 +267,15 @@ export const NFTStudio: FC = () => {
                     uri: jsonUris[i],
                     sellerFeeBasisPoints: percentAmount(parseFloat(directRoyalties)),
                 });
-                builder = builder.prepend(setComputeUnitLimit(umi, { units: 800_000 }));
-                await builder.sendAndConfirm(umi, {
-                    send: { skipPreflight: true },
-                    confirm: { commitment: 'confirmed' }
+                builder = builder
+                    .prepend(setComputeUnitLimit(umi, { units: 400_000 }))
+                    .prepend(setComputeUnitPrice(umi, { microLamports: 100_000 }));
+
+                await withSolanaRetry(async () => {
+                    await builder.sendAndConfirm(umi, {
+                        send: { skipPreflight: true, maxRetries: 5 },
+                        confirm: { commitment: 'confirmed' }
+                    });
                 });
                 mints.push(mint.publicKey.toString());
             }
