@@ -20,8 +20,8 @@ export const DevnetBanner = () => {
           <div className="flex items-center gap-2">
             <span className="text-xl">⚠️</span>
             <p className="text-sm font-medium">
-              <span className="font-bold">Developer Mode Required:</span> This is a showcase project on <span className="font-mono font-bold">Solana Devnet</span>. 
-              Please enable Developer Mode in your Phantom wallet settings and switch to Devnet to mint.
+              <span className="font-bold">Solana Devnet Required:</span> This project runs on <span className="font-mono font-bold underline">Solana Devnet</span> (NOT Testnet Mode). 
+              In Phantom: ⚙️ Settings ➔ Developer Settings ➔ Change Network ➔ Select <span className="font-bold underline">Solana Devnet</span>.
             </p>
           </div>
           <button

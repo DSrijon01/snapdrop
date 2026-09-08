@@ -85,24 +85,39 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
             const latestBlockhash = await connection.getLatestBlockhash("confirmed");
 
             let rawTx: Uint8Array;
-            if (tx.version !== undefined) {
-                // VersionedTransaction
-                if (signers && signers.length > 0) {
-                    tx.sign(signers);
-                }
-                const signedTx = await wallet.signTransaction(tx);
-                rawTx = signedTx.serialize();
-            } else {
-                // Standard Transaction
-                tx.feePayer = tx.feePayer || wallet.publicKey;
-                tx.recentBlockhash = tx.recentBlockhash || latestBlockhash.blockhash;
-                if (signers && signers.length > 0) {
-                    for (const s of signers) {
-                        tx.partialSign(s);
+            try {
+                if (tx.version !== undefined) {
+                    // VersionedTransaction
+                    if (signers && signers.length > 0) {
+                        tx.sign(signers);
                     }
+                    const signedTx = await wallet.signTransaction(tx);
+                    rawTx = signedTx.serialize();
+                } else {
+                    // Standard Transaction
+                    tx.feePayer = tx.feePayer || wallet.publicKey;
+                    tx.recentBlockhash = latestBlockhash.blockhash;
+                    if (signers && signers.length > 0) {
+                        for (const s of signers) {
+                            tx.partialSign(s);
+                        }
+                    }
+                    const signedTx = await wallet.signTransaction(tx);
+                    rawTx = signedTx.serialize();
                 }
-                const signedTx = await wallet.signTransaction(tx);
-                rawTx = signedTx.serialize();
+            } catch (signErr: any) {
+                const signErrStr = (
+                    (signErr?.name || "") + " " +
+                    (signErr?.message || "") + " " +
+                    (typeof signErr === "string" ? signErr : JSON.stringify(signErr) || "")
+                ).toLowerCase();
+
+                if (signErr?.name === "WalletSignTransactionError" || signErrStr.includes("unexpected error")) {
+                    throw new Error(
+                        "Phantom Wallet Error: Transaction simulation failed in wallet. Your Phantom wallet is currently set to 'Testnet Mode' instead of Solana Devnet! Please switch Phantom to Solana Devnet (Phantom ⚙️ ➔ Developer Settings ➔ Change Network ➔ Solana Devnet)."
+                    );
+                }
+                throw signErr;
             }
 
             const signature = await connection.sendRawTransaction(rawTx, {
@@ -133,3 +148,44 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
     return provider;
 }
 
+/**
+ * Parses Solana transaction errors into clear, actionable, user-friendly messages.
+ * Specifically detects Phantom network mismatch (Testnet mode vs Devnet).
+ */
+export function parseSolanaErrorMessage(err: any): string {
+    const errorStr = (
+        (err?.name || "") + " " +
+        (err?.message || "") + " " +
+        (typeof err === "string" ? err : JSON.stringify(err) || "")
+    ).toLowerCase();
+
+    if (
+        errorStr.includes("user rejected") ||
+        errorStr.includes("rejected the request") ||
+        errorStr.includes("transaction cancelled") ||
+        errorStr.includes("user denied")
+    ) {
+        return "Transaction was cancelled in your wallet.";
+    }
+
+    if (
+        err?.name === "WalletSignTransactionError" ||
+        errorStr.includes("walletsigntransactionerror") ||
+        errorStr.includes("unexpected error") ||
+        errorStr.includes("testnet mode") ||
+        errorStr.includes("phantom wallet error") ||
+        errorStr.includes("simulation failed: unexpected error")
+    ) {
+        return "Phantom Wallet Network Mismatch: Your Phantom wallet is set to 'Testnet Mode' instead of Solana Devnet! Please open Phantom ➔ Settings (⚙️) ➔ Developer Settings ➔ Change Network ➔ Select 'Solana Devnet'.";
+    }
+
+    if (errorStr.includes("insufficient lamports") || errorStr.includes("insufficient funds") || errorStr.includes("0x1")) {
+        return "Insufficient SOL balance in your wallet to cover the trade amount and gas fees.";
+    }
+
+    if (err?.logs && Array.isArray(err.logs) && err.logs.length > 0) {
+        return `${err.message || "Transaction failed"}. Logs: ${err.logs[err.logs.length - 1]}`;
+    }
+
+    return err?.message || "Transaction failed. Please ensure your wallet is set to Solana Devnet.";
+}

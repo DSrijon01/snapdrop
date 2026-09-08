@@ -7,7 +7,7 @@ import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapte
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token';
-import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
+import { createConfirmedProvider, withSolanaRetry, parseSolanaErrorMessage } from '@/utils/solanaRetry';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
@@ -424,12 +424,9 @@ export default function EPlaysPage() {
         
     } catch (error: any) {
         console.error("SOL Trade failed:", error);
-        let errorMsg = error.message || "Unknown error";
-        if (error.logs) {
-            console.error("Simulation Logs:", error.logs);
-            errorMsg = `${errorMsg}. Logs: ${error.logs[error.logs.length - 1]}`;
-        }
-        setTxStatus({ type: 'error', message: `Simulation Failed: ${errorMsg}` });
+        const friendlyMessage = parseSolanaErrorMessage(error);
+        setTxStatus({ type: 'error', message: friendlyMessage });
+        toast.error(friendlyMessage, { duration: 6000 });
     } finally {
         setIsSubmitting(false);
     }
@@ -502,7 +499,8 @@ export default function EPlaysPage() {
       fetchMarketsAndPositions();
     } catch (e: any) {
       console.error("Claim winnings failed:", e);
-      toast.error(`Claim failed: ${e.message || e}`);
+      const friendlyMessage = parseSolanaErrorMessage(e);
+      toast.error(friendlyMessage, { duration: 6000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -570,8 +568,9 @@ export default function EPlaysPage() {
 
       fetchMarketsAndPositions();
     } catch (e: any) {
-      console.error("Losing position cleanup failed:", e);
-      toast.error(`Cleanup failed: ${e.message || e}`);
+      console.error("Close losing position failed:", e);
+      const friendlyMessage = parseSolanaErrorMessage(e);
+      toast.error(friendlyMessage, { duration: 6000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -818,10 +817,24 @@ export default function EPlaysPage() {
               <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
                 
                 {txStatus && (
-                    <div className={`p-4 rounded-xl font-mono text-xs border ${
-                        txStatus.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/20' : 'bg-green-500/10 text-green-500 border-green-500/20'
-                    } break-all leading-relaxed`}>
-                        {txStatus.message}
+                    <div className={`p-4 rounded-xl text-xs border ${
+                        txStatus.type === 'error' ? 'bg-red-500/10 text-red-500 border-red-500/30' : 'bg-green-500/10 text-green-500 border-green-500/20'
+                    } leading-relaxed`}>
+                        <div className="font-bold flex items-center gap-1.5 mb-1.5">
+                          {txStatus.type === 'error' ? '⚠️ Transaction Error' : '✅ Success'}
+                        </div>
+                        <div className="font-mono text-[11px] break-words">{txStatus.message}</div>
+                        {txStatus.type === 'error' && (txStatus.message.includes('Phantom') || txStatus.message.includes('Devnet') || txStatus.message.includes('Testnet')) && (
+                          <div className="mt-3 p-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 rounded-lg text-[11px] font-sans">
+                            <span className="font-bold flex items-center gap-1">🔧 Quick Fix in Phantom:</span>
+                            <ol className="list-decimal list-inside mt-1.5 space-y-1">
+                              <li>Open your <span className="font-bold">Phantom</span> wallet</li>
+                              <li>Click <span className="font-bold">Settings (⚙️)</span> at the bottom right</li>
+                              <li>Scroll down & select <span className="font-bold">Developer Settings</span></li>
+                              <li>Click <span className="font-bold">Change Network</span> ➔ Select <span className="font-bold text-foreground underline">Solana Devnet</span></li>
+                            </ol>
+                          </div>
+                        )}
                     </div>
                 )}
 
