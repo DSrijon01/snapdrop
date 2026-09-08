@@ -7,7 +7,7 @@ import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapte
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token';
-import { createConfirmedProvider } from '@/utils/solanaRetry';
+import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
@@ -371,7 +371,7 @@ export default function EPlaysPage() {
         setIsSubmitting(true);
         setTxStatus(null);
 
-        const provider = new AnchorProvider(connection, anchorWallet!, { preflightCommitment: 'confirmed' });
+        const provider = createConfirmedProvider(connection, anchorWallet!);
         const program = new Program(idl as Idl, provider);
 
         const market = selectedTrade.market;
@@ -381,58 +381,30 @@ export default function EPlaysPage() {
         const formattedAmount = new BN(amountNum * 1e9);
         const userTokenAccount = getAssociatedTokenAddressSync(targetMint, publicKey, false);
 
-        const tx = new Transaction();
-        tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }));
-        tx.add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }));
+        const signature = await withSolanaRetry(async () => {
+            return await (program.methods as any)
+                .buyShares(formattedAmount, isYes)
+                .accounts({
+                    buyer: publicKey,
+                    marketState: market.marketStatePubkey,
+                    userMintAccount: userTokenAccount,
+                    mint: targetMint,
+                    tokenProgram: TOKEN_PROGRAM_ID,
+                    systemProgram: SystemProgram.programId,
+                })
+                .preInstructions([
+                    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+                    createAssociatedTokenAccountIdempotentInstruction(
+                        publicKey,
+                        userTokenAccount,
+                        publicKey,
+                        targetMint
+                    ),
+                ])
+                .rpc({ skipPreflight: true });
+        }, 2);
 
-        // Inject Idempotent ATA creation instruction in case they've never bought this token side
-        tx.add(
-            createAssociatedTokenAccountIdempotentInstruction(
-                publicKey,
-                userTokenAccount,
-                publicKey,
-                targetMint
-            )
-        );
-
-        // Append the buy_shares instruction (direct SOL transfer)
-        const buyIx = await (program.methods as any)
-            .buyShares(formattedAmount, isYes)
-            .accounts({
-                buyer: publicKey,
-                marketState: market.marketStatePubkey,
-                userMintAccount: userTokenAccount,
-                mint: targetMint,
-                tokenProgram: TOKEN_PROGRAM_ID,
-                systemProgram: SystemProgram.programId,
-            })
-            .instruction();
-
-        tx.add(buyIx);
-
-        tx.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-        tx.feePayer = publicKey;
-
-        // Pre-simulate the transaction programmatically to catch exact error messages
-        const sim = await connection.simulateTransaction(tx);
-        if (sim.value.err) {
-            console.error("Local Simulation Logs:", sim.value.logs);
-            const logsText = sim.value.logs ? sim.value.logs.join("\n") : "";
-            let parsedError = "Unknown simulation error";
-            
-            if (logsText.includes("custom program error: 0x1772") || logsText.includes("MarketExpired")) {
-                parsedError = "Market is expired.";
-            } else if (logsText.includes("custom program error: 0x1774")) {
-                parsedError = "Invalid YES/NO mint.";
-            } else if (logsText.includes("InstructionError")) {
-                parsedError = `Transaction failed: ${JSON.stringify(sim.value.err)}`;
-            } else {
-                parsedError = sim.value.logs ? sim.value.logs[sim.value.logs.length - 1] : JSON.stringify(sim.value.err);
-            }
-            throw new Error(`${parsedError}`);
-        }
-
-        const signature = await sendTransaction(tx, connection, { skipPreflight: true, preflightCommitment: 'confirmed' });
         setTxStatus({ type: 'success', message: `Order Placed Successfully! TX Hash: ${signature}` });
         toast.success("SOL Trade Executed!");
         
@@ -495,22 +467,24 @@ export default function EPlaysPage() {
 
       const PLATFORM_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
 
-      const signature = await (program.methods as any)
-          .claimWinnings()
-          .accounts({
-              claimer: publicKey,
-              marketState: pos.market.marketStatePubkey,
-              userMintAccount: pos.userMintAccount,
-              mint: pos.mintPubkey,
-              platformWallet: PLATFORM_WALLET,
-              tokenProgram: TOKEN_PROGRAM_ID,
-              systemProgram: SystemProgram.programId,
-          })
-          .preInstructions([
-              ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
-              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-          ])
-          .rpc({ skipPreflight: true });
+      const signature = await withSolanaRetry(async () => {
+          return await (program.methods as any)
+              .claimWinnings()
+              .accounts({
+                  claimer: publicKey,
+                  marketState: pos.market.marketStatePubkey,
+                  userMintAccount: pos.userMintAccount,
+                  mint: pos.mintPubkey,
+                  platformWallet: PLATFORM_WALLET,
+                  tokenProgram: TOKEN_PROGRAM_ID,
+                  systemProgram: SystemProgram.programId,
+              })
+              .preInstructions([
+                  ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+                  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+              ])
+              .rpc({ skipPreflight: true });
+      }, 2);
 
       toast.success(`Winnings claimed successfully! TX Hash: ${signature}`);
       
@@ -564,20 +538,22 @@ export default function EPlaysPage() {
       const provider = createConfirmedProvider(connection, anchorWallet!);
       const program = new Program(idl as Idl, provider);
 
-      const signature = await (program.methods as any)
-          .closeLosingPosition()
-          .accounts({
-              user: publicKey,
-              marketState: pos.market.marketStatePubkey,
-              userMintAccount: pos.userMintAccount,
-              mint: pos.mintPubkey,
-              tokenProgram: TOKEN_PROGRAM_ID,
-          })
-          .preInstructions([
-              ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
-              ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-          ])
-          .rpc({ skipPreflight: true });
+      const signature = await withSolanaRetry(async () => {
+          return await (program.methods as any)
+              .closeLosingPosition()
+              .accounts({
+                  user: publicKey,
+                  marketState: pos.market.marketStatePubkey,
+                  userMintAccount: pos.userMintAccount,
+                  mint: pos.mintPubkey,
+                  tokenProgram: TOKEN_PROGRAM_ID,
+              })
+              .preInstructions([
+                  ComputeBudgetProgram.setComputeUnitLimit({ units: 300_000 }),
+                  ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+              ])
+              .rpc({ skipPreflight: true });
+      }, 2);
 
       toast.success(`Losing position cleaned! Reclaimed rent. TX Hash: ${signature}`);
       
