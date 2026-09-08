@@ -70,12 +70,66 @@ export async function withSolanaRetry<T>(
 
 /**
  * Creates an AnchorProvider with cluster-wide 'confirmed' commitment and skipPreflight,
- * eliminating "Blockhash not found" simulation mismatches across devnet nodes.
+ * overriding sendAndConfirm with modern blockhash-aware confirmation and maxRetries
+ * to permanently eliminate Anchor's 30-second legacy timeout (confirmTransactionUsingLegacyTimeoutStrategy).
  */
 export function createConfirmedProvider(connection: Connection, wallet: any): AnchorProvider {
-    return new AnchorProvider(connection, wallet, {
+    const provider = new AnchorProvider(connection, wallet, {
         commitment: "confirmed",
         preflightCommitment: "confirmed",
         skipPreflight: true,
     });
+
+    if (wallet && typeof wallet.signTransaction === "function") {
+        provider.sendAndConfirm = async (tx: any, signers?: any[], opts?: any) => {
+            const latestBlockhash = await connection.getLatestBlockhash("confirmed");
+
+            let rawTx: Uint8Array;
+            if (tx.version !== undefined) {
+                // VersionedTransaction
+                if (signers && signers.length > 0) {
+                    tx.sign(signers);
+                }
+                const signedTx = await wallet.signTransaction(tx);
+                rawTx = signedTx.serialize();
+            } else {
+                // Standard Transaction
+                tx.feePayer = tx.feePayer || wallet.publicKey;
+                tx.recentBlockhash = tx.recentBlockhash || latestBlockhash.blockhash;
+                if (signers && signers.length > 0) {
+                    for (const s of signers) {
+                        tx.partialSign(s);
+                    }
+                }
+                const signedTx = await wallet.signTransaction(tx);
+                rawTx = signedTx.serialize();
+            }
+
+            const signature = await connection.sendRawTransaction(rawTx, {
+                skipPreflight: true,
+                maxRetries: 5,
+                preflightCommitment: "confirmed",
+                ...opts,
+            });
+
+            // Modern block-height-exceedance confirmation strategy instead of 30-second legacy timeout
+            const confirmation = await connection.confirmTransaction(
+                {
+                    signature,
+                    blockhash: latestBlockhash.blockhash,
+                    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
+                },
+                "confirmed"
+            );
+
+            if (confirmation.value.err) {
+                throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(confirmation.value.err)}`);
+            }
+
+            return signature;
+        };
+    }
+
+    return provider;
 }
+
