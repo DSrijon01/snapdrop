@@ -4,11 +4,19 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect, useRef } from "react";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 
+const BOT_ITEMS = [
+  { word: "TRADE", seed: "EW9U" },
+  { word: "PREDICT", seed: "StreetSync" },
+  { word: "MANAGE", seed: "Solana" },
+  { word: "SWAP", seed: "CyberBot" },
+  { word: "NFTS", seed: "NeonRider" },
+];
+
 export function WalletGate({ children }: { children: React.ReactNode }) {
   const { connected } = useWallet();
   const hasConnected = useRef(false);
   const [showExitMessage, setShowExitMessage] = useState(false);
-  const [robotSeed, setRobotSeed] = useState("EW9U");
+  const [itemIndex, setItemIndex] = useState(0);
 
   useEffect(() => {
     if (connected) {
@@ -20,22 +28,13 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
     }
   }, [connected]);
 
-  if (connected) {
-    return <>{children}</>;
-  }
-
-  const BOT_ITEMS = [
-    { word: "TRADE", seed: "EW9U" },
-    { word: "PREDICT", seed: "StreetSync" },
-    { word: "MANAGE", seed: "Solana" },
-    { word: "SWAP", seed: "CyberBot" },
-    { word: "NFTS", seed: "NeonRider" },
-  ];
-  const [itemIndex, setItemIndex] = useState(0);
-
   const cycleNext = () => {
     setItemIndex((prev) => (prev + 1) % BOT_ITEMS.length);
   };
+
+  if (connected) {
+    return <>{children}</>;
+  }
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 text-center h-full w-full self-center justify-self-center my-auto">

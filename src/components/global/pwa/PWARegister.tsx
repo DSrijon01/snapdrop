@@ -5,8 +5,8 @@ import { useEffect } from "react";
 export function PWARegister() {
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      // Register service worker
-      const swUrl = `${process.env.NODE_ENV === "production" ? "/snapdrop" : ""}/sw.js`;
+      // Register service worker at domain root
+      const swUrl = "/sw.js";
       navigator.serviceWorker
         .register(swUrl)
         .then((reg) => {
