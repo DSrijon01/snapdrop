@@ -4,6 +4,8 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect, useRef } from "react";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 
+import { InteractiveBotAvatar } from "@/components/features/avatar/InteractiveBotAvatar";
+
 const BOT_ITEMS = [
   { word: "TRADE", seed: "EW9U" },
   { word: "PREDICT", seed: "StreetSync" },
@@ -56,26 +58,20 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
           </div>
         </div>
 
-        {/* Animated Bottts Robot Avatar on the Right */}
+        {/* Animated & Interactive Bottts Robot Avatar on the Right */}
         <div className="flex flex-col items-center justify-center shrink-0">
-          <div 
-            onClick={cycleNext}
-            title="Click to cycle"
-            className="relative group cursor-pointer flex flex-col items-center select-none"
-          >
-            {/* Glowing Backdrop Ring */}
-            <div className="absolute inset-0 bg-primary/25 dark:bg-primary/35 blur-3xl rounded-full scale-125 pointer-events-none -z-10 animate-pulse" />
-
-            {/* Avatar Image using exact DiceBear bottts API, scaled larger */}
-            <img
-              src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
-              alt="Street Sync Bot"
-              className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain drop-shadow-[0_0_25px_rgba(255,24,1,0.5)] dark:drop-shadow-[0_0_35px_rgba(255,24,1,0.7)] animate-bounce group-hover:scale-110 transition-transform duration-300 pointer-events-auto"
+          <div className="flex flex-col items-center select-none">
+            <InteractiveBotAvatar
+              seed={BOT_ITEMS[itemIndex].seed}
+              onClick={cycleNext}
             />
 
             {/* Dynamic Street Sync Keyword Badge (changes on click) */}
-            <div className="mt-4 flex flex-col items-center gap-2">
-              <div className="px-6 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-md flex items-center gap-2.5 text-sm font-black uppercase tracking-widest font-display text-foreground transition-all group-hover:border-primary/50 group-hover:scale-105">
+            <div className="mt-1 flex flex-col items-center gap-2">
+              <div 
+                onClick={cycleNext}
+                className="cursor-pointer px-6 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-md flex items-center gap-2.5 text-sm font-black uppercase tracking-widest font-display text-foreground transition-all hover:border-primary/50 hover:scale-105 active:scale-95"
+              >
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0 drop-shadow-[0_0_6px_rgba(255,24,1,0.8)]" />
                 <span className="text-foreground font-black tracking-widest font-display">
                   {BOT_ITEMS[itemIndex].word}
@@ -87,10 +83,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
                 {BOT_ITEMS.map((item, idx) => (
                   <span
                     key={item.word}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setItemIndex(idx);
-                    }}
+                    onClick={() => setItemIndex(idx)}
                     className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
                       idx === itemIndex
                         ? "text-primary bg-primary/10 border border-primary/30"
