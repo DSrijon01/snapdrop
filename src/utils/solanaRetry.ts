@@ -7,7 +7,7 @@ import { AnchorProvider } from "@coral-xyz/anchor";
  */
 export async function withSolanaRetry<T>(
     operation: () => Promise<T>,
-    maxRetries: number = 4,
+    maxRetries: number = 3,
     baseDelayMs: number = 1500
 ): Promise<T> {
     let attempt = 0;
@@ -22,11 +22,42 @@ export async function withSolanaRetry<T>(
                 (typeof err === "string" ? err : JSON.stringify(err) || "")
             ).toLowerCase();
 
-            const isUserRejection = errorStr.includes("user rejected") ||
-                                    errorStr.includes("rejected the request") ||
-                                    errorStr.includes("transaction cancelled") ||
-                                    errorStr.includes("user denied");
+            // 1. User rejection / cancellation MUST NEVER RETRY
+            const isUserRejection = 
+                err?.code === 4001 ||
+                err?.name === "UserRejectedRequestError" ||
+                err?.name === "WalletWindowClosedError" ||
+                errorStr.includes("user rejected") ||
+                errorStr.includes("rejected the request") ||
+                errorStr.includes("transaction cancelled") ||
+                errorStr.includes("transaction canceled") ||
+                errorStr.includes("user cancelled") ||
+                errorStr.includes("user canceled") ||
+                errorStr.includes("user denied") ||
+                errorStr.includes("cancelled by user") ||
+                errorStr.includes("canceled by user") ||
+                errorStr.includes("cancel") ||
+                errorStr.includes("reject") ||
+                errorStr.includes("denied") ||
+                errorStr.includes("declined") ||
+                errorStr.includes("window closed");
+
             if (isUserRejection) {
+                throw err;
+            }
+
+            // 2. Insufficient balance MUST NEVER RETRY
+            const isInsufficientFunds = 
+                errorStr.includes("insufficient lamports") ||
+                errorStr.includes("insufficient funds") ||
+                errorStr.includes("0x1");
+
+            if (isInsufficientFunds) {
+                throw err;
+            }
+
+            // 3. Network mismatch or wrong mode MUST NEVER RETRY
+            if (errorStr.includes("testnet mode") || errorStr.includes("network mismatch")) {
                 throw err;
             }
 
@@ -42,10 +73,7 @@ export async function withSolanaRetry<T>(
                                 errorStr.includes("rate limit") || 
                                 errorStr.includes("too many requests");
             const isBlockhashIssue = errorStr.includes("blockhash not found") || 
-                                     errorStr.includes("blockhash") ||
-                                     errorStr.includes("transaction simulation failed") ||
                                      errorStr.includes("block height exceeded") ||
-                                     errorStr.includes("expired") ||
                                      isTimeout;
             const isNetworkIssue = errorStr.includes("failed to fetch") ||
                                    errorStr.includes("err_name_not_resolved") ||
@@ -112,7 +140,32 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
                     (typeof signErr === "string" ? signErr : JSON.stringify(signErr) || "")
                 ).toLowerCase();
 
-                if (signErr?.name === "WalletSignTransactionError" || signErrStr.includes("unexpected error")) {
+                // 1. MUST check for user cancellation / rejection FIRST before any simulation check
+                const isUserRejection = 
+                    signErr?.code === 4001 ||
+                    signErr?.name === "WalletWindowClosedError" ||
+                    signErr?.name === "UserRejectedRequestError" ||
+                    signErrStr.includes("user rejected") ||
+                    signErrStr.includes("rejected the request") ||
+                    signErrStr.includes("user cancelled") ||
+                    signErrStr.includes("user canceled") ||
+                    signErrStr.includes("transaction cancelled") ||
+                    signErrStr.includes("transaction canceled") ||
+                    signErrStr.includes("user denied") ||
+                    signErrStr.includes("declined") ||
+                    signErrStr.includes("window closed") ||
+                    signErrStr.includes("cancel") ||
+                    signErrStr.includes("reject");
+
+                if (isUserRejection) {
+                    const cancelErr = new Error("Transaction cancelled in your wallet.");
+                    (cancelErr as any).name = "UserRejectedRequestError";
+                    (cancelErr as any).code = 4001;
+                    throw cancelErr;
+                }
+
+                // 2. Only if explicitly not user cancellation, check for phantom testnet mode issue
+                if (signErrStr.includes("simulation failed: unexpected error") || (signErrStr.includes("unexpected error") && signErrStr.includes("simulation"))) {
                     throw new Error(
                         "Phantom Wallet Error: Transaction simulation failed in wallet. Your Phantom wallet is currently set to 'Testnet Mode' instead of Solana Devnet! Please switch Phantom to Solana Devnet (Phantom ⚙️ ➔ Developer Settings ➔ Change Network ➔ Solana Devnet)."
                     );
@@ -150,7 +203,7 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
 
 /**
  * Parses Solana transaction errors into clear, actionable, user-friendly messages.
- * Specifically detects Phantom network mismatch (Testnet mode vs Devnet).
+ * Specifically detects user cancellations and Phantom network mismatch.
  */
 export function parseSolanaErrorMessage(err: any): string {
     const errorStr = (
@@ -160,21 +213,33 @@ export function parseSolanaErrorMessage(err: any): string {
     ).toLowerCase();
 
     if (
+        err?.code === 4001 ||
+        err?.name === "UserRejectedRequestError" ||
+        err?.name === "WalletWindowClosedError" ||
         errorStr.includes("user rejected") ||
         errorStr.includes("rejected the request") ||
         errorStr.includes("transaction cancelled") ||
-        errorStr.includes("user denied")
+        errorStr.includes("transaction canceled") ||
+        errorStr.includes("user cancelled") ||
+        errorStr.includes("user canceled") ||
+        errorStr.includes("user denied") ||
+        errorStr.includes("cancelled in your wallet") ||
+        errorStr.includes("canceled in your wallet") ||
+        errorStr.includes("cancelled by user") ||
+        errorStr.includes("canceled by user") ||
+        errorStr.includes("cancel") ||
+        errorStr.includes("reject") ||
+        errorStr.includes("denied") ||
+        errorStr.includes("declined") ||
+        errorStr.includes("window closed")
     ) {
         return "Transaction was cancelled in your wallet.";
     }
 
     if (
-        err?.name === "WalletSignTransactionError" ||
-        errorStr.includes("walletsigntransactionerror") ||
-        errorStr.includes("unexpected error") ||
         errorStr.includes("testnet mode") ||
-        errorStr.includes("phantom wallet error") ||
-        errorStr.includes("simulation failed: unexpected error")
+        errorStr.includes("phantom wallet network mismatch") ||
+        (errorStr.includes("simulation failed") && errorStr.includes("unexpected error"))
     ) {
         return "Phantom Wallet Network Mismatch: Your Phantom wallet is set to 'Testnet Mode' instead of Solana Devnet! Please open Phantom ➔ Settings (⚙️) ➔ Developer Settings ➔ Change Network ➔ Select 'Solana Devnet'.";
     }

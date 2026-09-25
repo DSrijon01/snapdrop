@@ -8,28 +8,12 @@ import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, createAssociatedTokenAccountIdempotentInstruction } from '@solana/spl-token';
 import { createConfirmedProvider, withSolanaRetry, parseSolanaErrorMessage } from '@/utils/solanaRetry';
+import { checkSolBalance } from '@/utils/balanceCheck';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
+import { MarketCard, Market } from '@/components/features/e-plays/MarketCard';
 
-// === Types ===
-type Market = {
-  id: string;
-  title: string;
-  volume: string;
-  yesPrice: number;
-  noPrice: number;
-  category: string;
-  resolved: boolean;
-  outcome: boolean | null;
-  totalYesShares: number;
-  totalNoShares: number;
-  // Raw Blockchain Data
-  marketStatePubkey: PublicKey;
-  yesMint: PublicKey;
-  noMint: PublicKey;
-  vault: PublicKey;
-};
 
 type Position = {
   id: string;
@@ -92,19 +76,20 @@ export default function EPlaysPage() {
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Default Mock Markets if blockchain fetch fails or has 0 markets (perfect for offline pitch showcase)
+  // Default Fallback Markets if blockchain fetch fails or has 0 markets
   const MOCK_FALLBACK_MARKETS: Market[] = [
     {
       id: "mock-1",
-      title: "Will Solana reach $500 by December 2026?",
-      volume: "$142,500 Vol",
-      yesPrice: 0.65,
-      noPrice: 0.35,
-      category: "Solana DeFi",
+      title: "Will Solana reach 250 SOL equivalent target by end of month?",
+      volume: "◎ 4,820.50 Vol",
+      yesPrice: 0.74,
+      noPrice: 0.26,
+      category: "Solana Ecosystem",
       resolved: false,
       outcome: null,
-      totalYesShares: 92500 * 1e9,
-      totalNoShares: 50000 * 1e9,
+      totalYesShares: 3567.17 * 1e9,
+      totalNoShares: 1253.33 * 1e9,
+      expiryTs: Math.floor(Date.now() / 1000) + 4 * 86400 + 18 * 3600,
       marketStatePubkey: PublicKey.default,
       yesMint: PublicKey.default,
       noMint: PublicKey.default,
@@ -113,14 +98,15 @@ export default function EPlaysPage() {
     {
       id: "mock-2",
       title: "Will Street Sync secure its Series A funding before Q4?",
-      volume: "$94,200 Vol",
-      yesPrice: 0.88,
-      noPrice: 0.12,
+      volume: "◎ 2,450.00 Vol",
+      yesPrice: 0.65,
+      noPrice: 0.35,
       category: "Funding Events",
       resolved: false,
       outcome: null,
-      totalYesShares: 82896 * 1e9,
-      totalNoShares: 11304 * 1e9,
+      totalYesShares: 1592.5 * 1e9,
+      totalNoShares: 857.5 * 1e9,
+      expiryTs: Math.floor(Date.now() / 1000) + 12 * 86400,
       marketStatePubkey: PublicKey.default,
       yesMint: PublicKey.default,
       noMint: PublicKey.default,
@@ -129,14 +115,15 @@ export default function EPlaysPage() {
     {
       id: "mock-3",
       title: "Will the next major NFT standard (SPL-x) be pioneered by SnapDrop?",
-      volume: "$48,100 Vol",
+      volume: "◎ 1,120.00 Vol",
       yesPrice: 0.45,
       noPrice: 0.55,
       category: "Technology",
       resolved: true,
       outcome: true, // YES won
-      totalYesShares: 21645 * 1e9,
-      totalNoShares: 26455 * 1e9,
+      totalYesShares: 504 * 1e9,
+      totalNoShares: 616 * 1e9,
+      expiryTs: Math.floor(Date.now() / 1000) - 86400,
       marketStatePubkey: PublicKey.default,
       yesMint: PublicKey.default,
       noMint: PublicKey.default,
@@ -175,17 +162,24 @@ export default function EPlaysPage() {
 
           const totalVolume = (totalYes + totalNo) / 1e9;
 
+          const category = accData.title?.toLowerCase().includes("solana")
+            ? "Solana Ecosystem"
+            : accData.title?.toLowerCase().includes("funding")
+            ? "Funding Events"
+            : "DeFi Protocol";
+
           return {
             id: account.publicKey.toBase58(),
             title: accData.title,
             volume: `◎ ${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 1 })} Vol`,
             yesPrice,
             noPrice,
-            category: 'Pari-Mutuel',
+            category,
             resolved: accData.resolved,
             outcome: accData.outcome,
             totalYesShares: totalYes,
             totalNoShares: totalNo,
+            expiryTs: accData.expiryTs?.toNumber ? accData.expiryTs.toNumber() : (typeof accData.expiryTs === 'number' ? accData.expiryTs : undefined),
             marketStatePubkey: account.publicKey,
             yesMint: accData.yes_mint || accData.yesMint,
             noMint: accData.no_mint || accData.noMint,
@@ -294,6 +288,25 @@ export default function EPlaysPage() {
     }
   }, [connection, publicKey, isDemo]);
 
+  const [userSolBalance, setUserSolBalance] = useState<number | null>(null);
+
+  const fetchUserSolBalance = useCallback(async () => {
+    if (!publicKey) {
+      setUserSolBalance(null);
+      return;
+    }
+    try {
+      const lamports = await connection.getBalance(publicKey, "confirmed");
+      setUserSolBalance(lamports / 1e9);
+    } catch (e) {
+      console.warn("Failed to fetch user SOL balance:", e);
+    }
+  }, [connection, publicKey]);
+
+  useEffect(() => {
+    fetchUserSolBalance();
+  }, [fetchUserSolBalance]);
+
   useEffect(() => {
     fetchMarketsAndPositions();
   }, [fetchMarketsAndPositions]);
@@ -303,6 +316,7 @@ export default function EPlaysPage() {
     setTradeAction('buy');
     setTradeAmount('');
     setTxStatus(null);
+    fetchUserSolBalance();
   };
 
   const closeDrawer = () => {
@@ -322,6 +336,19 @@ export default function EPlaysPage() {
     if (isNaN(amountNum) || amountNum <= 0) {
         setTxStatus({ type: 'error', message: 'Enter a valid amount.' });
         return;
+    }
+
+    if (!isDemo && publicKey) {
+      const hasBalance = await checkSolBalance(publicKey, amountNum, connection, () => {
+        fetchUserSolBalance();
+      });
+      if (!hasBalance) {
+        setTxStatus({ 
+          type: 'error', 
+          message: `Insufficient SOL balance. You need at least ${amountNum.toFixed(2)} SOL. Request devnet SOL from the prompt to proceed.` 
+        });
+        return;
+      }
     }
 
     if (isDemo) {
@@ -421,12 +448,18 @@ export default function EPlaysPage() {
 
         setTradeAmount('');
         fetchMarketsAndPositions();
+        fetchUserSolBalance();
         
     } catch (error: any) {
         console.error("SOL Trade failed:", error);
         const friendlyMessage = parseSolanaErrorMessage(error);
+        const isCancel = friendlyMessage.includes("cancelled") || friendlyMessage.includes("canceled");
         setTxStatus({ type: 'error', message: friendlyMessage });
-        toast.error(friendlyMessage, { duration: 6000 });
+        if (isCancel) {
+          toast("Order cancelled in wallet", { icon: "ℹ️", duration: 3000 });
+        } else {
+          toast.error(friendlyMessage, { duration: 6000 });
+        }
     } finally {
         setIsSubmitting(false);
     }
@@ -647,44 +680,14 @@ export default function EPlaysPage() {
                     <p className="text-muted-foreground font-mono uppercase tracking-widest text-xs">No active markets found.</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {markets.filter(m => !m.resolved).map((market) => (
-                    <div 
-                        key={market.id} 
-                        className="bg-card/45 backdrop-blur-md border border-border rounded-3xl p-6 hover:border-primary/50 hover:shadow-2xl transition-all duration-500 flex flex-col justify-between group min-h-[220px]"
-                    >
-                        <div>
-                        <div className="flex justify-between items-start mb-4">
-                            <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 bg-secondary text-primary border border-primary/20 rounded">
-                              {market.category}
-                            </span>
-                            <span className="text-xs text-muted-foreground flex items-center gap-1 font-mono font-semibold">
-                              <Clock className="w-3.5 h-3.5 text-primary" />
-                              {market.volume}
-                            </span>
-                        </div>
-                        <h3 className="text-lg font-black leading-snug mb-6 text-foreground group-hover:text-primary transition-colors font-display">
-                            {market.title}
-                        </h3>
-                        </div>
-
-                        <div className="flex gap-3 w-full mt-auto">
-                        <button
-                            onClick={() => handleOpenDrawer(market, 'yes')}
-                            className="flex-1 flex flex-col items-center justify-center py-3 bg-green-500/10 text-green-500 border border-green-500/20 hover:bg-green-500 hover:text-white transition-all font-bold tracking-tight rounded-xl group/btn"
-                        >
-                            <span className="text-[10px] uppercase font-mono tracking-widest opacity-80 group-hover/btn:opacity-100">Buy Yes</span>
-                            <span className="text-lg font-black font-mono">{(market.yesPrice * 100).toFixed(0)}%</span>
-                        </button>
-                        <button
-                            onClick={() => handleOpenDrawer(market, 'no')}
-                            className="flex-1 flex flex-col items-center justify-center py-3 bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500 hover:text-white transition-all font-bold tracking-tight rounded-xl group/btn2"
-                        >
-                            <span className="text-[10px] uppercase font-mono tracking-widest opacity-80 group-hover/btn2:opacity-100">Buy No</span>
-                            <span className="text-lg font-black font-mono">{(market.noPrice * 100).toFixed(0)}%</span>
-                        </button>
-                        </div>
-                    </div>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {markets.filter(m => !m.resolved).map((market, idx) => (
+                      <MarketCard
+                        key={market.id}
+                        market={market}
+                        isFeatured={idx === 0}
+                        onTrade={handleOpenDrawer}
+                      />
                     ))}
                 </div>
             )}
@@ -841,12 +844,16 @@ export default function EPlaysPage() {
                 <div className="bg-background/40 border border-border p-5 rounded-2xl">
                   <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 font-mono">Selected Event</p>
                   <h3 className="text-lg font-black leading-snug text-foreground font-display">{selectedTrade.market.title}</h3>
-                  <div className="mt-4 flex gap-3 text-xs font-mono">
-                    <span className="px-3 py-1 bg-muted border border-border/50 font-bold uppercase">
-                      Trading: <span className={selectedTrade.side === 'yes' ? 'text-green-500' : 'text-red-500'}>{selectedTrade.side}</span>
+                  <div className="mt-4 flex flex-wrap gap-2 text-xs font-mono">
+                    <span className={`px-3 py-1 font-bold uppercase rounded-lg border flex items-center gap-1.5 ${
+                      selectedTrade.side === 'yes' 
+                        ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30' 
+                        : 'bg-rose-500/10 text-rose-500 border-rose-500/30'
+                    }`}>
+                      Trading: {selectedTrade.side.toUpperCase()}
                     </span>
-                    <span className="px-3 py-1 bg-muted border border-border/50 font-bold">
-                      Price: {(currentPrice * 100).toFixed(0)}% Probability
+                    <span className="px-3 py-1 bg-muted/60 border border-border/50 font-bold rounded-lg text-foreground">
+                      Probability: {(currentPrice * 100).toFixed(0)}%
                     </span>
                   </div>
                 </div>
@@ -872,9 +879,27 @@ export default function EPlaysPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block text-xs font-bold uppercase text-muted-foreground tracking-widest font-mono">
-                    Amount to Spend (SOL)
-                  </label>
+                  <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold uppercase text-muted-foreground tracking-widest font-mono">
+                      Amount to Spend (SOL)
+                    </label>
+                    {userSolBalance !== null && (
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground">
+                        <span>Balance:</span>
+                        <span className="font-bold text-foreground">◎ {userSolBalance.toFixed(3)}</span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const maxSafe = Math.max(0, userSolBalance - 0.01);
+                            setTradeAmount(maxSafe.toFixed(2));
+                          }}
+                          className="px-1.5 py-0.5 text-[10px] uppercase font-bold bg-primary/10 text-primary hover:bg-primary/20 rounded transition-colors cursor-pointer"
+                        >
+                          Max
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
                       <span className="text-muted-foreground font-mono font-bold text-xl">◎</span>
@@ -904,9 +929,16 @@ export default function EPlaysPage() {
                       <span className="text-muted-foreground font-bold uppercase flex items-center gap-2">
                         Est. Payout if {selectedTrade.side.toUpperCase()} Wins
                       </span>
-                      <span className="font-black text-primary text-sm flex items-center gap-1">
-                        ◎ {estimatedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SOL
-                      </span>
+                      <div className="text-right">
+                        <span className="font-black text-emerald-500 text-sm flex items-center justify-end gap-1">
+                          ◎ {estimatedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} SOL
+                        </span>
+                        {amountNum > 0 && (
+                          <span className="text-[10px] text-muted-foreground block font-light">
+                            Pay ◎ {amountNum.toFixed(2)} SOL · Win ◎ {estimatedPayout.toFixed(2)} SOL
+                          </span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
