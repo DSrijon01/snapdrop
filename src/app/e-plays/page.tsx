@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, Loader2, Coins, ArrowUpRight, Award, Trash2, ShieldAlert } from 'lucide-react';
+import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, Loader2, Coins, ArrowUpRight, Award, Trash2, ShieldAlert, Info } from 'lucide-react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
@@ -75,6 +75,7 @@ export default function EPlaysPage() {
   const [markets, setMarkets] = useState<Market[]>([]);
   const [positions, setPositions] = useState<Position[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showPayoutInfoModal, setShowPayoutInfoModal] = useState(false);
 
   // Default Fallback Markets if blockchain fetch fails or has 0 markets
   const MOCK_FALLBACK_MARKETS: Market[] = [
@@ -219,8 +220,9 @@ export default function EPlaysPage() {
 
                 const totalWinningShares = isYes ? matchedMarket.totalYesShares : matchedMarket.totalNoShares;
                 const totalPool = matchedMarket.totalYesShares + matchedMarket.totalNoShares;
+                // Net payout after 2% platform fee
                 const currentValue = matchedMarket.resolved
-                  ? (isWinner ? (balance * totalPool / (totalWinningShares || 1)) : 0)
+                  ? (isWinner ? ((balance * totalPool / (totalWinningShares || 1)) * 0.98) : 0)
                   : balance; // 1:1 expected value before resolution
 
                 activePositions.push({
@@ -616,7 +618,8 @@ export default function EPlaysPage() {
     
   const amountNum = parseFloat(tradeAmount) || 0;
   const estimatedShares = amountNum; // 1 SOL = 1 share
-  const estimatedPayout = currentPrice > 0 ? (amountNum / currentPrice) : 0;
+  // Net payout after 2% platform fee
+  const estimatedPayout = currentPrice > 0 ? ((amountNum / currentPrice) * 0.98) : 0;
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
@@ -708,7 +711,20 @@ export default function EPlaysPage() {
                     <th className="p-4 font-semibold text-right">Tokens Owned</th>
                     <th className="p-4 font-semibold text-right">Winning Probability</th>
                     <th className="p-4 font-semibold text-right">Total Pool</th>
-                    <th className="p-4 font-semibold text-right">Winning Calculation</th>
+                    <th className="p-4 font-semibold text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Est. Winning Payout</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowPayoutInfoModal(true)}
+                          title="How is winning payout calculated?"
+                          aria-label="How is winning payout calculated?"
+                          className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary/10 text-primary hover:bg-primary/20 hover:scale-110 active:scale-95 transition-all border border-primary/30 cursor-pointer"
+                        >
+                          <Info className="w-2.5 h-2.5" />
+                        </button>
+                      </div>
+                    </th>
                     <th className="p-4 font-semibold text-center">Settlement Action</th>
                   </tr>
                 </thead>
@@ -717,10 +733,14 @@ export default function EPlaysPage() {
                     const isClaimable = pos.isResolved && pos.isWinner;
                     const isLosing = pos.isResolved && !pos.isWinner;
                     
+                    const isYes = pos.position === 'Yes';
                     const totalPool = (pos.market.totalYesShares + pos.market.totalNoShares) / 1e9;
+                    const totalSideShares = (isYes ? pos.market.totalYesShares : pos.market.totalNoShares) / 1e9;
+                    
+                    // Exact pari-mutuel pool payout minus 2% platform fee
                     const estPayout = pos.isResolved
                       ? (pos.isWinner ? pos.currentValue : 0)
-                      : (pos.avgPrice > 0 ? (pos.shares / pos.avgPrice) : 0);
+                      : (totalSideShares > 0 ? ((pos.shares / totalSideShares) * totalPool * 0.98) : 0);
 
                     return (
                       <tr key={pos.id} className="border-b border-border/30 hover:bg-muted/20 transition-colors">
@@ -746,8 +766,21 @@ export default function EPlaysPage() {
                         <td className="p-4 text-right font-mono text-sm">
                           ◎ {totalPool.toFixed(2)}
                         </td>
-                        <td className="p-4 text-right font-mono text-primary font-black text-sm">
-                          ◎ {estPayout.toFixed(2)}
+                        <td className="p-4 text-right font-mono">
+                          <div className="flex flex-col items-end">
+                            <span className="text-primary font-black text-sm">
+                              ◎ {estPayout.toFixed(2)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => setShowPayoutInfoModal(true)}
+                              title="Click to view winning payout calculation details"
+                              className="text-[10px] text-muted-foreground hover:text-primary transition-colors font-normal inline-flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>Net (2% fee)</span>
+                              <Info className="w-2.5 h-2.5 text-primary/70" />
+                            </button>
+                          </div>
                         </td>
                         <td className="p-4 text-center">
                           {isClaimable ? (
@@ -933,8 +966,17 @@ export default function EPlaysPage() {
                   
                   {tradeAction === 'buy' && (
                     <div className="flex justify-between items-center text-xs font-mono border-t border-border/40 pt-4">
-                      <span className="text-muted-foreground font-bold uppercase flex items-center gap-2">
-                        Est. Payout if {selectedTrade.side.toUpperCase()} Wins
+                      <span className="text-muted-foreground font-bold uppercase flex items-center gap-1.5">
+                        <span>Est. Payout if {selectedTrade.side.toUpperCase()} Wins</span>
+                        <button
+                          type="button"
+                          onClick={() => setShowPayoutInfoModal(true)}
+                          title="How is payout calculated?"
+                          aria-label="How is payout calculated?"
+                          className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-primary/10 text-primary hover:bg-primary/20 active:scale-95 transition-all border border-primary/30 cursor-pointer"
+                        >
+                          <Info className="w-2 h-2" />
+                        </button>
                       </span>
                       <div className="text-right">
                         <span className="font-black text-emerald-500 text-sm flex items-center justify-end gap-1">
@@ -977,6 +1019,128 @@ export default function EPlaysPage() {
               </div>
             </motion.div>
           </>
+        )}
+      </AnimatePresence>
+
+      {/* Payout Calculation Clarification Modal */}
+      <AnimatePresence>
+        {showPayoutInfoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowPayoutInfoModal(false)}
+              className="fixed inset-0 bg-background/80 backdrop-blur-md"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 12 }}
+              transition={{ type: "spring", duration: 0.3 }}
+              className="relative w-full max-w-lg bg-card/95 border border-border/80 rounded-3xl shadow-2xl p-6 sm:p-7 z-10 font-sans overflow-hidden backdrop-blur-xl"
+            >
+              {/* Radial gradient background accent */}
+              <div className="absolute top-0 right-0 w-56 h-56 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+
+              <div className="flex items-center justify-between pb-4 border-b border-border/60">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-sm">
+                    <Info className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black font-display uppercase tracking-tight text-foreground">
+                      How Payouts Work
+                    </h3>
+                    <p className="text-xs text-muted-foreground font-mono">
+                      Proportional Pari-Mutuel Pool Distribution
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPayoutInfoModal(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="mt-5 space-y-4 text-xs font-sans max-h-[70vh] overflow-y-auto pr-1">
+                <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-1.5">
+                  <span className="text-[11px] font-mono uppercase font-bold text-primary block">
+                    1. Proportional Pool Settlement
+                  </span>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Street Sync prediction markets use on-chain pari-mutuel pooling. Rather than a fixed odds bookmaker, winning token holders split <strong>100% of the combined market pool</strong> (both YES and NO deposits) in direct proportion to their stake.
+                  </p>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-2">
+                  <span className="text-[11px] font-mono uppercase font-bold text-primary block">
+                    2. Winning Payout Formula
+                  </span>
+                  <div className="bg-background/90 border border-border/70 p-3 rounded-xl font-mono text-[11px] text-foreground space-y-1">
+                    <div className="text-emerald-500 font-bold">
+                      Payout = (Your Staked SOL ÷ Total Winning Side SOL) × Total Pool × 0.98
+                    </div>
+                    <div className="text-[10px] text-muted-foreground pt-1 border-t border-border/40 mt-1">
+                      * <strong>2% Platform Fee:</strong> Deducted by the smart contract upon winning claim; <strong>98%</strong> of the pool is distributed to winners.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-muted/30 border border-border/60 space-y-2.5">
+                  <span className="text-[11px] font-mono uppercase font-bold text-primary block">
+                    3. Calculation Examples
+                  </span>
+                  
+                  <div className="space-y-2.5 text-[11px] font-mono">
+                    <div className="p-3 rounded-xl bg-background/60 border border-border/40 space-y-1">
+                      <span className="text-foreground font-bold flex items-center justify-between">
+                        <span>Scenario A: Opposing Bets (YES vs NO)</span>
+                        <span className="text-[10px] text-emerald-500 font-normal">Active Contested</span>
+                      </span>
+                      <p className="text-muted-foreground">
+                        Total Pool: <strong>◎ 2.00 SOL</strong> (1.00 YES vs 1.00 NO).<br/>
+                        If you staked <strong>0.50 SOL</strong> on YES and YES wins:<br/>
+                        <span className="text-emerald-500 font-bold block mt-1">
+                          (0.50 ÷ 1.00) × 2.00 SOL × 0.98 = ◎ 0.98 SOL (~96% gain)
+                        </span>
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-xl bg-background/60 border border-border/40 space-y-1">
+                      <span className="text-foreground font-bold flex items-center justify-between">
+                        <span>Scenario B: Uncontested Market (One Side Only)</span>
+                        <span className="text-[10px] text-amber-500 font-normal">Single-Sided</span>
+                      </span>
+                      <p className="text-muted-foreground">
+                        Total Pool: <strong>◎ 1.05 SOL</strong> (1.05 YES vs 0.00 NO).<br/>
+                        If you staked <strong>0.05 SOL</strong> on YES and YES wins:<br/>
+                        <span className="text-primary font-bold block mt-1">
+                          (0.05 ÷ 1.05) × 1.05 SOL × 0.98 = ◎ 0.049 SOL
+                        </span>
+                        <span className="block text-[10px] text-muted-foreground mt-0.5 font-sans">
+                          Because no opponent staked on NO, there was no opposing capital to win. Your deposit is returned minus the 2% protocol fee.
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-5 pt-4 border-t border-border/60 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowPayoutInfoModal(false)}
+                  className="px-5 py-2.5 text-xs font-black uppercase tracking-wider bg-primary text-primary-foreground hover:bg-primary-hover rounded-xl transition-all shadow-md shadow-primary/20 cursor-pointer"
+                >
+                  Understood
+                </button>
+              </div>
+            </motion.div>
+          </div>
         )}
       </AnimatePresence>
     </div>
