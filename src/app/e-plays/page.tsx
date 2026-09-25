@@ -705,7 +705,7 @@ export default function EPlaysPage() {
                   <tr className="bg-muted/40 border-b border-border/60 text-xs uppercase font-mono tracking-wider text-muted-foreground">
                     <th className="p-4 font-semibold">Market Event</th>
                     <th className="p-4 font-semibold">Selection</th>
-                    <th className="p-4 font-semibold text-right">Shares Owned</th>
+                    <th className="p-4 font-semibold text-right">Tokens Owned</th>
                     <th className="p-4 font-semibold text-right">Winning Probability</th>
                     <th className="p-4 font-semibold text-right">Total Pool</th>
                     <th className="p-4 font-semibold text-right">Winning Calculation</th>
@@ -734,7 +734,14 @@ export default function EPlaysPage() {
                             {pos.position}
                           </span>
                         </td>
-                        <td className="p-4 text-right font-mono font-bold text-sm">{pos.shares.toFixed(2)}</td>
+                        <td className="p-4 text-right font-mono font-bold text-sm">
+                          <div className="flex flex-col items-end">
+                            <span className="text-foreground">1 Token</span>
+                            <span className="text-[10px] text-muted-foreground font-normal">
+                              ◎ {pos.shares.toFixed(2)} Pooled
+                            </span>
+                          </div>
+                        </td>
                         <td className="p-4 text-right font-mono text-sm">{(pos.avgPrice * 100).toFixed(0)}%</td>
                         <td className="p-4 text-right font-mono text-sm">
                           ◎ {totalPool.toFixed(2)}
@@ -774,7 +781,7 @@ export default function EPlaysPage() {
                   {positions.length === 0 && (
                     <tr>
                       <td colSpan={7} className="p-12 text-center text-muted-foreground italic font-light text-sm">
-                        No prediction shares owned in this wallet. Visit Active Markets to buy.
+                        No prediction tokens owned in this wallet. Visit Active Markets to buy.
                       </td>
                     </tr>
                   )}
@@ -917,10 +924,10 @@ export default function EPlaysPage() {
                 <div className="bg-muted/30 border border-border/60 p-5 space-y-4 rounded-2xl">
                   <div className="flex justify-between items-center text-xs font-mono border-b border-border/40 pb-4">
                     <span className="text-muted-foreground font-bold uppercase flex items-center gap-2">
-                      Estimated Shares Received
+                      Tokens Received
                     </span>
                     <span className="font-black text-foreground text-sm">
-                      {estimatedShares.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedTrade.side.toUpperCase()}
+                      1 {selectedTrade.side.toUpperCase()} Token
                     </span>
                   </div>
                   
