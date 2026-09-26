@@ -14,6 +14,7 @@ import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/
 import { PublicKey, SystemProgram, ComputeBudgetProgram } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
+import { resolveNftImageUrl, getFallbackImage, handleImageFallback, fetchJsonWithGatewayFailover } from "@/utils/nftImageResolver";
 
 interface NFT {
     name: string;
@@ -214,19 +215,25 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 const nftAssets = assets.filter((asset: any) => asset.mint.decimals === 0);
                 const walletNfts = await Promise.all(nftAssets.map(async (asset: any) => {
                     let json = undefined;
+                    const cleanName = (asset.metadata.name || "").replace(/\0/g, "").trim();
                     if (asset.metadata.uri) {
                          try {
-                             const response = await fetch(asset.metadata.uri);
-                             json = await response.json();
+                             json = await fetchJsonWithGatewayFailover(asset.metadata.uri);
                          } catch (unknownError) { console.error("Failed to load metadata json", unknownError); }
                     }
+                    const rawImg = json?.image || "";
+                    const resolvedImg = resolveNftImageUrl(rawImg, cleanName || "NFT");
                     return {
-                        name: asset.metadata.name,
+                        name: cleanName || "NFT",
                         uri: asset.metadata.uri,
                         mint: asset.publicKey,
-                        image: json?.image || "",
+                        image: resolvedImg,
                         description: json?.description || "",
-                        json,
+                        json: {
+                            ...json,
+                            name: cleanName || json?.name || "NFT",
+                            image: resolvedImg,
+                        },
                         ownerName: "Me",
                         ownerAddress: walletKey,
                         isListed: false
@@ -255,14 +262,16 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     try {
                         const meta = await getTokenMetadataWithCache(new PublicKey(mintAddr), connection, umi);
                         if (!meta) return null;
+                        const cleanName = (meta.name || "").replace(/\0/g, "").trim();
+                        const resolvedImg = resolveNftImageUrl(meta.image, cleanName || "Listed NFT");
                         return {
-                            name: meta.name,
-                            image: meta.image || "",
+                            name: cleanName || "NFT",
+                            image: resolvedImg,
                             mint: mintAddr,
                             description: meta.description,
                             json: {
-                                name: meta.name,
-                                image: meta.image,
+                                name: cleanName || "NFT",
+                                image: resolvedImg,
                                 description: meta.description,
                                 symbol: meta.symbol
                             },
@@ -325,11 +334,11 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         onClick={() => setSelectedNft(nft)}
                     >
                         <img 
-                            src={nft.json?.image || nft.image || "https://placehold.co/400x400/121212/pink?text=NFT"} 
+                            src={resolveNftImageUrl(nft.json?.image || nft.image, nft.name || "NFT")} 
                             alt={nft.name || nft.json?.name}
                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                             onError={(e) => {
-                                (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                                handleImageFallback(e, nft.name || nft.json?.name || "NFT");
                             }}
                         />
                         
@@ -383,7 +392,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 alt={nft.name}
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 grayscale group-hover:grayscale-0"
                                 onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                                    handleImageFallback(e, nft.name);
                                 }}
                             />
                             
@@ -433,11 +442,11 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             {/* Image Section */}
                             <div className="w-full md:w-1/2 bg-gray-100 aspect-square md:aspect-auto relative group">
                                 <img 
-                                    src={selectedNft.json?.image || selectedNft.image} 
+                                    src={resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name)} 
                                     alt={selectedNft.name}
                                     className="w-full h-full object-contain"
                                     onError={(e) => {
-                                        (e.target as HTMLImageElement).src = "https://placehold.co/400x400/121212/pink?text=NFT";
+                                        handleImageFallback(e, selectedNft.name);
                                     }}
                                 />
                             </div>

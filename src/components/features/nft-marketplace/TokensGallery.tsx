@@ -7,6 +7,7 @@ import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import { useTokenMetadata } from "@/hooks/useTokenMetadata";
 import { motion, AnimatePresence } from "framer-motion";
 import { TokenListingModal } from "./TokenListingModal";
+import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 
 type TokenAccountInfo = {
     mint: PublicKey;
@@ -148,11 +149,11 @@ const TokenRow: FC<{ token: TokenAccountInfo; onListForSale: () => void }> = ({ 
                     <div className="w-10 h-10 rounded-full bg-muted animate-pulse" />
                 ) : metadata?.image ? (
                     <img 
-                        src={metadata.image} 
+                        src={resolveNftImageUrl(metadata.image, metadata.name)} 
                         alt={metadata.name} 
                         className="w-10 h-10 rounded-full object-cover bg-muted border border-border" 
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                            handleImageFallback(e, metadata.name);
                         }}
                     />
                 ) : (

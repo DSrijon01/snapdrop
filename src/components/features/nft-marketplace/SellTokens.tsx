@@ -11,6 +11,7 @@ import { TokenBadge } from "../../global/wallet/TokenBadge";
 import toast from "react-hot-toast";
 import { PublicKey } from "@solana/web3.js";
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
+import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 
 const SecondaryListingItem = ({ 
     listing, 
@@ -51,11 +52,11 @@ const SecondaryListingItem = ({
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
                     <img 
-                        src={metadata.image} 
+                        src={resolveNftImageUrl(metadata.image, metadata.name)} 
                         alt={metadata.name} 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                            handleImageFallback(e, metadata.name);
                         }}
                     />
                 ) : (
@@ -141,11 +142,11 @@ const PurchaseHistoryItem = ({ history }: { history: any }) => {
                 <div className="w-10 h-10 rounded-full bg-muted animate-pulse shrink-0" />
             ) : image ? (
                 <img 
-                    src={image} 
+                    src={resolveNftImageUrl(image, name)} 
                     alt={name} 
                     className="w-10 h-10 rounded-full object-cover shrink-0 bg-muted border border-border" 
                     onError={(e) => {
-                        (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                        handleImageFallback(e, name);
                     }}
                 />
             ) : (

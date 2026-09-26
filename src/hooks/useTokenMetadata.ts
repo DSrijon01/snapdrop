@@ -6,6 +6,13 @@ import { fetchMetadata, findMetadataPda } from '@metaplex-foundation/mpl-token-m
 import { publicKey } from '@metaplex-foundation/umi';
 import { TOKEN_2022_PROGRAM_ID, getTokenMetadata, unpackMint, getExtensionTypes } from '@solana/spl-token';
 
+import { 
+    resolveNftImageUrl, 
+    fetchJsonWithGatewayFailover, 
+    getFallbackImage, 
+    sanitizeSolanaString 
+} from '@/utils/nftImageResolver';
+
 export type TokenMetadata = {
     name: string;
     symbol: string;
@@ -61,18 +68,18 @@ export async function getTokenMetadataWithCache(
                 try {
                     const metadataOnChain = await getTokenMetadata(connection, mint);
                     if (metadataOnChain) {
+                        const name = sanitizeSolanaString(metadataOnChain.name) || "Token-2022";
+                        const symbol = sanitizeSolanaString(metadataOnChain.symbol) || "T22";
                         let jsonMetadata: any = {};
                         if (metadataOnChain.uri) {
-                            try {
-                                const res = await globalThis.fetch(metadataOnChain.uri);
-                                jsonMetadata = await res.json();
-                            } catch(e) { console.warn("Failed to fetch JSON uri", e); }
+                            jsonMetadata = (await fetchJsonWithGatewayFailover(metadataOnChain.uri)) || {};
                         }
+                        const image = resolveNftImageUrl(jsonMetadata.image, name);
                         const result: TokenMetadata = {
-                            name: metadataOnChain.name,
-                            symbol: metadataOnChain.symbol,
-                            uri: metadataOnChain.uri,
-                            image: jsonMetadata.image || "",
+                            name,
+                            symbol,
+                            uri: metadataOnChain.uri || "",
+                            image,
                             description: jsonMetadata.description || "",
                             isToken2022: true,
                             extensions: extensions
@@ -90,21 +97,22 @@ export async function getTokenMetadataWithCache(
             const metadataPda = findMetadataPda(umi, { mint: mintPubkey });
             
             const account = await fetchMetadata(umi, metadataPda);
+            const name = sanitizeSolanaString(account.name) || "Solana Collectible";
+            const symbol = sanitizeSolanaString(account.symbol) || "NFT";
             
-            // Fetch JSON from URI
+            // Fetch JSON from URI with multi-gateway failover
             let jsonMetadata: any = {};
             if (account.uri) {
-                try {
-                    const res = await globalThis.fetch(account.uri);
-                    jsonMetadata = await res.json();
-                } catch(e) { console.warn("Failed to fetch JSON uri", e); }
+                jsonMetadata = (await fetchJsonWithGatewayFailover(account.uri)) || {};
             }
 
+            const image = resolveNftImageUrl(jsonMetadata.image, name);
+
             const result: TokenMetadata = {
-                name: account.name,
-                symbol: account.symbol,
-                uri: account.uri,
-                image: jsonMetadata.image || "",
+                name,
+                symbol,
+                uri: account.uri || "",
+                image,
                 description: jsonMetadata.description || "",
                 isToken2022: !!isToken2022, 
                 extensions: extensions
@@ -125,13 +133,13 @@ export async function getTokenMetadataWithCache(
         return result;
     }
 
-    // Cache a fallback token metadata object to avoid repeatedly hammering RPC for failed fetches
+    // Cache a procedural fallback token metadata object to prevent broken images
     const fallbackResult: TokenMetadata = {
-        name: "Unknown Token",
-        symbol: "UNK",
+        name: "Solana Collectible",
+        symbol: "NFT",
         uri: "",
-        image: "",
-        description: "Metadata could not be loaded.",
+        image: getFallbackImage("Solana Collectible", mintStr),
+        description: "On-Chain NFT metadata.",
         isToken2022: false,
         extensions: []
     };

@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { Search, Database, Coins, Tag, TrendingUp, RefreshCw, ExternalLink, ShieldAlert } from "lucide-react";
 import { motion } from "framer-motion";
 import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
+import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 
 // Types
 interface TokenTx {
@@ -424,11 +425,11 @@ export default function SSScanPage() {
                       <tr key={idx} className="hover:bg-muted/10 transition-colors">
                         <td className="p-4 pl-6 font-bold flex items-center gap-2">
                           <img
-                            src={tx.image || "https://placehold.co/400?text=Token"}
+                            src={resolveNftImageUrl(tx.image, tx.name)}
                             alt={tx.name}
                             className="w-6 h-6 rounded-full object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://placehold.co/400?text=Asset";
+                              handleImageFallback(e, tx.name);
                             }}
                           />
                           <span>{tx.name}</span>
@@ -502,11 +503,11 @@ export default function SSScanPage() {
                       <tr key={idx} className="hover:bg-muted/10 transition-colors">
                         <td className="p-4 pl-6 font-bold flex items-center gap-2">
                           <img
-                            src={tx.image || "https://placehold.co/400?text=NFT"}
+                            src={resolveNftImageUrl(tx.image, tx.name)}
                             alt={tx.name}
                             className="w-7 h-7 rounded-lg object-cover"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src = "https://placehold.co/400?text=NFT";
+                              handleImageFallback(e, tx.name);
                             }}
                           />
                           <span>{tx.name}</span>

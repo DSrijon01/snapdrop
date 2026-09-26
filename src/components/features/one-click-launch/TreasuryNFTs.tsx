@@ -10,6 +10,7 @@ import { umi } from '@/utils/umi';
 import { findMetadataPda, fetchMetadata } from '@metaplex-foundation/mpl-token-metadata';
 import { publicKey } from '@metaplex-foundation/umi';
 import { withSolanaRetry } from '@/utils/solanaRetry';
+import { resolveNftImageUrl, handleImageFallback } from '@/utils/nftImageResolver';
 
 export type TokenAccountInfo = {
     mint: PublicKey;
@@ -35,11 +36,11 @@ const NFTCard: FC<{ nft: TokenAccountInfo; isSelected: boolean; onSelect: () => 
                     <div className="w-16 h-16 rounded-lg bg-muted animate-pulse" />
                  ) : metadata?.image ? (
                     <img 
-                        src={metadata.image} 
+                        src={resolveNftImageUrl(metadata.image, metadata.name)} 
                         alt={metadata.name} 
                         className="w-16 h-16 rounded-lg object-cover bg-muted" 
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                            handleImageFallback(e, metadata.name);
                         }}
                     />
                 ) : (

@@ -15,6 +15,7 @@ import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
+import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/utils/nftImageResolver";
 
 export interface NFTDetail {
     image: string;
@@ -89,8 +90,8 @@ export const StackedNFTGallery = () => {
                     try {
                         const mintPubkey = listing.account.mint;
                         const meta = await getTokenMetadataWithCache(mintPubkey, connection, umi);
-                        const imageUrl = meta?.image || "";
                         const title = meta?.name || "Treasury NFT";
+                        const imageUrl = resolveNftImageUrl(meta?.image, title);
                         
                         const adminStr = listing.account.admin.toBase58();
                         const baseName = title.split('#')[0].trim() || "Treasury";
@@ -466,11 +467,11 @@ export const StackedNFTGallery = () => {
                                             }}
                                         >
                                             <img 
-                                                src={img} 
+                                                src={resolveNftImageUrl(img, `${card.title} - Layer ${i}`)} 
                                                 alt={`${card.title} - Layer ${i}`} 
                                                 className="w-full h-full object-cover" 
                                                 onError={(e) => {
-                                                    (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                                    handleImageFallback(e, `${card.title} - Layer ${i}`);
                                                 }}
                                             />
                                             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -544,11 +545,11 @@ export const StackedNFTGallery = () => {
                                 {expandedCard.type === 'candymachine' ? (
                                     <>
                                         <img 
-                                            src={expandedCard.images[0]} 
+                                            src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
                                             alt={expandedCard.title} 
                                             className="w-full h-full object-cover" 
                                             onError={(e) => {
-                                                (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                                handleImageFallback(e, expandedCard.title);
                                             }}
                                         />
                                         <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-transparent" />
@@ -582,10 +583,11 @@ export const StackedNFTGallery = () => {
                                                         onClick={() => setSelectedNFT(nft)}
                                                     >
                                                         <img 
-                                                            src={nft.image} 
+                                                            src={resolveNftImageUrl(nft.image, `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`)} 
+                                                            alt={nft.mintAddress} 
                                                             className="w-full aspect-square object-cover" 
                                                             onError={(e) => {
-                                                                (e.target as HTMLImageElement).src = "/assets/demo.webp";
+                                                                handleImageFallback(e, `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`);
                                                             }}
                                                         />
                                                         <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 backdrop-blur-md border-t border-white/10">

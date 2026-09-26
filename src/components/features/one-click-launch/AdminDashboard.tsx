@@ -19,6 +19,7 @@ import { AdminPanel } from './AdminPanel';
 import { TreasuryAccountingDashboard } from './treasury/TreasuryAccountingDashboard';
 import { ShieldCheck, CircleDollarSign } from 'lucide-react';
 import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
+import { resolveNftImageUrl, handleImageFallback } from '@/utils/nftImageResolver';
 // Admin Wallet Address
 const ADMIN_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -421,11 +422,11 @@ const TokenCard: FC<{
                     <div className="w-12 h-12 rounded-full bg-muted animate-pulse" />
                  ) : image ? (
                     <img 
-                        src={image} 
+                        src={resolveNftImageUrl(image, name)} 
                         alt={name} 
                         className="w-12 h-12 rounded-full object-cover bg-muted" 
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                            handleImageFallback(e, name);
                         }}
                     />
                 ) : (

@@ -6,7 +6,7 @@ import { generateSigner, percentAmount, some, none, publicKey as umiPublicKey, s
 import { createNft, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { create, mplCandyMachine, addConfigLines } from "@metaplex-foundation/mpl-candy-machine";
 import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
-import { irysUploader } from '@metaplex-foundation/umi-uploader-irys';
+import { pinataUploader } from '@/utils/umiPinataUploader';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { compressImageForDevnet } from '@/utils/imageCompressor';
 import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
@@ -45,11 +45,7 @@ export const NFTStudio: FC = () => {
         const u = createUmi(endpoint)
             .use(mplTokenMetadata())
             .use(mplCandyMachine())
-            .use(irysUploader({ 
-                address: 'https://devnet.irys.xyz',
-                providerUrl: endpoint,
-                timeout: 60000,
-            }));
+            .use(pinataUploader());
             
         if (wallet.wallet?.adapter) {
             u.use(walletAdapterIdentity(wallet.wallet.adapter));
@@ -93,7 +89,7 @@ export const NFTStudio: FC = () => {
         if (!coverImage) return setStatus("Please provide a Collection Cover Image.");
         
         setIsLoading(true);
-        setStatus("1/5: Optimizing images (<100KB) & uploading to Arweave...");
+        setStatus("1/5: Preparing images & uploading permanently to Pinata IPFS...");
         try {
             // Compress Cover and all inner assets to stay strictly under Irys 100 KiB free limit
             const compressedCover = await compressImageForDevnet(coverImage);
@@ -241,7 +237,7 @@ export const NFTStudio: FC = () => {
         if (assets.length === 0) return setStatus("Please add at least one image asset.");
         
         setIsLoading(true);
-        setStatus(`1/3: Optimizing images (<100KB) & uploading ${assets.length} Assets to Arweave...`);
+        setStatus(`1/3: Uploading ${assets.length} Assets permanently to Pinata IPFS...`);
         try {
             const genericFiles = await Promise.all(assets.map(async (a) => {
                 const compressedAsset = await compressImageForDevnet(a.file);

@@ -17,6 +17,7 @@ For complete in-depth implementation patterns, architecture diagrams, and checkl
 | **5** | `WalletSignTransactionError: Unexpected error` / `Simulation Failed: Unexpected error` | Prediction Market (`buyShares`), NFT Minting, Token Listing | Phantom wallet is set to **Testnet Mode** (shows yellow top banner `You are currently in Testnet Mode`) while the dApp and Anchor contracts run on **Devnet**. When Phantom attempts internal simulation on Testnet, accounts/programs aren't found (`AccountNotFound`), causing Phantom to abort with `Unexpected error`. | In Phantom: Settings ⚙️ ➔ Developer Settings ➔ Change Network ➔ Select **Solana Devnet**. Handled in `createConfirmedProvider` & `parseSolanaErrorMessage` (`src/utils/solanaRetry.ts`) with clear instructions displayed in the UI. |
 | **6** | `TransactionExpiredBlockheightExceededError: block height exceeded` | Direct Minting & Candy Machine Minting | 0 priority fee with high Compute Units (800k); transaction sits in validator queue past 150 slots (~60–90s) | Prepend `setComputeUnitPrice(umi, { microLamports: 100_000 })`, lower CU limit to 400k, pass `maxRetries: 5`, and wrap in `withSolanaRetry()`. |
 | **7** | `WalletSendTransactionError: Unexpected error` | e-Plays trading (`buyShares`) / Module Subscription / SOL transfers | Using wallet adapter `sendTransaction(tx, connection)` delegates simulation and routing to Phantom's internal RPC which fails/mismatches with app RPC | Replace `sendTransaction` with Anchor `(program.methods as any).buyShares(...)...rpc({ skipPreflight: true })` powered by `createConfirmedProvider` (or `signTransaction` + `connection.sendRawTransaction(rawTx, { skipPreflight: true, maxRetries: 5 })`). |
+| **8** | Broken Images / `[image]` alt text / Pink Placeholders / HTTP 404 on NFT & Token cards | Exclusive Drops, Your Stream, NFTs For Sale, Token Launchpad | 1. Ephemeral devnet Irys nodes (`devnet.irys.xyz`) wipe test files after 30 days (404). 2. Metaplex `\0` null-byte padding. 3. Gateway rate-limiting. 4. Returning `image: ""` renders native broken icon. | 1. Switched creation uploaders (`TokenGenerator`, `Token2022Studio`, `NFTStudio`) to **Pinata IPFS** via `pinataUploader()` (`src/utils/umiPinataUploader.ts`) with dedicated gateway. 2. Pinned files never expire. 3. Stripped null bytes and added procedural Cyberpunk SVG data-URI fallback + gateway failover via `src/utils/nftImageResolver.ts`. |
 
 ---
 
@@ -37,6 +38,14 @@ For complete in-depth implementation patterns, architecture diagrams, and checkl
 4. **Confirmed Anchor Provider Creation**:
    - File: [`src/utils/anchorProvider.ts`](src/utils/anchorProvider.ts)
    - Function: `createConfirmedProvider(connection, wallet)`
+
+5. **Pinata Permanent IPFS Uploader Plugin**:
+   - File: [`src/utils/umiPinataUploader.ts`](src/utils/umiPinataUploader.ts)
+   - Usage: `umi.use(pinataUploader())` (drop-in replacement for `irysUploader` across all studios)
+
+6. **Solana NFT Image & Gateway Failover Resolver**:
+   - File: [`src/utils/nftImageResolver.ts`](src/utils/nftImageResolver.ts)
+   - Function: `resolveNftImageUrl(rawUri, title)`, `getFallbackImage(title, seed)`, `handleImageFallback(e, title)`
 
 ---
 

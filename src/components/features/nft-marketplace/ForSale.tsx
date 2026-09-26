@@ -18,6 +18,7 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 import { mplTokenMetadata, fetchDigitalAsset } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
+import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/utils/nftImageResolver";
 
 export const ForSale: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
@@ -72,13 +73,13 @@ export const ForSale: FC = () => {
                     const priceSol = data.price.toNumber() / LAMPORTS_PER_SOL;
                     
                     let name = "Unknown NFT";
-                    let image = "https://placehold.co/400?text=No+Image";
+                    let image = getFallbackImage("Unknown NFT", mintAddr);
 
                     try {
                         const meta = await getTokenMetadataWithCache(new PublicKey(mintAddr), connection, umi);
                         if (meta) {
-                            name = meta.name;
-                            image = meta.image || image;
+                            name = (meta.name || "Unknown NFT").replace(/\0/g, "").trim();
+                            image = resolveNftImageUrl(meta.image, name);
                         }
                     } catch (err) {
                         console.error(`Failed to fetch metadata for ${mintAddr}`, err);
@@ -339,11 +340,11 @@ export const ForSale: FC = () => {
                             </div>
 
                             <img 
-                                src={item.image} 
+                                src={resolveNftImageUrl(item.image, item.name)} 
                                 alt={item.name}
                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                                 onError={(e) => {
-                                    (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                                    handleImageFallback(e, item.name);
                                 }}
                             />
                         </div>
@@ -426,11 +427,11 @@ export const ForSale: FC = () => {
 
                                 <div className="flex items-center gap-4 bg-muted/40 p-4 rounded-xl border border-border">
                                     <img
-                                        src={successTx.image}
+                                        src={resolveNftImageUrl(successTx.image, successTx.name)}
                                         alt={successTx.name}
                                         className="w-16 h-16 rounded-lg object-cover bg-muted"
                                         onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                                            handleImageFallback(e, successTx.name);
                                         }}
                                     />
                                     <div className="flex-1 min-w-0">

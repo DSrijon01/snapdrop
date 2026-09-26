@@ -9,6 +9,7 @@ import { BN } from "@coral-xyz/anchor";
 import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 
 const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) => {
     const isFixedPrice = !!item.account.pricePerToken;
@@ -39,11 +40,11 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
                     <img 
-                        src={metadata.image} 
+                        src={resolveNftImageUrl(metadata.image, metadata.name)} 
                         alt={metadata.name} 
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                         onError={(e) => {
-                            (e.target as HTMLImageElement).src = "https://placehold.co/400?text=No+Image";
+                            handleImageFallback(e, metadata.name);
                         }}
                     />
                 ) : (
