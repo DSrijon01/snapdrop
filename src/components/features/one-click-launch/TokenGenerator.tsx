@@ -6,7 +6,7 @@ import { umi } from '../../../utils/umi';
 import { createGenericFile, generateSigner, percentAmount } from '@metaplex-foundation/umi';
 import { createAndMint, TokenStandard } from '@metaplex-foundation/mpl-token-metadata';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { pinataUploader } from '@/utils/umiPinataUploader';
+import { pinataUploader, setPinataJwt } from '@/utils/umiPinataUploader';
 import { PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { setComputeUnitLimit, setComputeUnitPrice } from '@metaplex-foundation/mpl-toolbox';
@@ -145,7 +145,25 @@ export const TokenGenerator: React.FC<TokenGeneratorProps> = ({ onListNow }) => 
 
     return (
         <div className="bg-card border border-border rounded-xl p-6 shadow-sm max-w-2xl mx-auto space-y-6">
-            <h3 className="text-2xl font-bold font-display uppercase italic">Create SPL Token</h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-bold font-display uppercase italic">Create SPL Token</h3>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const current = typeof window !== "undefined" ? localStorage.getItem("street_sync_pinata_jwt") || "" : "";
+                        const entered = window.prompt("Configure Pinata IPFS JWT for token media storage:", current);
+                        if (entered !== null) {
+                            setPinataJwt(entered);
+                            setStatus(entered.trim() ? "⚡ Pinata IPFS JWT updated!" : "Pinata JWT cleared.");
+                        }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors cursor-pointer"
+                    title="Configure Pinata JWT for permanent IPFS storage"
+                >
+                    <span>⚡ Pinata IPFS</span>
+                    <span className="text-[10px] opacity-75">⚙️</span>
+                </button>
+            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">

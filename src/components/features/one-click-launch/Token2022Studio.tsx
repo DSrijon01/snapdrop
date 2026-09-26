@@ -33,7 +33,7 @@ import { createInitializeInstruction as createInitTokenMetadataInstruction, pack
 import { umi } from '../../../utils/umi';
 import { createGenericFile } from '@metaplex-foundation/umi';
 import { walletAdapterIdentity } from '@metaplex-foundation/umi-signer-wallet-adapters';
-import { pinataUploader } from '@/utils/umiPinataUploader';
+import { pinataUploader, setPinataJwt } from '@/utils/umiPinataUploader';
 import { compressImageForDevnet } from '@/utils/imageCompressor';
 import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
 
@@ -581,11 +581,29 @@ export const Token2022Studio: React.FC<Token2022StudioProps> = ({ onListNow }) =
     return (
         <div className="bg-card border border-border rounded-xl shadow-sm text-foreground">
             {/* Header Section */}
-            <div className="p-6 border-b border-border">
-                <h3 className="text-2xl font-bold font-display uppercase italic text-primary">Token-2022 Generator Studio</h3>
-                <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
-                    Create advanced Token-2022 assets with powerful on-chain extensions. Enable specific rules, limits, and behavior natively embedded in your SPL token.
-                </p>
+            <div className="p-6 border-b border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h3 className="text-2xl font-bold font-display uppercase italic text-primary">Token-2022 Generator Studio</h3>
+                    <p className="text-muted-foreground mt-2 text-sm max-w-2xl">
+                        Create advanced Token-2022 assets with powerful on-chain extensions. Enable specific rules, limits, and behavior natively embedded in your SPL token.
+                    </p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => {
+                        const current = typeof window !== "undefined" ? localStorage.getItem("street_sync_pinata_jwt") || "" : "";
+                        const entered = window.prompt("Configure Pinata IPFS JWT for Token-2022 media storage:", current);
+                        if (entered !== null) {
+                            setPinataJwt(entered);
+                            setStatus(entered.trim() ? "⚡ Pinata IPFS JWT updated!" : "Pinata JWT cleared.");
+                        }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors cursor-pointer self-start md:self-center"
+                    title="Configure Pinata JWT for permanent IPFS storage"
+                >
+                    <span>⚡ Pinata IPFS</span>
+                    <span className="text-[10px] opacity-75">⚙️</span>
+                </button>
             </div>
 
             <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-8">
