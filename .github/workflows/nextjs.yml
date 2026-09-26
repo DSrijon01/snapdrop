@@ -88,6 +88,7 @@ jobs:
           NEXT_PUBLIC_SOLANA_RPC_URL: https://devnet.helius-rpc.com/?api-key=7adb5466-7650-4c74-919f-5a6b9b7c01cd
           NEXT_PUBLIC_PINATA_JWT: ${{ secrets.NEXT_PUBLIC_PINATA_JWT }}
           NEXT_PUBLIC_PINATA_GATEWAY: ${{ secrets.NEXT_PUBLIC_PINATA_GATEWAY || 'copper-given-dolphin-912.mypinata.cloud' }}
+          NEXT_PUBLIC_JUPITER_API_KEY: ${{ secrets.NEXT_PUBLIC_JUPITER_API_KEY || 'jup_c424485f4dc05d12d4a719840d3eaebeaf65be9e2640f9d499b23962b684cff3' }}
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
