@@ -94,21 +94,7 @@ export interface SwapSimulationReceipt {
 }
 
 export function getJupiterApiKey(): string {
-  let key = process.env.NEXT_PUBLIC_JUPITER_API_KEY || "";
-  if (typeof window !== "undefined") {
-    const local = localStorage.getItem("street_sync_jup_api_key");
-    if (local && local.trim()) {
-      key = local.trim();
-    }
-  }
-  // Default to provided verified production key
-  return key || "jup_c424485f4dc05d12d4a719840d3eaebeaf65be9e2640f9d499b23962b684cff3";
-}
-
-export function setJupiterApiKey(key: string): void {
-  if (typeof window !== "undefined") {
-    localStorage.setItem("street_sync_jup_api_key", key.trim());
-  }
+  return process.env.NEXT_PUBLIC_JUPITER_API_KEY?.trim() || "";
 }
 
 /**
