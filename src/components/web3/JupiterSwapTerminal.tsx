@@ -399,7 +399,7 @@ export const JupiterSwapTerminal: React.FC = () => {
                 window.Jupiter.init({
                   displayMode: "integrated",
                   integratedTargetId: "jupiter-terminal-app",
-                  endpoint: "https://api.mainnet-beta.solana.com",
+                  endpoint: "https://mainnet.helius-rpc.com/?api-key=7adb5466-7650-4c74-919f-5a6b9b7c01cd",
                   strictTokenList: false,
                   formProps: {
                     initialInputMint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
