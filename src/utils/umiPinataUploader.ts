@@ -22,7 +22,7 @@ export function createPinataUploader(): UploaderInterface {
 
       for (const file of files) {
         const formData = new FormData();
-        const blob = new Blob([file.buffer], { type: file.contentType || "image/png" });
+        const blob = new Blob([file.buffer as any], { type: file.contentType || "image/png" });
         formData.append("file", blob, file.uniqueName);
         formData.append(
           "pinataMetadata",
