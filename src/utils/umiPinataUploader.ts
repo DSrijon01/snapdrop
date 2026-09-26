@@ -1,6 +1,48 @@
 import { GenericFile, lamports, Umi, UmiPlugin, UploaderInterface } from "@metaplex-foundation/umi";
 
 /**
+ * Retrieves the Pinata JWT and Gateway, checking environment variables first,
+ * then falling back to browser localStorage, and prompting if missing in an interactive session.
+ */
+export function getPinataConfig(): { jwt: string; gateway: string } {
+  let jwt = process.env.NEXT_PUBLIC_PINATA_JWT || "";
+  let gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "copper-given-dolphin-912.mypinata.cloud";
+
+  if (typeof window !== "undefined") {
+    const localJwt = localStorage.getItem("street_sync_pinata_jwt");
+    if (localJwt && localJwt.trim()) {
+      jwt = localJwt.trim();
+    }
+    const localGateway = localStorage.getItem("street_sync_pinata_gateway");
+    if (localGateway && localGateway.trim()) {
+      gateway = localGateway.trim();
+    }
+  }
+
+  // Fallback: If not in env or localStorage and running in the browser, prompt the admin
+  if (!jwt && typeof window !== "undefined") {
+    const prompted = window.prompt(
+      "Pinata IPFS JWT is required for permanent decentralized media storage.\n\nPlease paste your Pinata JWT (it will be saved to your browser session):"
+    );
+    if (prompted && prompted.trim()) {
+      jwt = prompted.trim();
+      localStorage.setItem("street_sync_pinata_jwt", jwt);
+    }
+  }
+
+  return { jwt, gateway };
+}
+
+export function setPinataJwt(jwt: string, gateway?: string): void {
+  if (typeof window !== "undefined") {
+    localStorage.setItem("street_sync_pinata_jwt", jwt.trim());
+    if (gateway) {
+      localStorage.setItem("street_sync_pinata_gateway", gateway.trim());
+    }
+  }
+}
+
+/**
  * Creates an UploaderInterface that uploads directly to Pinata IPFS.
  * 
  * Benefits:
@@ -9,13 +51,11 @@ import { GenericFile, lamports, Umi, UmiPlugin, UploaderInterface } from "@metap
  * - Direct drop-in replacement for irysUploader in TokenGenerator, Token2022Studio, and NFTStudio.
  */
 export function createPinataUploader(): UploaderInterface {
-  const jwt = process.env.NEXT_PUBLIC_PINATA_JWT;
-  const gateway = process.env.NEXT_PUBLIC_PINATA_GATEWAY || "copper-given-dolphin-912.mypinata.cloud";
-
   return {
     async upload(files: GenericFile[]): Promise<string[]> {
+      const { jwt, gateway } = getPinataConfig();
       if (!jwt) {
-        throw new Error("Missing NEXT_PUBLIC_PINATA_JWT environment variable");
+        throw new Error("Missing Pinata JWT. Please configure NEXT_PUBLIC_PINATA_JWT in GitHub Secrets or browser settings.");
       }
 
       const uris: string[] = [];
@@ -57,8 +97,9 @@ export function createPinataUploader(): UploaderInterface {
     },
 
     async uploadJson<T>(json: T): Promise<string> {
+      const { jwt, gateway } = getPinataConfig();
       if (!jwt) {
-        throw new Error("Missing NEXT_PUBLIC_PINATA_JWT environment variable");
+        throw new Error("Missing Pinata JWT. Please configure NEXT_PUBLIC_PINATA_JWT in GitHub Secrets or browser settings.");
       }
 
       const metadataName = (json as any)?.name ? `${(json as any).name}-metadata.json` : "metadata.json";

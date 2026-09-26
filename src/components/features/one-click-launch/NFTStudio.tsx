@@ -6,7 +6,7 @@ import { generateSigner, percentAmount, some, none, publicKey as umiPublicKey, s
 import { createNft, mplTokenMetadata, TokenStandard } from "@metaplex-foundation/mpl-token-metadata";
 import { create, mplCandyMachine, addConfigLines } from "@metaplex-foundation/mpl-candy-machine";
 import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
-import { pinataUploader } from '@/utils/umiPinataUploader';
+import { pinataUploader, setPinataJwt } from '@/utils/umiPinataUploader';
 import { CarouselItem } from '@/app/snbl/_components/StackedNFTGallery';
 import { compressImageForDevnet } from '@/utils/imageCompressor';
 import { HELIUS_DEVNET_RPC } from '@/utils/solanaRpc';
@@ -313,6 +313,25 @@ export const NFTStudio: FC = () => {
                         NFT Studio <span className="text-primary text-sm tracking-widest align-top ml-2">Launcher</span>
                     </h2>
                     <p className="text-muted-foreground text-sm mt-1">Drag, Drop & Launch directly to the Gallery.</p>
+                    <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-muted-foreground">Storage:</span>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                const current = typeof window !== "undefined" ? localStorage.getItem("street_sync_pinata_jwt") || "" : "";
+                                const entered = window.prompt("Configure Pinata IPFS JWT:", current);
+                                if (entered !== null) {
+                                    setPinataJwt(entered);
+                                    setStatus(entered.trim() ? "⚡ Pinata IPFS JWT updated!" : "Pinata JWT cleared.");
+                                }
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg transition-colors cursor-pointer"
+                            title="Configure Pinata JWT for permanent IPFS storage"
+                        >
+                            <span>⚡ Pinata IPFS</span>
+                            <span className="text-[10px] opacity-75">⚙️</span>
+                        </button>
+                    </div>
                 </div>
                 <div className="flex bg-background border border-border rounded-xl p-1">
                     <button 
