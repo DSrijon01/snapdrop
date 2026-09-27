@@ -6,12 +6,13 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Float, RoundedBox, Sparkles, Environment } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
-import { X, Box, RotateCw, Play, Pause, ExternalLink, Copy, Check, Eye } from "lucide-react";
+import { X, Box, RotateCw, Play, Pause, ExternalLink, Copy, Check, Eye, ShoppingCart } from "lucide-react";
 
 export interface NFT3DViewerProps {
     isOpen: boolean;
     onClose: () => void;
     item: {
+        id?: string;
         name: string;
         image: string;
         rank?: number;
@@ -20,7 +21,11 @@ export interface NFT3DViewerProps {
         seller?: string;
         description?: string;
         attributes?: Array<{ trait_type: string; value: string }> | string[];
+        raw?: any;
     } | null;
+    onBuy?: (item: any) => void;
+    isBuying?: boolean;
+    currentWallet?: string;
 }
 
 // Procedural Card Back Canvas Generator (Cyberpunk Circuit & Street Sync Branding)
@@ -284,7 +289,7 @@ const NFTCardSlab: FC<{
     );
 };
 
-export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => {
+export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy, isBuying, currentWallet }) => {
     const [mounted, setMounted] = useState(false);
     const [autoRotate, setAutoRotate] = useState(true);
     const [targetRotationY, setTargetRotationY] = useState(0);
@@ -441,6 +446,29 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
                                 <p className="text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                                     {item.description}
                                 </p>
+                            )}
+
+                            {/* Dedicated Buy Now Button in 3D HUD */}
+                            {onBuy && item.price !== undefined && (
+                                <div className="pt-1">
+                                    {currentWallet && item.seller === currentWallet ? (
+                                        <button
+                                            disabled
+                                            className="w-full py-2.5 bg-muted text-muted-foreground border border-border rounded-xl text-xs font-mono font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                                        >
+                                            You Listed This Item
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => onBuy((item as any).raw || item)}
+                                            disabled={isBuying}
+                                            className="w-full py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-display uppercase tracking-wider font-bold rounded-xl text-xs shadow-lg shadow-primary/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                                        >
+                                            <ShoppingCart size={15} />
+                                            <span>{isBuying ? "Processing Purchase..." : `Buy Now for ${item.price} SOL`}</span>
+                                        </button>
+                                    )}
+                                </div>
                             )}
 
                             {/* Mint Address with Copy */}

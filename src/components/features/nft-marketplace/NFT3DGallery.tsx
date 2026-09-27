@@ -5,7 +5,7 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Float, RoundedBox, Sparkles, Environment } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
-import { Box, RotateCw, Play, Pause, Maximize2, ExternalLink, Sparkles as SparklesIcon, Layers } from "lucide-react";
+import { Box, RotateCw, Play, Pause, Maximize2, ExternalLink, Sparkles as SparklesIcon, Layers, ShoppingCart } from "lucide-react";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { useWallet } from "@solana/wallet-adapter-react";
 
@@ -217,35 +217,7 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
     };
 
     return (
-        <div className="container mx-auto px-4 py-6 space-y-8 animate-in fade-in duration-500">
-            {/* Header Banner */}
-            <div className="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-card via-card/90 to-primary/10 border border-primary/30 shadow-2xl relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-                
-                <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/25 text-primary text-xs font-mono font-bold uppercase tracking-wider">
-                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-                            Feature • Street Sync 3D Collectible Hub
-                        </div>
-                        <h2 className="text-3xl md:text-5xl font-black text-foreground font-display uppercase italic tracking-tight">
-                            Interactive 3D NFT Gallery
-                        </h2>
-                        <p className="text-muted-foreground text-sm max-w-2xl leading-relaxed">
-                            Examine digital collectibles in authentic three-dimensional museum-grade slabs. Drag to rotate, zoom, and inspect on-chain verifiable artwork with real-time Three.js lighting and reflections.
-                        </p>
-                    </div>
-
-                    <button
-                        onClick={() => setIsFullscreenViewerOpen(true)}
-                        className="px-6 py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display uppercase tracking-wider font-bold rounded-2xl flex items-center gap-2.5 shadow-xl shadow-primary/25 transition-all hover:scale-105 shrink-0"
-                    >
-                        <Maximize2 size={16} />
-                        <span>Launch Fullscreen 3D</span>
-                    </button>
-                </div>
-            </div>
-
+        <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-500">
             {/* Main Stage Grid: Interactive 3D Turntable on Left, Info & Gallery on Right */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* 3D Turntable Viewport (7 Cols) */}
@@ -338,7 +310,7 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
                                 Rank #{selectedItem.rank}
                             </span>
                             {selectedItem.price && (
-                                <span className="text-2xl font-black font-mono text-foreground">
+                                <span className="text-2xl font-black font-mono text-primary">
                                     {selectedItem.price} <span className="text-xs text-muted-foreground font-sans">SOL</span>
                                 </span>
                             )}
@@ -357,41 +329,43 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
                             {selectedItem.description}
                         </p>
 
-                        <div className="pt-4 border-t border-border/60 flex items-center justify-between gap-3 flex-wrap">
-                            <div className="min-w-0">
-                                <span className="text-[10px] font-mono uppercase text-muted-foreground block">
-                                    Solana Mint
-                                </span>
-                                <span className="text-xs font-mono font-bold text-foreground truncate block max-w-[160px]">
-                                    {selectedItem.mint || "Verified Asset"}
-                                </span>
-                            </div>
+                        {/* Dedicated Buy & Action Section */}
+                        <div className="pt-2 space-y-3">
+                            {onBuy && selectedItem.price !== undefined ? (
+                                currentWallet && (selectedItem as any).raw?.seller === currentWallet ? (
+                                    <button
+                                        disabled
+                                        className="w-full py-3.5 bg-muted text-muted-foreground border border-border rounded-2xl text-xs font-mono font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        You Listed This Item
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => onBuy((selectedItem as any).raw || selectedItem)}
+                                        disabled={isBuying === selectedItem.id}
+                                        className="w-full py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display uppercase tracking-wider font-bold rounded-2xl text-xs shadow-xl shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        <ShoppingCart size={15} />
+                                        <span>{isBuying === selectedItem.id ? "Processing Purchase..." : `Buy Now for ${selectedItem.price} SOL`}</span>
+                                    </button>
+                                )
+                            ) : null}
 
-                            <div className="flex items-center gap-2">
-                                {onBuy && selectedItem.price !== undefined && (
-                                    currentWallet && (selectedItem as any).raw?.seller === currentWallet ? (
-                                        <button
-                                            disabled
-                                            className="px-3.5 py-2 bg-muted text-muted-foreground border border-border rounded-xl text-xs font-mono font-bold cursor-not-allowed"
-                                        >
-                                            You Listed This
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => onBuy((selectedItem as any).raw || selectedItem)}
-                                            disabled={isBuying === selectedItem.id}
-                                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-mono font-bold rounded-xl text-xs shadow-md shadow-primary/20 transition-all hover:scale-[1.02] disabled:opacity-50"
-                                        >
-                                            {isBuying === selectedItem.id ? "Buying..." : `Buy Now (${selectedItem.price} SOL)`}
-                                        </button>
-                                    )
-                                )}
+                            <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-mono uppercase text-muted-foreground block">
+                                        Solana Mint
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-foreground truncate block max-w-[150px]">
+                                        {selectedItem.mint || "Verified Asset"}
+                                    </span>
+                                </div>
 
                                 <button
                                     onClick={() => setIsFullscreenViewerOpen(true)}
                                     className="px-3.5 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/25 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
                                 >
-                                    <Box size={14} />
+                                    <Maximize2 size={13} />
                                     <span>Fullscreen 3D</span>
                                 </button>
                             </div>
@@ -450,7 +424,19 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
             <NFT3DViewer
                 isOpen={isFullscreenViewerOpen}
                 onClose={() => setIsFullscreenViewerOpen(false)}
-                item={selectedItem}
+                item={{
+                    ...selectedItem,
+                    seller: (selectedItem as any).raw?.seller,
+                    raw: (selectedItem as any).raw,
+                }}
+                onBuy={(itemToBuy) => {
+                    if (onBuy) {
+                        onBuy(itemToBuy);
+                        setIsFullscreenViewerOpen(false);
+                    }
+                }}
+                isBuying={isBuying === selectedItem.id}
+                currentWallet={currentWallet}
             />
         </div>
     );

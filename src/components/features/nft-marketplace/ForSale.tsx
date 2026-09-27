@@ -277,6 +277,12 @@ export const ForSale: FC = () => {
                 isOpen={!!selected3DItem} 
                 onClose={() => setSelected3DItem(null)} 
                 item={selected3DItem}
+                onBuy={(itemToBuy) => {
+                    handleBuy(itemToBuy);
+                    setSelected3DItem(null);
+                }}
+                isBuying={isBuying === selected3DItem?.id}
+                currentWallet={wallet?.publicKey?.toBase58()}
             />
 
             {/* Header / Filter Bar */}
@@ -360,12 +366,14 @@ export const ForSale: FC = () => {
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     setSelected3DItem({
+                                        id: item.id,
                                         name: item.name,
                                         rank: item.rank,
                                         image: resolveNftImageUrl(item.image, item.name),
                                         mint: item.mint,
                                         price: item.price,
                                         seller: item.seller,
+                                        raw: item,
                                     });
                                 }}
                                 className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
