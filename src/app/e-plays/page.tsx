@@ -617,9 +617,24 @@ export default function EPlaysPage() {
     : 0;
     
   const amountNum = parseFloat(tradeAmount) || 0;
-  const estimatedShares = amountNum; // 1 SOL = 1 share
-  // Net payout after 2% platform fee
-  const estimatedPayout = currentPrice > 0 ? ((amountNum / currentPrice) * 0.98) : 0;
+  const estimatedShares = amountNum; // 1 SOL = 1 share (9-decimal SPL token)
+  // Exact on-chain Pari-Mutuel payout calculation:
+  // When user deposits amountNum, their chosen side pool and total pool increase by amountNum.
+  // If the chosen side wins: Payout = (user_shares / new_total_side_shares) * new_total_pool * 0.98
+  let estimatedPayout = 0;
+  if (selectedTrade && amountNum > 0) {
+    const isYes = selectedTrade.side === 'yes';
+    const currentSideSol = (isYes ? (selectedTrade.market.totalYesShares || 0) : (selectedTrade.market.totalNoShares || 0)) / 1e9;
+    const oppositeSideSol = (isYes ? (selectedTrade.market.totalNoShares || 0) : (selectedTrade.market.totalYesShares || 0)) / 1e9;
+
+    const newSideSol = currentSideSol + amountNum;
+    const newTotalPool = currentSideSol + oppositeSideSol + amountNum;
+
+    if (newSideSol > 0) {
+      const grossPayout = (amountNum / newSideSol) * newTotalPool;
+      estimatedPayout = grossPayout * 0.98; // Net payout after 2% platform fee
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
