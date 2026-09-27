@@ -756,7 +756,9 @@ export default function EPlaysPage() {
                         </td>
                         <td className="p-4 text-right font-mono font-bold text-sm">
                           <div className="flex flex-col items-end">
-                            <span className="text-foreground">1 Token</span>
+                            <span className="text-foreground">
+                              {pos.shares < 0.01 ? pos.shares.toFixed(4) : pos.shares.toFixed(2)} Tokens
+                            </span>
                             <span className="text-[10px] text-muted-foreground font-normal">
                               ◎ {pos.shares.toFixed(2)} Pooled
                             </span>
@@ -960,7 +962,7 @@ export default function EPlaysPage() {
                       Tokens Received
                     </span>
                     <span className="font-black text-foreground text-sm">
-                      1 {selectedTrade.side.toUpperCase()} Token
+                      {tradeAmount && !isNaN(parseFloat(tradeAmount)) ? parseFloat(tradeAmount).toFixed(2) : "0.00"} {selectedTrade.side.toUpperCase()} Tokens
                     </span>
                   </div>
                   
