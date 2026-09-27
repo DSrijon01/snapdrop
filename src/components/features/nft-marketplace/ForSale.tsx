@@ -9,7 +9,8 @@ import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
-import { X, CheckCircle, Copy, ExternalLink } from "lucide-react";
+import { NFT3DGallery } from "./NFT3DGallery";
+import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
 
 // Metaplex Imports
@@ -23,7 +24,7 @@ import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/uti
 export const ForSale: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
-    const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+    const [viewMode, setViewMode] = useState<'grid' | '3d'>('grid');
     
     // State for Real On-Chain Listings
     const [activeListings, setActiveListings] = useState<any[]>([]);
@@ -311,33 +312,69 @@ export const ForSale: FC = () => {
                         <button 
                             onClick={() => setViewMode('grid')}
                             className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="Grid View"
+                            aria-label="Grid View"
                         >
                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                         </button>
                         <button 
-                            onClick={() => setViewMode('list')}
-                            className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            onClick={() => setViewMode('3d')}
+                            className={`px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === '3d' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            title="3D NFT View"
+                            aria-label="3D NFT View"
                         >
-                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" /></svg>
+                            <Box size={16} />
+                            <span className="text-xs font-mono font-bold">3D</span>
                         </button>
                      </div>
                 </div>
             </div>
 
-            {/* Grid */}
-            <div className={`${viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4' : 'flex flex-col'} gap-6`}>
-                {filteredItems.map((item) => (
-                    <motion.div
-                        key={item.id}
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={`group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 ${viewMode === 'list' ? 'flex flex-row items-center h-48' : ''}`}
-                    >
-                        {/* Image */}
-                        <div className={`overflow-hidden relative ${viewMode === 'list' ? 'w-48 h-full aspect-square' : 'aspect-square w-full'}`}>
-                            <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
-                                <span className="text-[10px] uppercase font-bold text-white tracking-widest">P2P Listing</span>
-                            </div>
+            {/* Viewport Content */}
+            {viewMode === '3d' ? (
+                <NFT3DGallery 
+                    items={filteredItems} 
+                    onBuy={handleBuy} 
+                    currentWallet={wallet?.publicKey?.toBase58()} 
+                    isBuying={isBuying} 
+                />
+            ) : (
+                /* Grid */
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {filteredItems.map((item) => (
+                        <motion.div
+                            key={item.id}
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300"
+                        >
+                            {/* Image */}
+                            <div className="overflow-hidden relative aspect-square w-full">
+                                <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
+                                    <span className="text-[10px] uppercase font-bold text-white tracking-widest">P2P Listing</span>
+                                </div>
+
+                            {/* 3D View Button */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelected3DItem({
+                                        name: item.name,
+                                        rank: item.rank,
+                                        image: resolveNftImageUrl(item.image, item.name),
+                                        mint: item.mint,
+                                        price: item.price,
+                                        seller: item.seller,
+                                    });
+                                }}
+                                className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
+                                title="View in 3D"
+                                aria-label="View in 3D"
+                            >
+                                <Box size={11} className="text-primary group-hover/btn:text-primary-foreground transition-colors" />
+                                <span>3D</span>
+                            </button>
 
                             <img 
                                 src={resolveNftImageUrl(item.image, item.name)} 
@@ -350,15 +387,15 @@ export const ForSale: FC = () => {
                         </div>
 
                         {/* Info */}
-                        <div className={`p-4 ${viewMode === 'list' ? 'flex-1 flex flex-row items-center justify-between' : ''}`}>
-                            <div className={viewMode === 'list' ? 'flex flex-col gap-2' : ''}>
-                                <div className={`flex justify-between items-start mb-2 ${viewMode === 'list' ? 'flex-col gap-1 items-start' : ''}`}>
+                        <div className="p-4">
+                            <div>
+                                <div className="flex justify-between items-start mb-2">
                                     <h3 className="font-bold text-foreground text-lg font-display uppercase">{item.name}</h3>
                                     <span className="text-xs font-mono font-bold text-muted-foreground bg-muted px-2 py-1 rounded border border-border">#{item.rank}</span>
                                 </div>
                             </div>
                             
-                            <div className={`${viewMode === 'list' ? 'flex flex-col items-end gap-2' : 'mt-4 pt-4 border-t border-border flex items-end justify-between'}`}>
+                            <div className="mt-4 pt-4 border-t border-border flex items-end justify-between">
                                 <div>
                                     <div className="text-foreground font-bold text-lg flex items-center gap-1">
                                         {item.price} <span className="text-xs text-muted-foreground font-normal">SOL</span>
@@ -387,6 +424,7 @@ export const ForSale: FC = () => {
                     </motion.div>
                 ))}
             </div>
+            )}
 
             <AnimatePresence>
                 {successTx && (

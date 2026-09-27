@@ -8,6 +8,8 @@ import { fetchAllDigitalAssetByOwner, mplTokenMetadata } from "@metaplex-foundat
 import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
 import { motion, AnimatePresence } from "framer-motion";
 import { ListingModal } from "./ListingModal";
+import { NFT3DViewer } from "./NFT3DViewer";
+import { Box } from "lucide-react";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
@@ -69,6 +71,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const [nfts, setNfts] = useState<NFT[]>(wallet.publicKey ? (walletNftsCache[wallet.publicKey.toBase58()] || []) : []);
     const [loading, setLoading] = useState(wallet.publicKey ? !walletNftsCache[wallet.publicKey.toBase58()] : false);
     const [selectedNft, setSelectedNft] = useState<NFT | null>(null);
+    const [viewer3DNft, setViewer3DNft] = useState<any | null>(null);
     const [listingNft, setListingNft] = useState<NFT | null>(null);
     const [delistingId, setDelistingId] = useState<string | null>(null);
 
@@ -311,11 +314,8 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         fetchNFTs();
     }, [wallet.publicKey, umi, refreshTrigger]);
 
-    if (!wallet.publicKey) return (
-        <div className="text-center text-muted-foreground py-10 italic">
-            Connect wallet to view your Street Sync stream.
-        </div>
-    );
+    // Render preview cards if wallet not connected or no NFTs minted yet
+    const isDisconnected = !wallet.publicKey;
 
     return (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 p-1 sm:p-2">
@@ -333,6 +333,28 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         className="group relative aspect-square overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all cursor-pointer shadow-lg hover:shadow-primary/20"
                         onClick={() => setSelectedNft(nft)}
                     >
+                        {/* 3D View Button */}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setViewer3DNft({
+                                    name: nft.name || nft.json?.name || "NFT",
+                                    image: resolveNftImageUrl(nft.json?.image || nft.image, nft.name || "NFT"),
+                                    mint: nft.mint,
+                                    description: nft.description || nft.json?.description,
+                                    attributes: nft.json?.attributes,
+                                    price: nft.listingPrice,
+                                });
+                            }}
+                            className="absolute top-2.5 right-2.5 z-20 px-2 py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
+                            title="View in 3D"
+                            aria-label="View in 3D"
+                        >
+                            <Box size={11} className="text-primary group-hover/btn:text-primary-foreground transition-colors" />
+                            <span>3D</span>
+                        </button>
+
                         <img 
                             src={resolveNftImageUrl(nft.json?.image || nft.image, nft.name || "NFT")} 
                             alt={nft.name || nft.json?.name}
@@ -378,15 +400,60 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
             ) : (
                 // Empty State / Mock Stream
                 <>
-                    <div className="col-span-full mb-4 p-6 rounded-2xl bg-card/80 border border-border flex flex-col items-start gap-2 shadow-lg">
-                        <h4 className="text-xl font-black text-foreground tracking-tight uppercase italic font-display">Your Collection</h4>
-                        <p className="text-sm text-muted-foreground font-light">
-                            You don&apos;t have any NFTs yet. Mint one to start your collection. Here is a <span className="text-primary font-bold">preview</span>.
-                        </p>
+                    <div className="col-span-full mb-4 p-5 rounded-2xl bg-card/90 border border-primary/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-xl backdrop-blur-md">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                <h4 className="text-lg font-black text-foreground tracking-tight uppercase italic font-display">
+                                    {isDisconnected ? "Preview Collection • 3D Holographic Mode" : "Your Collection"}
+                                </h4>
+                            </div>
+                            <p className="text-xs text-muted-foreground font-light max-w-xl">
+                                {isDisconnected 
+                                    ? "Connect wallet to view and manage your on-chain NFTs. Click any '3D' button on the cards below to launch the interactive 3D viewer."
+                                    : "You don't have any NFTs yet. Mint one to start your collection. Previewing available 3D assets below:"
+                                }
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => setViewer3DNft({
+                                name: MOCK_NFTS[0].name,
+                                image: MOCK_NFTS[0].image,
+                                mint: MOCK_NFTS[0].mint,
+                                description: "Interactive 3D Holographic NFT collectible from Street Sync.",
+                                rank: 1,
+                            })}
+                            className="px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-mono font-bold rounded-xl flex items-center gap-2 shrink-0 shadow-lg shadow-primary/20 transition-all hover:scale-105"
+                        >
+                            <Box size={14} />
+                            <span>Launch 3D Viewer</span>
+                        </button>
                     </div>
 
                     {MOCK_NFTS.map((nft, i) => (
                         <div key={`mock-${i}`} className="group relative aspect-square overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/30 transition-all hover:shadow-[0_0_20px_rgba(var(--primary),0.15)]">
+                            {/* 3D View Button (Mock) */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewer3DNft({
+                                        name: nft.name,
+                                        image: nft.image,
+                                        mint: nft.mint,
+                                        description: "Preview collectible from Street Sync collection.",
+                                        rank: i + 1,
+                                    });
+                                }}
+                                className="absolute top-2.5 right-2.5 z-20 px-2 py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
+                                title="View in 3D"
+                                aria-label="View in 3D"
+                            >
+                                <Box size={11} className="text-primary group-hover/btn:text-primary-foreground transition-colors" />
+                                <span>3D</span>
+                            </button>
+
                             <img 
                                 src={nft.image} 
                                 alt={nft.name}
@@ -452,13 +519,33 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             </div>
 
                              <div className="w-full md:w-1/2 p-6 md:p-8 overflow-y-auto bg-card custom-scrollbar">
-                                <div className="flex items-center gap-2 mb-2">
-                                     <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
-                                        Verified Collection
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
+                                            Verified Collection
+                                        </div>
+                                        {selectedNft.json?.symbol && (
+                                            <span className="text-muted-foreground text-xs font-mono font-bold tracking-tight">{selectedNft.json.symbol}</span>
+                                        )}
                                     </div>
-                                    {selectedNft.json?.symbol && (
-                                        <span className="text-muted-foreground text-xs font-mono font-bold tracking-tight">{selectedNft.json.symbol}</span>
-                                    )}
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setViewer3DNft({
+                                                name: selectedNft.name,
+                                                image: resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name),
+                                                mint: selectedNft.mint,
+                                                description: selectedNft.description,
+                                                attributes: selectedNft.json?.attributes,
+                                                price: selectedNft.listingPrice,
+                                            });
+                                        }}
+                                        className="px-2.5 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/25 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                                        title="Inspect in 3D"
+                                    >
+                                        <Box size={13} />
+                                        <span>3D View</span>
+                                    </button>
                                 </div>
                                
                                 <h2 className="text-3xl font-black text-foreground mb-4 leading-tight font-display uppercase tracking-tight">{selectedNft.name || selectedNft.json?.name}</h2>
@@ -534,6 +621,13 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                     </div>
                 )}
             </AnimatePresence>
+
+            {/* 3D NFT Viewer Modal */}
+            <NFT3DViewer 
+                isOpen={!!viewer3DNft}
+                onClose={() => setViewer3DNft(null)}
+                item={viewer3DNft}
+            />
 
             {/* Listing Modal */}
             {listingNft && (

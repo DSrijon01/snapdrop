@@ -16,6 +16,8 @@ import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_I
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/utils/nftImageResolver";
+import { NFT3DViewer } from "@/components/features/nft-marketplace/NFT3DViewer";
+import { Box } from "lucide-react";
 
 export interface NFTDetail {
     image: string;
@@ -62,6 +64,7 @@ export const StackedNFTGallery = () => {
     const prevCurrentIndex = prevCurrentIndexRef.current;
     const [expandedCard, setExpandedCard] = useState<CarouselItem | null>(null);
     const [selectedNFT, setSelectedNFT] = useState<NFTDetail | null>(null);
+    const [viewer3DNft, setViewer3DNft] = useState<any | null>(null);
     const [isMinting, setIsMinting] = useState(false);
     const [status, setStatus] = useState("");
 
@@ -675,7 +678,23 @@ export const StackedNFTGallery = () => {
                                                 >
                                                     <div className="flex justify-between items-center pb-4 border-b border-white/5">
                                                         <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Asset Hash</span>
-                                                        <span className="text-sm font-mono font-bold text-foreground bg-white/5 px-3 py-1 rounded-full">{selectedNFT.mintAddress.slice(0, 10)}...</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <span className="text-sm font-mono font-bold text-foreground bg-white/5 px-3 py-1 rounded-full">{selectedNFT.mintAddress.slice(0, 10)}...</span>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setViewer3DNft({
+                                                                    name: `${expandedCard.collection || "Drop"} Asset`,
+                                                                    image: selectedNFT.image,
+                                                                    mint: selectedNFT.mintAddress,
+                                                                    price: selectedNFT.price,
+                                                                })}
+                                                                className="px-2.5 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 rounded-full text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                                                                title="Inspect in 3D"
+                                                            >
+                                                                <Box size={12} />
+                                                                <span>3D View</span>
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                     <div className="flex justify-between items-center">
                                                         <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Price</span>
@@ -729,6 +748,12 @@ export const StackedNFTGallery = () => {
             </AnimatePresence>,
             document.body
         )}
+            {/* 3D NFT Viewer Modal */}
+            <NFT3DViewer 
+                isOpen={!!viewer3DNft}
+                onClose={() => setViewer3DNft(null)}
+                item={viewer3DNft}
+            />
         </div>
     );
 };
