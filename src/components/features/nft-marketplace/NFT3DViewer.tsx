@@ -1,6 +1,7 @@
 "use client";
 
 import { FC, Suspense, useRef, useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Float, RoundedBox, Sparkles, Environment } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
@@ -284,10 +285,25 @@ const NFTCardSlab: FC<{
 };
 
 export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => {
+    const [mounted, setMounted] = useState(false);
     const [autoRotate, setAutoRotate] = useState(true);
     const [targetRotationY, setTargetRotationY] = useState(0);
     const [copied, setCopied] = useState(false);
     const controlsRef = useRef<any>(null);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    // Lock body scroll when modal is open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = "hidden";
+            return () => {
+                document.body.style.overflow = "";
+            };
+        }
+    }, [isOpen]);
 
     // Keyboard shortcuts (Escape closes viewer)
     useEffect(() => {
@@ -326,7 +342,7 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
         setTimeout(() => setCopied(false), 2000);
     };
 
-    if (!item) return null;
+    if (!mounted || !item) return null;
 
     // Normalize attributes array
     const attributesList: Array<{ trait_type: string; value: string }> = Array.isArray(item.attributes)
@@ -338,17 +354,17 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
           })
         : [];
 
-    return (
+    return createPortal(
         <AnimatePresence>
             {isOpen && (
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-2xl select-none"
+                    className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-2xl select-none"
                 >
                     {/* Top Right Controls & Close */}
-                    <div className="absolute top-6 right-6 z-50 flex items-center gap-3">
+                    <div className="absolute top-6 right-6 z-[100000] flex items-center gap-3">
                         <button
                             onClick={handleResetView}
                             className="p-2.5 bg-card/60 hover:bg-card border border-border/60 hover:border-primary/50 rounded-xl text-muted-foreground hover:text-foreground transition-all shadow-lg backdrop-blur-md"
@@ -391,7 +407,7 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
                     </div>
 
                     {/* Left HUD Panel: NFT Metadata */}
-                    <div className="absolute top-6 left-6 z-40 max-w-sm w-full pointer-events-none">
+                    <div className="absolute top-6 left-6 z-[100000] max-w-sm w-full pointer-events-none">
                         <motion.div
                             initial={{ x: -40, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -521,7 +537,7 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
                         </Canvas>
 
                         {/* Bottom Interaction Guide */}
-                        <div className="absolute bottom-8 inset-x-0 text-center pointer-events-none">
+                        <div className="absolute bottom-8 inset-x-0 text-center pointer-events-none z-[100000]">
                             <div className="inline-flex items-center gap-2 bg-card/70 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-mono font-medium text-muted-foreground border border-border/50 shadow-lg">
                                 <Eye size={13} className="text-primary" />
                                 <span>Left-click + Drag to Rotate • Scroll to Zoom • Press [Space] to Pause</span>
@@ -530,6 +546,7 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item }) => 
                     </div>
                 </motion.div>
             )}
-        </AnimatePresence>
+        </AnimatePresence>,
+        document.body
     );
 };

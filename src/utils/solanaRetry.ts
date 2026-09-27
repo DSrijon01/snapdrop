@@ -165,7 +165,12 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
                 }
 
                 // 2. Only if explicitly not user cancellation, check for phantom testnet mode issue
-                if (signErrStr.includes("simulation failed: unexpected error") || (signErrStr.includes("unexpected error") && signErrStr.includes("simulation"))) {
+                if (
+                    signErrStr.includes("simulation failed: unexpected error") ||
+                    (signErrStr.includes("unexpected error") && signErrStr.includes("simulation")) ||
+                    (signErrStr.includes("walletsigntransactionerror") && signErrStr.includes("unexpected error")) ||
+                    signErrStr.includes("unexpected error")
+                ) {
                     throw new Error(
                         "Phantom Wallet Error: Transaction simulation failed in wallet. Your Phantom wallet is currently set to 'Testnet Mode' instead of Solana Devnet! Please switch Phantom to Solana Devnet (Phantom ⚙️ ➔ Developer Settings ➔ Change Network ➔ Solana Devnet)."
                     );
@@ -239,7 +244,9 @@ export function parseSolanaErrorMessage(err: any): string {
     if (
         errorStr.includes("testnet mode") ||
         errorStr.includes("phantom wallet network mismatch") ||
-        (errorStr.includes("simulation failed") && errorStr.includes("unexpected error"))
+        (errorStr.includes("simulation failed") && errorStr.includes("unexpected error")) ||
+        (errorStr.includes("walletsigntransactionerror") && errorStr.includes("unexpected error")) ||
+        errorStr.includes("unexpected error")
     ) {
         return "Phantom Wallet Network Mismatch: Your Phantom wallet is set to 'Testnet Mode' instead of Solana Devnet! Please open Phantom ➔ Settings (⚙️) ➔ Developer Settings ➔ Change Network ➔ Select 'Solana Devnet'.";
     }

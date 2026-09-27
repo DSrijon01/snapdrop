@@ -10,9 +10,9 @@ import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@me
 import { publicKey as umiPublicKey, transactionBuilder, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
 import { PublicKey, SystemProgram, ComputeBudgetProgram as SolanaComputeBudgetProgram } from "@solana/web3.js";
-import { withSolanaRetry } from "@/utils/solanaRetry";
+import { withSolanaRetry, parseSolanaErrorMessage } from "@/utils/solanaRetry";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
-import { getAssociatedTokenAddress, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
+import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/utils/nftImageResolver";
@@ -23,6 +23,7 @@ export interface NFTDetail {
     image: string;
     price: number;
     mintAddress: string;
+    name?: string;
 }
 
 export interface CarouselItem {
@@ -104,6 +105,7 @@ export const StackedNFTGallery = () => {
                             image: imageUrl,
                             price: listing.account.price.toNumber() / 1e9,
                             mintAddress: mintPubkey.toBase58(),
+                            name: title,
                         };
 
                         if (groupedListings.has(groupId)) {
@@ -296,7 +298,26 @@ export const StackedNFTGallery = () => {
 
             const buyerTokenAccount = await getAssociatedTokenAddress(mintPubkey, wallet.publicKey);
 
-            setStatus("Confirm Transaction...");
+            // Check if Buyer ATA exists
+            const buyerTokenAccountInfo = await connection.getAccountInfo(buyerTokenAccount);
+            const preInstructions: any[] = [
+                SolanaComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+                SolanaComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
+            ];
+
+            if (!buyerTokenAccountInfo) {
+                console.log("[StackedNFTGallery] Adding buyer ATA creation instruction...");
+                preInstructions.push(
+                    createAssociatedTokenAccountInstruction(
+                        wallet.publicKey,
+                        buyerTokenAccount,
+                        wallet.publicKey,
+                        mintPubkey
+                    )
+                );
+            }
+
+            setStatus("Confirm Transaction in your wallet...");
             
             await withSolanaRetry(async () => {
                 return await program.methods.buyNft()
@@ -311,10 +332,7 @@ export const StackedNFTGallery = () => {
                         systemProgram: SystemProgram.programId,
                         tokenProgram: TOKEN_PROGRAM_ID,
                     } as any)
-                    .preInstructions([
-                        SolanaComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
-                        SolanaComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }),
-                    ])
+                    .preInstructions(preInstructions)
                     .rpc({ skipPreflight: true });
             });
 
@@ -352,7 +370,7 @@ export const StackedNFTGallery = () => {
             setSelectedNFT(null);
         } catch (error: any) {
             console.error("Purchase failed:", error);
-            setStatus(`Purchase failed: ${error.message || "Unknown error"}`);
+            setStatus(`Purchase failed: ${parseSolanaErrorMessage(error)}`);
         } finally {
             setIsMinting(false);
         }
@@ -599,6 +617,25 @@ export const StackedNFTGallery = () => {
                                                                 <span className="text-sm font-mono text-primary font-black">{nft.price} SOL</span>
                                                             </div>
                                                         </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setSelectedNFT(nft);
+                                                                setViewer3DNft({
+                                                                    name: nft.name || `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`,
+                                                                    image: nft.image,
+                                                                    mint: nft.mintAddress,
+                                                                    price: nft.price,
+                                                                    description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
+                                                                });
+                                                            }}
+                                                            className="absolute top-2 left-2 z-10 px-2 py-1 bg-black/70 hover:bg-primary text-white hover:text-primary-foreground rounded-lg backdrop-blur-md border border-white/15 hover:border-primary/50 transition-all opacity-90 hover:opacity-100 shadow-md flex items-center gap-1 text-[10px] font-mono font-bold"
+                                                            title="Inspect in 3D"
+                                                        >
+                                                            <Box size={11} />
+                                                            <span>3D</span>
+                                                        </button>
                                                         {selectedNFT?.mintAddress === nft.mintAddress && (
                                                             <div className="absolute top-2 right-2 bg-primary text-primary-foreground p-1 rounded-full">
                                                                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
@@ -683,10 +720,11 @@ export const StackedNFTGallery = () => {
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setViewer3DNft({
-                                                                    name: `${expandedCard.collection || "Drop"} Asset`,
+                                                                    name: selectedNFT.name || `${expandedCard.collection || expandedCard.title} #${selectedNFT.mintAddress.slice(0, 4)}`,
                                                                     image: selectedNFT.image,
                                                                     mint: selectedNFT.mintAddress,
                                                                     price: selectedNFT.price,
+                                                                    description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
                                                                 })}
                                                                 className="px-2.5 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 rounded-full text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
                                                                 title="Inspect in 3D"
