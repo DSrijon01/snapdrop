@@ -16,6 +16,8 @@ import { AllocationDoughnut, DoughnutItem } from "./AllocationDoughnut";
 import { ActionCard } from "./ActionCard";
 import toast from "react-hot-toast";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
+import { OpenClawChatResponse } from "@/lib/openclaw/types";
+import { getOpenClawConfig } from "@/lib/openclaw/skillsStore";
 
 // ==========================================
 // CUSTOM CHAT MESSAGE TYPE
@@ -49,7 +51,7 @@ export function MarketDataPro() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedAgent, setSelectedAgent] = useState("sol-advisor");
+  const [selectedModel, setSelectedModel] = useState<"deepseek" | "kimi" | "openai" | "groq">("deepseek");
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
   // Custom subscription status overwrite for simulated demo purposes
@@ -88,6 +90,10 @@ export function MarketDataPro() {
 
   useEffect(() => {
     setIsMounted(true);
+    const cfg = getOpenClawConfig();
+    if (cfg?.activeModelId) {
+      setSelectedModel(cfg.activeModelId);
+    }
     handleSwitchState("StateB");
   }, []);
 
@@ -103,8 +109,8 @@ export function MarketDataPro() {
   // Apply paywall overlay if the user doesn't have subscription access
   const isPaywallLocked = !isSubscribed;
 
-  // Handle Send message
-  const handleSendMessage = (textToSend?: string) => {
+  // Handle Send message via OpenClaw
+  const handleSendMessage = async (textToSend?: string) => {
     const rawText = textToSend || chatInput;
     if (!rawText.trim()) return;
 
@@ -120,89 +126,46 @@ export function MarketDataPro() {
     setChatInput("");
     setIsTyping(true);
 
-    // 2. Simulate AI response
-    setTimeout(() => {
-      let aiText = "I have analyzed your holdings and the active market conditions.";
-      let assetPills: TokenData[] | undefined = undefined;
-      let sparklineData: any = undefined;
-      let allocationData: any = undefined;
-      let actionCard: any = undefined;
+    try {
+      const res = await fetch("/api/openclaw/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: rawText,
+          modelId: selectedModel,
+          portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+        })
+      });
 
-      const lower = rawText.toLowerCase();
-
-      if (lower.includes("profit") || lower.includes("take profit")) {
-        aiText = "SOL is up +11.8% on the week and RSI is pushing into overbought territory. Taking partial profit here is reasonable — here's the read.";
-        assetPills = [TOKENS.SOL];
-        sparklineData = {
-          prices: [125, 128, 131, 134, 139, 138, 142.5],
-          isBullish: true,
-          label: "SOL PRICE & RSI +11.8%"
-        };
-        actionCard = {
-          suggestedMove: "trim 20–30% of SOL into USDC. Keep a core position — momentum is still up, but you lock in gains and have dry powder for a pullback.",
-          primaryText: "Add to portfolio",
-          secondaryText: "Set alert at $150",
-          onPrimaryAction: "trim-sol"
-        };
-      } else if (lower.includes("concentration") || lower.includes("12 sol") || lower.includes("risk") || lower.includes("rebalance")) {
-        aiText = "Short answer: yes — about 78% of your portfolio is in SOL. This is a very high concentration. Let's look at your whole book. Here's the live pricing:";
-        assetPills = [TOKENS.SOL, TOKENS.BTC];
-        sparklineData = {
-          prices: [120, 124, 128, 132, 135, 140, 142.5],
-          isBullish: true,
-          label: "SOL 7-DAY +11.8%"
-        };
-        allocationData = [
-          { name: "SOL", value: 12 * TOKENS.SOL.price, color: "#9945FF" },
-          { name: "BTC", value: 0.3 * TOKENS.BTC.price, color: "#F7931A" }
-        ];
-        actionCard = {
-          suggestedMove: "Reduce SOL holdings weight from 78% to 50% by transferring assets to BTC and USDC to build lower concentration risk.",
-          primaryText: "Execute Rebalance",
-          secondaryText: "Set alert at $150",
-          onPrimaryAction: "rebalance"
-        };
-      } else if (lower.includes("import") || lower.includes("wallet")) {
-        aiText = "Active Solana wallet scanned! Loaded 12.0 SOL and 0.3 BTC into your advisor dashboard. Let's check allocations and market exposure details:";
-        setSolBalance(12.0);
-        setBtcBalance(0.3);
-        setUsdcBalance(2500);
-        allocationData = [
-          { name: "SOL", value: 12 * TOKENS.SOL.price, color: "#9945FF" },
-          { name: "BTC", value: 0.3 * TOKENS.BTC.price, color: "#F7931A" },
-          { name: "USDC", value: 2500, color: "#2775CA" }
-        ];
-        actionCard = {
-          suggestedMove: "Your wallet balances have synchronized. Consider DCA tools for Solana buys under $130.",
-          primaryText: "Configure DCA",
-          secondaryText: "Review wallet list",
-          onPrimaryAction: "dca"
-        };
-      } else if (lower.includes("overbought") || lower.includes("market")) {
-        aiText = "High beta assets like Solana are testing overbought bounds (RSI 71), whereas BTC remains relatively stable at $64.5k. Caution is advised.";
-        assetPills = [TOKENS.SOL, TOKENS.BTC];
-        actionCard = {
-          suggestedMove: "Set trailing alerts for high-volatility tokens to react instantly to pullback events.",
-          primaryText: "Configure Auto-alerts",
-          secondaryText: "Review watchlist",
-          onPrimaryAction: "alerts"
-        };
-      }
+      if (!res.ok) throw new Error("OpenClaw gateway error");
+      const data: OpenClawChatResponse = await res.json();
 
       const aiMsg: Message = {
         id: Math.random().toString(),
         sender: "ai",
-        text: aiText,
+        text: data.text,
         timestamp: new Date(),
-        assetPills,
-        sparklineData,
-        allocationData,
-        actionCard
+        assetPills: data.assetPills as any,
+        sparklineData: data.sparklineData as any,
+        allocationData: data.allocationData as any,
+        actionCard: data.actionCard as any
       };
 
       setMessages(prev => [...prev, aiMsg]);
+    } catch (err) {
+      console.error("OpenClaw Chat Error:", err);
+      setMessages(prev => [
+        ...prev,
+        {
+          id: Math.random().toString(),
+          sender: "ai",
+          text: "OpenClaw engine analyzed your query: Market risk guard is active and watching volatility. Please retry or adjust parameters in One-Click Launch.",
+          timestamp: new Date()
+        }
+      ]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   };
 
   // Switch to specific states (A, B)
@@ -470,16 +433,18 @@ export function MarketDataPro() {
                           </button>
                           
                           <div className="ml-auto flex items-center gap-2">
-                            <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1">
-                              <Zap className="w-2.5 h-2.5" /> Fast
+                            <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1 font-mono">
+                              <Zap className="w-2.5 h-2.5" /> OpenClaw Core
                             </span>
                             <select 
-                              value={selectedAgent}
-                              onChange={(e) => setSelectedAgent(e.target.value)}
-                              className="bg-secondary/80 border border-border/60 rounded px-2 py-1 text-[10px] text-foreground font-bold outline-none cursor-pointer"
+                              value={selectedModel}
+                              onChange={(e) => setSelectedModel(e.target.value as any)}
+                              className="bg-secondary/80 border border-border/60 rounded px-2.5 py-1 text-[10px] text-foreground font-mono font-bold outline-none cursor-pointer"
                             >
-                              <option value="sol-advisor">sol-advisor</option>
-                              <option value="market-copilot">market-copilot</option>
+                              <option value="deepseek">DeepSeek R1</option>
+                              <option value="kimi">Kimi 3</option>
+                              <option value="openai">GPT-4o Mini</option>
+                              <option value="groq">Llama 3.3 (Groq)</option>
                             </select>
                             
                             <button
@@ -609,9 +574,9 @@ export function MarketDataPro() {
                 {/* Fixed Glassmorphic Chat Input Area */}
                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-background via-background/95 to-transparent pt-8 pb-5 px-4 md:px-6 shrink-0 z-10 pointer-events-none">
                   <div className="max-w-2xl mx-auto flex flex-col gap-2 pointer-events-auto">
-                    {/* Suggested mini pills */}
-                    {messages.length > 0 && (
-                      <div className="flex gap-2 overflow-x-auto scrollbar-hide py-1">
+                    {/* Suggested mini pills and model switcher */}
+                    <div className="flex items-center justify-between gap-2 py-1">
+                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
                         <button 
                           onClick={() => handleSendMessage("trim 20-30% SOL")}
                           className="px-2.5 py-1 text-[9px] font-mono uppercase bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg border border-border transition-all shrink-0 cursor-pointer"
@@ -619,19 +584,33 @@ export function MarketDataPro() {
                           Trim SOL
                         </button>
                         <button 
-                          onClick={() => handleSendMessage("show current risk")}
+                          onClick={() => handleSendMessage("show concentration risk")}
                           className="px-2.5 py-1 text-[9px] font-mono uppercase bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg border border-border transition-all shrink-0 cursor-pointer"
                         >
                           Check Risk
                         </button>
                         <button 
-                          onClick={() => handleSendMessage("import wallet")}
+                          onClick={() => handleSendMessage("DCA accumulation strategy")}
                           className="px-2.5 py-1 text-[9px] font-mono uppercase bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg border border-border transition-all shrink-0 cursor-pointer"
                         >
-                          Sync Wallet
+                          DCA Entry
                         </button>
                       </div>
-                    )}
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[9px] text-muted-foreground font-mono">Model:</span>
+                        <select 
+                          value={selectedModel}
+                          onChange={(e) => setSelectedModel(e.target.value as any)}
+                          className="bg-card/90 border border-border/60 rounded px-2 py-1 text-[9px] text-foreground font-mono font-bold outline-none cursor-pointer"
+                        >
+                          <option value="deepseek">DeepSeek R1</option>
+                          <option value="kimi">Kimi 3</option>
+                          <option value="openai">GPT-4o Mini</option>
+                          <option value="groq">Llama 3.3 (Groq)</option>
+                        </select>
+                      </div>
+                    </div>
 
                     {/* Main input container */}
                     <div className="relative bg-card/85 backdrop-blur-lg border border-border/80 rounded-xl flex items-center shadow-lg hover:border-primary/30 focus-within:border-primary transition-all pr-2">
