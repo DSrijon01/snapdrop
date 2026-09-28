@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 import { OpenClawChatResponse } from "@/lib/openclaw/types";
 import { getOpenClawConfig } from "@/lib/openclaw/skillsStore";
+import { executeOpenClawChat } from "@/lib/openclaw/clientChat";
 
 // ==========================================
 // CUSTOM CHAT MESSAGE TYPE
@@ -127,18 +128,35 @@ export function MarketDataPro() {
     setIsTyping(true);
 
     try {
-      const res = await fetch("/api/openclaw/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      let data: OpenClawChatResponse | null = null;
+
+      // 1. Try server API route first if running on Node/Next server
+      try {
+        const res = await fetch("/api/openclaw/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: rawText,
+            modelId: selectedModel,
+            portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+          })
+        });
+
+        if (res.ok) {
+          data = await res.json();
+        }
+      } catch (e) {
+        // Fall back to client-side engine (GitHub Pages static host)
+      }
+
+      // 2. If server API returned 404/405 or was unreachable, run directly in browser
+      if (!data) {
+        data = await executeOpenClawChat({
           message: rawText,
           modelId: selectedModel,
           portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
-        })
-      });
-
-      if (!res.ok) throw new Error("OpenClaw gateway error");
-      const data: OpenClawChatResponse = await res.json();
+        });
+      }
 
       const aiMsg: Message = {
         id: Math.random().toString(),
@@ -153,16 +171,37 @@ export function MarketDataPro() {
 
       setMessages(prev => [...prev, aiMsg]);
     } catch (err) {
-      console.error("OpenClaw Chat Error:", err);
-      setMessages(prev => [
-        ...prev,
-        {
-          id: Math.random().toString(),
-          sender: "ai",
-          text: "OpenClaw engine analyzed your query: Market risk guard is active and watching volatility. Please retry or adjust parameters in One-Click Launch.",
-          timestamp: new Date()
-        }
-      ]);
+      console.error("Chat Error:", err);
+      try {
+        const fallback = await executeOpenClawChat({
+          message: rawText,
+          modelId: selectedModel,
+          portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+        });
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: "ai",
+            text: fallback.text,
+            timestamp: new Date(),
+            assetPills: fallback.assetPills as any,
+            sparklineData: fallback.sparklineData as any,
+            allocationData: fallback.allocationData as any,
+            actionCard: fallback.actionCard as any
+          }
+        ]);
+      } catch (fallbackErr) {
+        setMessages(prev => [
+          ...prev,
+          {
+            id: Math.random().toString(),
+            sender: "ai",
+            text: "Market intelligence is active. Real-time indicators are syncing with on-chain liquidity.",
+            timestamp: new Date()
+          }
+        ]);
+      }
     } finally {
       setIsTyping(false);
     }
@@ -434,7 +473,7 @@ export function MarketDataPro() {
                           
                           <div className="ml-auto flex items-center gap-2">
                             <span className="text-[10px] text-emerald-500 font-bold flex items-center gap-1 font-mono">
-                              <Zap className="w-2.5 h-2.5" /> OpenClaw Core
+                              <Zap className="w-2.5 h-2.5" /> AI Market Core
                             </span>
                             <select 
                               value={selectedModel}
