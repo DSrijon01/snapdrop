@@ -87,47 +87,48 @@ export const StackedNFTGallery = () => {
             if (!program) return [];
             try {
                 const listings = await program.account.galleryListing.all();
-                
                 const groupedListings = new Map<string, CarouselItem>();
                 
-                for (const listing of listings) {
-                    try {
-                        const mintPubkey = listing.account.mint;
-                        const meta = await getTokenMetadataWithCache(mintPubkey, connection, umi);
-                        const title = meta?.name || "Treasury NFT";
-                        const imageUrl = resolveNftImageUrl(meta?.image, title);
-                        
-                        const adminStr = listing.account.admin.toBase58();
-                        const baseName = title.split('#')[0].trim() || "Treasury";
-                        const groupId = `${adminStr}-${baseName}`;
-                        
-                        const nftDetail = {
-                            image: imageUrl,
-                            price: listing.account.price.toNumber() / 1e9,
-                            mintAddress: mintPubkey.toBase58(),
-                            name: title,
-                        };
+                await Promise.allSettled(
+                    listings.map(async (listing: any) => {
+                        try {
+                            const mintPubkey = listing.account.mint;
+                            const meta = await getTokenMetadataWithCache(mintPubkey, connection, umi);
+                            const title = meta?.name || "Treasury NFT";
+                            const imageUrl = resolveNftImageUrl(meta?.image, title);
+                            
+                            const adminStr = listing.account.admin.toBase58();
+                            const baseName = title.split('#')[0].trim() || "Treasury";
+                            const groupId = `${adminStr}-${baseName}`;
+                            
+                            const nftDetail = {
+                                image: imageUrl,
+                                price: listing.account.price.toNumber() / 1e9,
+                                mintAddress: mintPubkey.toBase58(),
+                                name: title,
+                            };
 
-                        if (groupedListings.has(groupId)) {
-                            const group = groupedListings.get(groupId)!;
-                            group.images.push(imageUrl);
-                            group.nfts!.push(nftDetail);
-                        } else {
-                            groupedListings.set(groupId, {
-                                id: `onchain-${groupId}`,
-                                type: "direct",
-                                title: `${baseName} Series`,
-                                subtitle: "On-Chain Treasury Stack",
-                                collection: "Treasury Vault",
-                                images: [imageUrl],
-                                nfts: [nftDetail],
-                                adminWallet: adminStr,
-                            });
+                            if (groupedListings.has(groupId)) {
+                                const group = groupedListings.get(groupId)!;
+                                group.images.push(imageUrl);
+                                group.nfts!.push(nftDetail);
+                            } else {
+                                groupedListings.set(groupId, {
+                                    id: `onchain-${groupId}`,
+                                    type: "direct",
+                                    title: `${baseName} Series`,
+                                    subtitle: "On-Chain Treasury Stack",
+                                    collection: "Treasury Vault",
+                                    images: [imageUrl],
+                                    nfts: [nftDetail],
+                                    adminWallet: adminStr,
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Failed to fetch asset for mint", listing.account.mint.toBase58(), e);
                         }
-                    } catch (e) {
-                        console.error("Failed to fetch asset for mint", listing.account.mint.toBase58(), e);
-                    }
-                }
+                    })
+                );
                 return Array.from(groupedListings.values());
             } catch (e) {
                 console.error("Failed to fetch on-chain listings", e);
@@ -145,17 +146,42 @@ export const StackedNFTGallery = () => {
                     // Filter out old simulated "direct" ones if we are fetching real on-chain ones now
                     localCards = localCards.filter(c => c.type !== 'direct');
 
-                    // Fetch real-time candy machine stats
-                    for (const card of localCards) {
-                        if (card.type === 'candymachine' && card.candyMachineId) {
-                            try {
-                                const cm = await fetchCandyMachine(umi, umiPublicKey(card.candyMachineId));
-                                card.totalMinted = Number(cm.itemsRedeemed);
-                                card.maxSupply = Number(cm.data.itemsAvailable);
-                            } catch (e) {
-                                console.error("Failed to fetch CM details", e);
+                    // Fetch real-time candy machine stats in parallel
+                    await Promise.allSettled(
+                        localCards.map(async (card) => {
+                            if (card.type === 'candymachine' && card.candyMachineId) {
+                                try {
+                                    const cm = await fetchCandyMachine(umi, umiPublicKey(card.candyMachineId));
+                                    card.totalMinted = Number(cm.itemsRedeemed);
+                                    card.maxSupply = Number(cm.data.itemsAvailable);
+                                } catch (e) {
+                                    console.error("Failed to fetch CM details", e);
+                                }
                             }
-                        }
+                        })
+                    );
+                }
+
+                // If fresh browser / no local cards found, auto-load deployed Candy Machine from environment
+                const defaultCmId = process.env.NEXT_PUBLIC_CANDY_MACHINE_ID || "DdU4yDWH7UgAboiEYe8D5ZQm5z7ES2n5wvgNKNYxQMF1";
+                if (localCards.length === 0 && defaultCmId) {
+                    try {
+                        const cm = await fetchCandyMachine(umi, umiPublicKey(defaultCmId));
+                        const coverImg = getFallbackImage("Devdutta Series", defaultCmId);
+                        localCards.push({
+                            id: `cm-${defaultCmId}`,
+                            type: "candymachine",
+                            title: "Devdutta Collection",
+                            subtitle: "Official Street Sync Drop",
+                            images: [coverImg],
+                            price: 0.05,
+                            candyMachineId: defaultCmId,
+                            totalMinted: Number(cm.itemsRedeemed),
+                            maxSupply: Number(cm.data.itemsAvailable),
+                            collection: "Devdutta Series",
+                        });
+                    } catch (cmErr) {
+                        console.warn("Failed to auto-load default Candy Machine:", cmErr);
                     }
                 }
                 

@@ -7,11 +7,25 @@ import { SystemProgram, PublicKey, LAMPORTS_PER_SOL, ComputeBudgetProgram } from
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { findListingAddress, findEscrowAddress, PROGRAM_ID, IDL } from "@/utils/program";
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
+import dynamic from "next/dynamic";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
-import { NFT3DGallery } from "./NFT3DGallery";
 import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
+
+const NFT3DGallery = dynamic(
+    () => import("./NFT3DGallery").then((mod) => mod.NFT3DGallery),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="h-96 w-full rounded-3xl bg-card/40 border border-border/40 flex items-center justify-center animate-pulse">
+                <span className="text-xs font-mono text-muted-foreground uppercase tracking-widest">
+                    Initializing High-FPS 3D Gallery Engine...
+                </span>
+            </div>
+        ),
+    }
+);
 
 // Metaplex Imports
 import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";

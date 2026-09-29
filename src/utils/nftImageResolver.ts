@@ -157,13 +157,47 @@ export function resolveNftImageUrl(rawUri?: string | null, fallbackTitle: string
   return uri;
 }
 
+// In-memory cache for resolved metadata & negative lookup cache for pruned testnet assets
+const jsonMetadataCache = new Map<string, any>();
+const deadUriSet = new Set<string>();
+
+// Hydrate dead URIs from sessionStorage on client to achieve 0ms lookups on repeat visits
+if (typeof window !== "undefined") {
+  try {
+    const stored = window.sessionStorage?.getItem("street_sync_dead_uris");
+    if (stored) {
+      JSON.parse(stored).forEach((u: string) => deadUriSet.add(u));
+    }
+  } catch {}
+}
+
+function markUriAsDead(uri: string) {
+  deadUriSet.add(uri);
+  if (typeof window !== "undefined") {
+    try {
+      window.sessionStorage?.setItem("street_sync_dead_uris", JSON.stringify(Array.from(deadUriSet).slice(-250)));
+    } catch {}
+  }
+}
+
 /**
- * Fetches JSON metadata with automatic multi-gateway failover.
- * If gateway.irys.xyz is 404, tries devnet.irys.xyz, arweave.net, etc.
+ * Fetches JSON metadata with ultra-fast parallel gateway racing and negative caching.
+ * Races candidate gateways concurrently with a 1500ms timeout rather than sequential loops,
+ * transforming 15-20s stalls into sub-second or 0ms instant resolutions.
  */
-export async function fetchJsonWithGatewayFailover(rawUri: string, timeoutMs: number = 4000): Promise<any> {
+export async function fetchJsonWithGatewayFailover(rawUri: string, timeoutMs: number = 1500): Promise<any> {
   const cleanedUri = sanitizeSolanaString(rawUri);
   if (!cleanedUri) return null;
+
+  // 1. Fast cache check
+  if (jsonMetadataCache.has(cleanedUri)) {
+    return jsonMetadataCache.get(cleanedUri);
+  }
+
+  // 2. Negative cache check: If known dead/pruned, return null immediately (0ms)
+  if (deadUriSet.has(cleanedUri)) {
+    return null;
+  }
 
   // Extract ID if it's Arweave / Irys
   const arweaveMatch = cleanedUri.match(/(?:arweave\.net|irys\.xyz)\/([a-zA-Z0-9_-]{40,})/);
@@ -187,28 +221,27 @@ export async function fetchJsonWithGatewayFailover(rawUri: string, timeoutMs: nu
     }
   }
 
-  for (const url of candidateUrls) {
-    try {
-      const controller = new AbortController();
-      const id = setTimeout(() => controller.abort(), timeoutMs);
-
+  // Parallel racing across candidate gateways
+  try {
+    const fetchPromises = candidateUrls.slice(0, 4).map(async (url) => {
       const res = await fetch(url, {
-        signal: controller.signal,
+        signal: AbortSignal.timeout(timeoutMs),
         headers: { Accept: "application/json" },
       });
-      clearTimeout(id);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (!data || typeof data !== "object") throw new Error("Invalid JSON");
+      return data;
+    });
 
-      if (res.ok) {
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch {
-          // not valid JSON, try next
-        }
-      }
-    } catch {
-      // Gateway failed or timed out, proceed to next candidate
+    const result = await Promise.any(fetchPromises);
+    if (result) {
+      jsonMetadataCache.set(cleanedUri, result);
+      return result;
     }
+  } catch {
+    // All gateways failed or timed out — mark URI as dead
+    markUriAsDead(cleanedUri);
   }
 
   return null;
