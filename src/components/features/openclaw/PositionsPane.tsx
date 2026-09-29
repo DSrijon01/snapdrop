@@ -1,7 +1,21 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { Wallet, Skull, Copy, Info, AlertTriangle, ShieldCheck } from "lucide-react";
+import { 
+  Wallet, 
+  Skull, 
+  Copy, 
+  RefreshCw, 
+  ShieldCheck, 
+  ArrowDownLeft, 
+  ArrowUpRight, 
+  Sparkles, 
+  RotateCcw,
+  CheckCircle2,
+  AlertCircle
+} from "lucide-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
+import { Transaction, SystemProgram, LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { AgentExecutionEngine, TokenPrice } from "./AgentExecutionEngine";
 
 interface PositionsPaneProps {
@@ -11,34 +25,140 @@ interface PositionsPaneProps {
 }
 
 export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, prices }) => {
+  const { publicKey, sendTransaction, connected } = useWallet();
+  const { connection } = useConnection();
+
   const [nukeArmed, setNukeArmed] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const [copied, setCopied] = useState(false);
+  const [isFunding, setIsFunding] = useState(false);
+  const [isAirdropping, setIsAirdropping] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [onChainSol, setOnChainSol] = useState(0);
+
   const timerRef = useRef<any>(null);
 
   const isSimulator = engine.isSimulator();
+  const agentAddress = engine.getSessionPublicKey();
 
-  const sessionWalletPublicKey = engine.getSessionPublicKey();
+  const refreshBalance = async () => {
+    setIsRefreshing(true);
+    try {
+      const bal = await engine.refreshOnChainBalance();
+      setOnChainSol(bal);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    refreshBalance();
+    const interval = setInterval(refreshBalance, 8000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(sessionWalletPublicKey);
+    if (!agentAddress) return;
+    navigator.clipboard.writeText(agentAddress);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Fund Agent from Connected Phantom/Solana Wallet
+  const handleFundFromWallet = async (amountSol = 0.5) => {
+    if (!connected || !publicKey) {
+      alert("Please connect your Solana wallet (e.g. Phantom) in the top bar first.");
+      return;
+    }
+    if (!agentAddress) return;
+
+    setIsFunding(true);
+    try {
+      engine.addLog(`Initiating transfer of ${amountSol} SOL from your wallet to OpenClaw Agent Vault...`, "info");
+      
+      const tx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: new PublicKey(agentAddress),
+          lamports: Math.floor(amountSol * LAMPORTS_PER_SOL),
+        })
+      );
+
+      const sig = await sendTransaction(tx, connection);
+      engine.addLog(`Fund transaction submitted: ${sig.slice(0, 8)}... Confirming...`, "info", sig);
+      
+      await connection.confirmTransaction(sig, "confirmed");
+      engine.addLog(`Agent Vault successfully funded with ${amountSol} SOL!`, "success", sig);
+      await refreshBalance();
+    } catch (err: any) {
+      engine.addLog(`Funding failed: ${err.message}`, "error");
+    } finally {
+      setIsFunding(false);
+    }
+  };
+
+  // 1-Click Devnet Airdrop
+  const handleDevnetAirdrop = async () => {
+    if (!agentAddress) return;
+    setIsAirdropping(true);
+    try {
+      engine.addLog(`Requesting 1 SOL Devnet Airdrop for Agent Vault...`, "info");
+      const sig = await connection.requestAirdrop(new PublicKey(agentAddress), 1 * LAMPORTS_PER_SOL);
+      await connection.confirmTransaction(sig, "confirmed");
+      engine.addLog(`Airdrop confirmed! +1.000 SOL added to Agent Vault.`, "success", sig);
+      await refreshBalance();
+    } catch (err: any) {
+      engine.addLog(`Airdrop rate-limited by public faucet: ${err.message}. You can also use 'Fund from Wallet'.`, "warning");
+    } finally {
+      setIsAirdropping(false);
+    }
+  };
+
+  // Withdraw from Agent back to user's connected wallet
+  const handleWithdrawAll = async () => {
+    if (!connected || !publicKey) {
+      alert("Please connect your wallet to receive withdrawn funds.");
+      return;
+    }
+    if (onChainSol <= 0.005) {
+      alert("Agent Vault balance is too low to withdraw.");
+      return;
+    }
+
+    setIsWithdrawing(true);
+    try {
+      engine.addLog(`Sweeping funds from Agent Vault back to ${publicKey.toBase58().slice(0, 4)}...`, "info");
+      const sig = await engine.withdrawTo(publicKey);
+      await refreshBalance();
+    } catch (err: any) {
+      engine.addLog(`Withdrawal error: ${err.message}`, "error");
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  // Reset / Fresh Agent Key
+  const handleResetKey = () => {
+    if (onChainSol > 0.01) {
+      if (!confirm(`Warning: Your current agent vault holds ${onChainSol.toFixed(4)} SOL. Are you sure you want to generate a new key without withdrawing?`)) {
+        return;
+      }
+    }
+    engine.resetSessionKey();
+    refreshBalance();
+  };
+
+  // Nuke logic
   const handleNukeClick = () => {
     if (!nukeArmed) {
-      // Arm the nuke
       setNukeArmed(true);
       setCountdown(5);
       engine.addLog("NUKE Armed! Click again within 5 seconds to wipe all positions.", "warning");
     } else {
-      // Execute the nuke
       engine.listNuke();
       setNukeArmed(false);
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-      }
+      if (timerRef.current) clearInterval(timerRef.current);
     }
   };
 
@@ -69,17 +189,17 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
   }, 0);
 
   return (
-    <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between h-full shadow-lg gap-6">
+    <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between h-full shadow-lg gap-5">
       
-      {/* Top Section: Balances */}
+      {/* Top Section: Balances & Header */}
       <div>
         <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
-          <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2">
+          <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-foreground">
             <Wallet className="w-5 h-5 text-primary" />
             Wallet & Positions
           </h3>
-          <span className="text-xs font-mono font-bold text-muted-foreground uppercase bg-muted px-2.5 py-1 border border-border">
-            Total Val: ${totalValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <span className="text-xs font-mono font-bold text-muted-foreground uppercase bg-muted px-2.5 py-1 border border-border rounded-md">
+            Portfolio: ${totalValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </span>
         </div>
 
@@ -91,13 +211,13 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
             const val = bal * price;
 
             return (
-              <div key={symbol} className="bg-background/60 border border-border/40 p-3.5 rounded-xl flex items-center justify-between">
+              <div key={symbol} className="bg-background/60 border border-border/40 p-3 rounded-xl flex items-center justify-between">
                 <div>
-                  <span className="font-bold font-display text-sm block">{symbol}</span>
+                  <span className="font-bold font-display text-sm block text-foreground">{symbol}</span>
                   <span className="text-[10px] text-muted-foreground font-mono block">Price: ${price.toLocaleString(undefined, { minimumFractionDigits: symbol === "SNAP" ? 4 : 2 })}</span>
                 </div>
                 <div className="text-right">
-                  <span className="font-bold font-mono text-sm block">{bal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
+                  <span className="font-bold font-mono text-sm block text-foreground">{bal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
                   <span className="text-[10px] text-muted-foreground font-mono block">${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                 </div>
               </div>
@@ -105,31 +225,95 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
           })}
         </div>
 
-        {/* Local Session Wallet Info */}
-        <div className="bg-muted/40 p-4 rounded-xl border border-border/30 text-xs space-y-2">
-          <div className="flex justify-between items-center text-[10px] font-mono font-bold text-muted-foreground uppercase border-b border-border/20 pb-1.5 mb-1.5">
-            <span>Agent Wallet (Local Session)</span>
-            <button 
-              onClick={handleCopy}
-              className="flex items-center gap-1 hover:text-foreground transition-colors font-bold"
-            >
-              <Copy className="w-3 h-3" />
-              {copied ? "Copied!" : "Copy"}
-            </button>
+        {/* Native OpenClaw Agent Vault (Solana) */}
+        <div className="bg-muted/40 p-4 rounded-xl border border-border/40 text-xs space-y-3">
+          <div className="flex justify-between items-center text-[10px] font-mono font-bold text-muted-foreground uppercase border-b border-border/20 pb-2">
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${onChainSol > 0.005 ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-500'}`} />
+              <span className="text-foreground tracking-wider font-extrabold">
+                OpenClaw Agent Vault (Solana)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={refreshBalance} 
+                disabled={isRefreshing}
+                className="hover:text-foreground transition-colors p-1"
+                title="Refresh On-Chain Balance"
+              >
+                <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
+              </button>
+
+              <button 
+                onClick={handleCopy}
+                className="flex items-center gap-1 hover:text-foreground transition-colors font-bold"
+                title="Copy Address"
+              >
+                <Copy className="w-3 h-3" />
+                {copied ? "Copied!" : "Copy"}
+              </button>
+
+              <button 
+                onClick={handleResetKey}
+                className="hover:text-amber-400 transition-colors p-1"
+                title="Generate Fresh Agent Key"
+              >
+                <RotateCcw className="w-3 h-3" />
+              </button>
+            </div>
           </div>
-          <div className="font-mono break-all font-bold select-all text-muted-foreground leading-relaxed bg-black/30 p-2 rounded-lg border border-border/10">
-            {sessionWalletPublicKey}
+
+          <div className="space-y-2.5">
+            {/* Address & Live Balance Row */}
+            <div className="font-mono text-[11px] break-all font-bold select-all bg-muted/50 p-2.5 rounded-lg border border-border flex justify-between items-center gap-2">
+              <span className="text-muted-foreground truncate">{agentAddress}</span>
+              <span className="text-[10px] font-mono font-black uppercase text-foreground bg-primary/20 px-2 py-0.5 rounded border border-primary/30 shrink-0">
+                {onChainSol.toFixed(3)} SOL
+              </span>
+            </div>
+
+            {/* Instant In-App Funding Actions */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleFundFromWallet(0.5)}
+                disabled={isFunding}
+                className="flex items-center justify-center gap-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-primary text-center cursor-pointer disabled:opacity-50"
+              >
+                <ArrowDownLeft className="w-3 h-3" />
+                {isFunding ? "Funding..." : "Fund 0.5 SOL"}
+              </button>
+
+              <button
+                onClick={handleDevnetAirdrop}
+                disabled={isAirdropping}
+                className="flex items-center justify-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-emerald-400 text-center cursor-pointer disabled:opacity-50"
+              >
+                <Sparkles className="w-3 h-3" />
+                {isAirdropping ? "Airdropping..." : "Airdrop 1 SOL"}
+              </button>
+
+              <button
+                onClick={handleWithdrawAll}
+                disabled={isWithdrawing || onChainSol <= 0.005}
+                className="flex items-center justify-center gap-1 bg-background/80 hover:bg-muted border border-border p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-muted-foreground hover:text-foreground text-center cursor-pointer disabled:opacity-40"
+              >
+                <ArrowUpRight className="w-3 h-3" />
+                {isWithdrawing ? "Sweeping..." : "Withdraw"}
+              </button>
+            </div>
+
+            <p className="text-[9px] text-muted-foreground leading-tight italic pt-0.5">
+              • Dedicated autonomous signing key running inside your OpenClaw session. Fund directly from your connected wallet to execute live on Solana.
+            </p>
           </div>
-          <p className="text-[10px] text-muted-foreground leading-relaxed italic">
-            * This local agent key is stored in your session. Fund it with Devnet SOL to run actual on-chain transaction automation.
-          </p>
         </div>
       </div>
 
       {/* Bottom Section: Network Mode & Nuke Button */}
-      <div className="space-y-4 pt-4 border-t border-border/40">
+      <div className="space-y-4 pt-3 border-t border-border/40">
         
-        {/* Simulator/Real Network Mode Toggle */}
+        {/* Simulator / Live Mode Toggle */}
         <div className="flex items-center justify-between bg-muted/40 p-3 rounded-xl border border-border/20">
           <div className="flex items-center gap-1.5">
             <ShieldCheck className="w-4 h-4 text-primary" />
@@ -138,19 +322,19 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
           <div className="flex bg-background border border-border p-0.5 rounded-lg text-[10px] font-mono font-bold uppercase">
             <button
               onClick={() => engine.setSimulator(true)}
-              className={`px-3 py-1.5 rounded-md transition-colors ${
-                isSimulator ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               Sandbox
             </button>
             <button
               onClick={() => engine.setSimulator(false)}
-              className={`px-3 py-1.5 rounded-md transition-colors ${
-                !isSimulator ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
+                !isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              Devnet
+              Live On-Chain
             </button>
           </div>
         </div>
@@ -158,7 +342,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
         {/* Confirm-to-Confirm NUKE button */}
         <button
           onClick={handleNukeClick}
-          className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all duration-300 flex items-center justify-center gap-2.5 border ${
+          className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all duration-300 flex items-center justify-center gap-2.5 border cursor-pointer ${
             nukeArmed
               ? 'bg-red-600 border-red-700 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
               : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-600 shadow-md hover:shadow-red-500/20'

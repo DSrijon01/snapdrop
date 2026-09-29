@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { 
   Play, Square, Plus, Trash2, ToggleLeft, ToggleRight, 
-  FileText, Cpu, Sparkles, Info, Check, Shield, Activity, ChevronDown, Zap
+  FileText, Cpu, Sparkles, Info, Check, Shield, Activity, ChevronDown, Zap, ExternalLink
 } from "lucide-react";
 import { AgentExecutionEngine, AgentRule, LogEntry, TokenPrice } from "./AgentExecutionEngine";
 
@@ -600,30 +600,41 @@ export const AgentController: React.FC<AgentControllerProps> = ({ engine, rules,
           </div>
 
           {/* Sub-Pane 2: AI Execution & Rationale Feed (Tradermap Image 3 Reference) */}
-          <div className="bg-black/50 border border-border rounded-2xl p-5 flex flex-col h-72 overflow-hidden shadow-inner">
-            <div className="flex items-center justify-between border-b border-border/20 pb-2 mb-2">
-              <span className="text-xs uppercase font-bold text-muted-foreground tracking-widest font-mono flex items-center gap-2">
+          <div className="bg-card border border-border rounded-2xl p-5 flex flex-col h-72 overflow-hidden shadow-sm">
+            <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
+              <span className="text-xs uppercase font-bold text-foreground tracking-widest font-mono flex items-center gap-2">
                 <FileText className="w-4 h-4 text-primary" />
                 {selectedModel.name} AI Rationale & Execution Feed
               </span>
-              <div className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
-                <span className="text-[10px] font-mono font-bold text-green-400 uppercase">Live Engine</span>
+              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">Live Engine</span>
               </div>
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 font-mono text-[11px] leading-relaxed scrollbar-hide">
               {logs.map((log, i) => (
-                <div key={i} className="flex gap-2 items-start py-1 border-b border-white/[0.03] last:border-0">
-                  <span className="text-muted-foreground/60 select-none shrink-0 font-medium text-[10px]">[{log.timestamp}]</span>
+                <div key={i} className="flex gap-2 items-start py-1 border-b border-border/20 last:border-0">
+                  <span className="text-muted-foreground select-none shrink-0 font-semibold text-[10px]">[{log.timestamp}]</span>
                   <span className={`font-medium flex-1 ${
-                    log.type === "success" ? "text-green-400" :
-                    log.type === "warning" ? "text-amber-400" :
-                    log.type === "error" ? "text-red-400" :
-                    log.type === "trade" ? "text-cyan-400" :
-                    "text-muted-foreground"
+                    log.type === "success" ? "text-emerald-600 dark:text-emerald-400" :
+                    log.type === "warning" ? "text-amber-600 dark:text-amber-400" :
+                    log.type === "error" ? "text-rose-600 dark:text-rose-400" :
+                    log.type === "trade" ? "text-cyan-600 dark:text-cyan-400 font-bold" :
+                    "text-foreground/90 font-medium"
                   }`}>
                     {log.message}
+                    {log.txHash && log.txHash !== "On-Chain Confirmed" && (
+                      <a
+                        href={`https://solscan.io/tx/${log.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 inline-flex items-center gap-1 text-[9px] font-mono text-cyan-600 dark:text-cyan-300 hover:underline font-bold"
+                      >
+                        <span>Solscan</span>
+                        <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
                   </span>
                 </div>
               ))}

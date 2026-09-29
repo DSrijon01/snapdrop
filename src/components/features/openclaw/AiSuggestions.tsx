@@ -60,7 +60,7 @@ export const AiSuggestions: React.FC<AiSuggestionsProps> = ({ prices, onExecuteS
   }, [prices]);
 
   return (
-    <div className="bg-card/40 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col h-full shadow-lg">
+    <div className="bg-card border border-border rounded-2xl p-5 flex flex-col h-full shadow-sm">
       <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
         <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-primary">
           <Bot className="w-5 h-5" />
@@ -68,9 +68,9 @@ export const AiSuggestions: React.FC<AiSuggestionsProps> = ({ prices, onExecuteS
         </h3>
         <button 
           onClick={generateSuggestion}
-          className="text-xs uppercase tracking-wider font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+          className="text-xs uppercase tracking-wider font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer"
         >
-          <Sparkles className="w-3 h-3 text-amber-400" />
+          <Sparkles className="w-3 h-3 text-amber-500" />
           Re-Analyze
         </button>
       </div>
@@ -85,8 +85,8 @@ export const AiSuggestions: React.FC<AiSuggestionsProps> = ({ prices, onExecuteS
           <div className="space-y-3">
             <div className={`flex items-center gap-2 px-3 py-2 border rounded-xl font-mono text-sm font-bold ${
               suggestion.isBuy 
-                ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20' 
+                : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
             }`}>
               {suggestion.isBuy ? <TrendingDown className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
               <span>{suggestion.text}</span>
@@ -103,7 +103,7 @@ export const AiSuggestions: React.FC<AiSuggestionsProps> = ({ prices, onExecuteS
             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/30">
               <div className="bg-muted/40 p-2 rounded-lg border border-border/20 text-center">
                 <span className="text-[9px] uppercase font-bold text-muted-foreground font-mono block">RSI (14)</span>
-                <span className={`text-xs font-mono font-bold ${suggestion.isBuy ? 'text-green-400' : 'text-red-400'}`}>
+                <span className={`text-xs font-mono font-bold ${suggestion.isBuy ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                   {suggestion.isBuy ? "32.4 (Oversold)" : "74.8 (Overbought)"}
                 </span>
               </div>
@@ -118,10 +118,10 @@ export const AiSuggestions: React.FC<AiSuggestionsProps> = ({ prices, onExecuteS
 
           <button
             onClick={() => onExecuteSuggestion(suggestion.isBuy, suggestion.symbol, suggestion.amount)}
-            className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 ${
+            className={`w-full py-3 rounded-xl font-bold uppercase tracking-wider text-xs transition-all flex items-center justify-center gap-2 cursor-pointer ${
               suggestion.isBuy
-                ? 'bg-green-500 text-white hover:bg-green-600 shadow-md hover:shadow-green-500/20'
-                : 'bg-red-500 text-white hover:bg-red-600 shadow-md hover:shadow-red-500/20'
+                ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md hover:shadow-emerald-500/20'
+                : 'bg-rose-600 text-white hover:bg-rose-700 shadow-md hover:shadow-rose-500/20'
             }`}
           >
             <Sparkles className="w-4 h-4" />

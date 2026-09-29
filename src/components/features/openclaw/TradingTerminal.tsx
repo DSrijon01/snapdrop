@@ -1,12 +1,25 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Zap, Bot, Sparkles, AlertCircle, TrendingUp, DollarSign, ArrowUpRight } from "lucide-react";
+import { Zap, Bot, Sparkles, AlertCircle, TrendingUp, DollarSign, ArrowUpRight, ChevronDown } from "lucide-react";
 import { AgentExecutionEngine, TokenPrice, AgentRule, LogEntry } from "./AgentExecutionEngine";
 import { PositionsPane } from "./PositionsPane";
 import { AiSuggestions } from "./AiSuggestions";
 import { AgentController } from "./AgentController";
 import { TradingViewChart } from "./TradingViewChart";
+
+export const MARKET_TOKENS = [
+  { symbol: "SOL", name: "Solana", badge: "L1" },
+  { symbol: "BTC", name: "Bitcoin", badge: "Macro" },
+  { symbol: "ETH", name: "Ethereum", badge: "Macro" },
+  { symbol: "JUP", name: "Jupiter", badge: "DeFi" },
+  { symbol: "RAY", name: "Raydium", badge: "AMM" },
+  { symbol: "BONK", name: "Bonk", badge: "Meme" },
+  { symbol: "WIF", name: "dogwifhat", badge: "Meme" },
+  { symbol: "RENDER", name: "Render", badge: "AI" },
+  { symbol: "ssSOL", name: "Street Staked SOL", badge: "Yield" },
+  { symbol: "SNAP", name: "Snapdrop", badge: "Platform" },
+];
 
 export const TradingTerminal: React.FC = () => {
   // Instantiate the execution engine once
@@ -131,37 +144,70 @@ export const TradingTerminal: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Chart View */}
-        <div className="lg:col-span-2 bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between shadow-lg h-[450px]">
+        <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5 flex flex-col justify-between shadow-sm h-[450px]">
           <div>
-            <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border pb-3 mb-4 gap-3">
               <div className="flex items-center gap-3">
                 <TrendingUp className="w-5 h-5 text-primary" />
-                <h3 className="font-bold font-display uppercase tracking-tight">
-                  {activeSymbol} Live Price Trail
-                </h3>
+                <div>
+                  <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-foreground">
+                    <span>Whole Market Live Price Trail</span>
+                    <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                      5s Polymarket Speed
+                    </span>
+                  </h3>
+                </div>
               </div>
-              <div className="flex gap-2">
-                {Object.keys(prices).filter(s => s !== "USDC").map(sym => (
+
+              {/* Market Token Selector Dropdown */}
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <select
+                    value={activeSymbol}
+                    onChange={(e) => setActiveSymbol(e.target.value)}
+                    className="bg-muted/40 hover:bg-muted border border-border text-foreground text-xs font-mono font-bold rounded-xl px-3 py-1.5 pr-8 appearance-none focus:outline-none focus:border-primary shadow-sm cursor-pointer transition-colors"
+                  >
+                    {MARKET_TOKENS.map((token) => {
+                      const p = prices[token.symbol]?.price;
+                      return (
+                        <option key={token.symbol} value={token.symbol} className="bg-popover text-popover-foreground">
+                          {token.symbol} — {token.name} ({token.badge}) {p ? `$${p >= 10 ? p.toFixed(1) : p.toFixed(token.symbol === "BONK" ? 6 : token.symbol === "SNAP" ? 4 : 2)}` : ""}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-baseline justify-between mb-2">
+              <div className="flex items-baseline gap-2">
+                <span className="text-3xl font-mono font-black tracking-tighter text-foreground">
+                  ${activePrice.toLocaleString(undefined, { minimumFractionDigits: activeSymbol === "BONK" ? 6 : activeSymbol === "SNAP" ? 4 : 2 })}
+                </span>
+                <span className={`text-xs font-bold font-mono ${activeChange >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+                  {activeChange >= 0 ? "+" : ""}{activeChange.toFixed(2)}%
+                </span>
+                <span className="text-[10px] font-mono text-muted-foreground">24h</span>
+              </div>
+
+              {/* Quick Select Chips */}
+              <div className="hidden sm:flex items-center gap-1 overflow-x-auto pb-0.5">
+                {["SOL", "BTC", "ETH", "JUP", "BONK", "ssSOL", "SNAP"].map((sym) => (
                   <button
                     key={sym}
                     onClick={() => setActiveSymbol(sym)}
-                    className={`px-3 py-1 rounded-full text-xs font-mono font-bold uppercase transition-colors ${
+                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold uppercase transition-all ${
                       activeSymbol === sym 
-                        ? 'bg-primary text-primary-foreground' 
-                        : 'bg-muted/80 text-muted-foreground hover:bg-muted'
+                        ? 'bg-primary text-primary-foreground shadow-sm' 
+                        : 'bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground'
                     }`}
                   >
                     {sym}
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="flex items-baseline gap-2 mb-2">
-              <span className="text-3xl font-mono font-black tracking-tighter text-foreground">${activePrice.toLocaleString(undefined, { minimumFractionDigits: activeSymbol === "SNAP" ? 4 : 2 })}</span>
-              <span className={`text-xs font-bold font-mono ${activeChange >= 0 ? "text-green-400" : "text-red-400"}`}>
-                {activeChange >= 0 ? "+" : ""}{activeChange.toFixed(2)}%
-              </span>
             </div>
           </div>
 
@@ -181,7 +227,7 @@ export const TradingTerminal: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         
         {/* Manual Order Entry */}
-        <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between shadow-lg h-full min-h-[400px]">
+        <div className="bg-card border border-border rounded-2xl p-5 flex flex-col justify-between shadow-sm h-full min-h-[400px]">
           <div>
             <div className="flex items-center justify-between border-b border-border pb-3 mb-5">
               <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2">
@@ -192,7 +238,7 @@ export const TradingTerminal: React.FC = () => {
                 <button
                   onClick={() => setIsBuy(true)}
                   className={`px-3 py-1 rounded-md transition-colors ${
-                    isBuy ? 'bg-green-500 text-white' : 'text-muted-foreground hover:text-foreground'
+                    isBuy ? 'bg-emerald-600 text-white' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Buy
@@ -200,7 +246,7 @@ export const TradingTerminal: React.FC = () => {
                 <button
                   onClick={() => setIsBuy(false)}
                   className={`px-3 py-1 rounded-md transition-colors ${
-                    !isBuy ? 'bg-red-500 text-white' : 'text-muted-foreground hover:text-foreground'
+                    !isBuy ? 'bg-rose-600 text-white' : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   Sell
@@ -228,7 +274,12 @@ export const TradingTerminal: React.FC = () => {
             {/* Form Fields */}
             <div className="space-y-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Amount ({activeSymbol})</label>
+                <div className="flex justify-between items-center">
+                  <label className="text-[10px] uppercase font-bold text-muted-foreground font-mono">Amount ({activeSymbol})</label>
+                  <span className="text-[10px] font-mono text-muted-foreground">
+                    Bal: {balances[activeSymbol] !== undefined ? balances[activeSymbol].toLocaleString(undefined, { maximumFractionDigits: activeSymbol === "BONK" ? 0 : 4 }) : "0.00"}
+                  </span>
+                </div>
                 <input
                   type="number"
                   value={amount}

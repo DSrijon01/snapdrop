@@ -1,8 +1,9 @@
 import type { NextConfig } from "next";
 
+const isExport = process.env.NODE_ENV === 'production';
+
 const nextConfig: NextConfig = {
-  output: 'export',
-  basePath: process.env.NODE_ENV === 'production' ? '/snapdrop' : '',
+  ...(isExport ? { output: 'export' as const, basePath: '/snapdrop' } : {}),
   images: {
     unoptimized: true,
   },
