@@ -12,33 +12,10 @@ import {
   ReferenceLine
 } from "recharts";
 import { Activity, RefreshCw, BarChart2, TrendingUp, Sparkles, ExternalLink } from "lucide-react";
+import { fetchClientMarketData, MarketDataResponse, KlinePoint as CandleData } from "@/lib/openclaw/clientMarketData";
 
 interface TradingViewChartProps {
   activeSymbol: string;
-}
-
-interface CandleData {
-  time: number;
-  date: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  sma20?: number;
-}
-
-interface MarketDataResponse {
-  success: boolean;
-  symbol: string;
-  interval: string;
-  currentPrice: number;
-  change24h: number;
-  high24h: number;
-  low24h: number;
-  volume24h: number;
-  candles: CandleData[];
-  isSimulated?: boolean;
 }
 
 const TIMEFRAMES = [
@@ -59,18 +36,13 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({ activeSymbol
   const [showTradingViewEmbed, setShowTradingViewEmbed] = useState(false);
   const tvContainerRef = useRef<HTMLDivElement>(null);
 
-  // Fetch live market data from our API
+  // Fetch live market data via client-side engine (Binance public API + resilient fallback)
   const fetchMarketData = async (silent = false) => {
     if (!silent) setIsLoading(true);
     setIsRefreshing(true);
     try {
-      const res = await fetch(
-        `/api/openclaw/market-data?symbol=${encodeURIComponent(activeSymbol)}&interval=${interval}&limit=50`,
-        { cache: "no-store" }
-      );
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data: MarketDataResponse = await res.json();
-      if (data.success && data.candles?.length > 0) {
+      const data = await fetchClientMarketData(activeSymbol, interval, 50);
+      if (data && data.candles?.length > 0) {
         setMarketData(data);
       }
     } catch (err) {
