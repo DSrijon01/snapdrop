@@ -11,8 +11,17 @@ export interface OpenClawSkill {
   lastUpdated?: string;
 }
 
+export type SupportedModelId = 
+  | "gpt-oss-120b" 
+  | "gpt-oss-20b" 
+  | "qwen-27b" 
+  | "deepseek" 
+  | "kimi" 
+  | "openai" 
+  | "groq";
+
 export interface AIModelOption {
-  id: "deepseek" | "kimi" | "openai" | "groq";
+  id: SupportedModelId;
   name: string;
   tagline: string;
   modelCode: string;
@@ -23,7 +32,7 @@ export interface AIModelOption {
 }
 
 export interface OpenClawConfig {
-  activeModelId: "deepseek" | "kimi" | "openai" | "groq";
+  activeModelId: SupportedModelId;
   skills: OpenClawSkill[];
   apiKeys: {
     openai?: string;
@@ -37,11 +46,14 @@ export interface OpenClawConfig {
 
 export interface OpenClawChatRequest {
   message: string;
-  modelId?: "deepseek" | "kimi" | "openai" | "groq";
+  modelId?: SupportedModelId;
   portfolio?: {
     sol: number;
-    btc: number;
-    usdc: number;
+    btc?: number;
+    usdc?: number;
+    jup?: number;
+    isLiveWallet?: boolean;
+    walletAddress?: string;
   };
   activeSkillIds?: string[];
 }

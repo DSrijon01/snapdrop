@@ -118,17 +118,17 @@ export async function executeOpenClawChat(
 
   // Map UI model selection to available models on Groq
   let groqModel = "openai/gpt-oss-120b";
-  let modelDisplayName = "GPT-OSS 120B (Groq Cloud)";
+  let modelDisplayName = "GPT-OSS 120B (Deep Reasoning)";
 
-  if (modelId === "deepseek") {
-    groqModel = "openai/gpt-oss-120b";
-    modelDisplayName = "GPT-OSS 120B Deep Reasoning (Groq)";
-  } else if (modelId === "kimi") {
-    groqModel = "qwen/qwen3.8-27b";
-    modelDisplayName = "Qwen 3.8 27B Macro (Groq)";
-  } else {
+  if (modelId === "gpt-oss-20b" || modelId === "openai" || modelId === "groq") {
     groqModel = "openai/gpt-oss-20b";
-    modelDisplayName = "GPT-OSS 20B High-Speed (Groq)";
+    modelDisplayName = "GPT-OSS 20B (High-Speed Execution)";
+  } else if (modelId === "qwen-27b" || modelId === "kimi") {
+    groqModel = "qwen/qwen3.8-27b";
+    modelDisplayName = "Qwen 3.8 27B (Market & Macro)";
+  } else {
+    groqModel = "openai/gpt-oss-120b";
+    modelDisplayName = "GPT-OSS 120B (Deep Reasoning)";
   }
 
   // Generate 7-day sparkline prices
@@ -223,23 +223,29 @@ export async function executeOpenClawChat(
     label: `SOL 7-DAY (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h.toFixed(1)}%)`,
   };
 
+  const walletContextStr = portfolio?.isLiveWallet
+    ? `Live Connected Solana Wallet (${portfolio.walletAddress ? `${portfolio.walletAddress.slice(0, 4)}..${portfolio.walletAddress.slice(-4)}` : "Active"}): ${solBalance.toFixed(4)} SOL ($${solVal.toFixed(2)}), ${usdcBalance} USDC`
+    : `Simulated Demo Portfolio: ${solBalance} SOL ($${solVal.toFixed(0)}), ${btcBalance} BTC ($${btcVal.toFixed(0)}), ${usdcBalance} USDC ($${usdcVal.toFixed(0)})`;
+
   // Try live Groq API inference
   const apiKey = resolveGroqApiKey();
   if (apiKey) {
     try {
-      const systemPrompt = `You are a high-level autonomous financial AI advisor.
-Current real-time market data:
+      const systemPrompt = `You are StreetSync AI Copilot, an autonomous, institutional-grade financial and crypto trading intelligence assistant on the StreetSync platform, running on high-speed Groq Cloud open-source inference models (${modelDisplayName}).
+
+Live Real-Time Market Prices:
 - SOL: $${solPrice} (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h}% 24h)
 - BTC: $${btcPrice} (${prices.BTC.change24h >= 0 ? "+" : ""}${prices.BTC.change24h}% 24h)
 - ETH: $${ethPrice} (${prices.ETH.change24h >= 0 ? "+" : ""}${prices.ETH.change24h}% 24h)
 
-User current portfolio:
-- ${solBalance} SOL = $${solVal.toFixed(0)} (${solWeightPct.toFixed(1)}% of portfolio)
-- ${btcBalance} BTC = $${btcVal.toFixed(0)} (${btcWeightPct.toFixed(1)}% of portfolio)
-- ${usdcBalance} USDC = $${usdcVal.toFixed(0)} (${usdcWeightPct.toFixed(1)}% of portfolio)
-- Total Capital: $${totalPortfolioVal.toFixed(0)}
+User Portfolio Context:
+- ${walletContextStr}
+- Total Portfolio Value: $${totalPortfolioVal.toFixed(2)}
 
-Provide a sharp, authoritative, and structured market analysis in 2-3 concise paragraphs. Address their question directly. End with a 1-sentence actionable move.`;
+Instructions:
+1. If the user asks about your name, identity, who you are, or greets you: Introduce yourself warmly and concisely as "StreetSync AI Copilot" running on ${modelDisplayName}. Briefly state that you provide real-time market insights, portfolio auditing, risk guardrails, and Jupiter DEX execution analysis. Do NOT output an unsolicited, repetitive market recap when simply asked your name or greeted.
+2. If the user asks a question about crypto, prices, strategy, risk, or portfolio: Provide a sharp, structured, data-grounded financial analysis directly addressing their query. Reference real-time spot prices and the user's portfolio context where relevant. Conclude with a clear, concise actionable takeaway.
+3. Keep the tone professional, objective, and institutional.`;
 
       const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
@@ -286,10 +292,12 @@ Provide a sharp, authoritative, and structured market analysis in 2-3 concise pa
 
   // Resilient contextual analysis if offline or network unavailable
   let contextualAnalysis = "";
-  if (lowerMsg.includes("btc") || lowerMsg.includes("bitcoin")) {
+  if (/^(hi|hello|hey|who are you|what is your name|your name|what's your name|who made you|help|introduce yourself)\b/i.test(lowerMsg.trim())) {
+    contextualAnalysis = `I am **StreetSync AI Copilot**, your autonomous financial and crypto trading intelligence assistant powered by **${modelDisplayName}** on Groq Cloud.\n\nI monitor live on-chain market feeds (SOL, BTC, ETH), audit your connected wallet allocations, evaluate concentration risk, and structure 1-click execution moves for Jupiter DEX.\n\nHow can I help you analyze the market or your portfolio today?`;
+  } else if (lowerMsg.includes("btc") || lowerMsg.includes("bitcoin")) {
     contextualAnalysis = `**Current BTC Price**: Bitcoin is trading at **$${btcPrice.toLocaleString()}** today (${prices.BTC.change24h >= 0 ? "+" : ""}${prices.BTC.change24h}% over the past 24 hours).\n\n**Market Snapshot**: BTC continues to anchor macroeconomic liquidity with key resistance near $85,000 and dynamic support around the 50-day moving average. Institutional flows remain net positive across primary ETFs, buffering broader crypto volatility.\n\n**Portfolio Implications**: Your current holding of **${btcBalance} BTC** accounts for **$${btcVal.toLocaleString()}** (${btcWeightPct.toFixed(0)}% of your capital). At current price levels, maintaining core exposure while accumulating on pullbacks is favorable.\n\n**Actionable Move**: Maintain current position and set a DCA buy tranche if BTC tests immediate support below $${(btcPrice * 0.97).toFixed(0)}.`;
   } else if (lowerMsg.includes("sol") || lowerMsg.includes("solana")) {
-    contextualAnalysis = `**Current SOL Price**: Solana is trading at **$${solPrice.toFixed(2)}** (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h}% over 24h).\n\n**Market Snapshot**: Solana on-chain volume and DEX velocity on Jupiter remain elevated. Short-term momentum indicates consolidation within the $${(solPrice * 0.95).toFixed(0)}–$${(solPrice * 1.08).toFixed(0)} band.\n\n**Portfolio Implications**: Your allocation contains **${solBalance} SOL** ($${solVal.toFixed(0)}, ${solWeightPct.toFixed(0)}% of portfolio). Risk concentration is relatively high.\n\n**Actionable Move**: Consider trimming 15-20% into USDC yield to de-risk concentration while holding the core thesis.`;
+    contextualAnalysis = `**Current SOL Price**: Solana is trading at **$${solPrice.toFixed(2)}** (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h}% over 24h).\n\n**Market Snapshot**: Solana on-chain volume and DEX velocity on Jupiter remain elevated. Short-term momentum indicates consolidation within the $${(solPrice * 0.95).toFixed(0)}–$${(solPrice * 1.08).toFixed(0)} band.\n\n**Portfolio Implications**: Your allocation contains **${solBalance.toFixed(2)} SOL** ($${solVal.toFixed(0)}, ${solWeightPct.toFixed(0)}% of portfolio). Risk concentration is relatively high.\n\n**Actionable Move**: Consider trimming 15-20% into USDC yield to de-risk concentration while holding the core thesis.`;
   } else {
     contextualAnalysis = `**Live Market Overview**: SOL is at **$${solPrice.toFixed(2)}** (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h}%), BTC is at **$${btcPrice.toLocaleString()}** (${prices.BTC.change24h >= 0 ? "+" : ""}${prices.BTC.change24h}%), and ETH is at **$${ethPrice.toLocaleString()}**.\n\n**Portfolio Snapshot**: Your total portfolio value is **$${totalPortfolioVal.toLocaleString()}** consisting of ${solWeightPct.toFixed(0)}% SOL, ${btcWeightPct.toFixed(0)}% BTC, and ${usdcWeightPct.toFixed(0)}% USDC.\n\n**Actionable Move**: Portfolio risk profile is balanced. Review trailing limit bounds and maintain dry powder in USDC.`;
   }

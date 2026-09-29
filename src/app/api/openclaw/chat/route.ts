@@ -73,21 +73,21 @@ export async function POST(req: NextRequest) {
     const usdcWeightPct = (usdcVal / totalPortfolioVal) * 100;
 
     // Read Groq API Key
-    const groqKey = process.env.GROQ_API_KEY;
+    const groqKey = process.env.GROQ_API_KEY || process.env.NEXT_PUBLIC_GROQ_API_KEY;
 
     // Map UI selection to active Groq inference models
     let groqModel = "openai/gpt-oss-120b";
-    let modelDisplayName = "GPT-OSS 120B (Groq Cloud)";
+    let modelDisplayName = "GPT-OSS 120B (Deep Reasoning)";
 
-    if (modelId === "deepseek") {
-      groqModel = "openai/gpt-oss-120b";
-      modelDisplayName = "GPT-OSS 120B Deep Reasoning (Groq)";
-    } else if (modelId === "kimi") {
-      groqModel = "qwen/qwen3.8-27b";
-      modelDisplayName = "Qwen 3.8 27B Macro (Groq)";
-    } else {
+    if (modelId === "gpt-oss-20b" || modelId === "openai" || modelId === "groq") {
       groqModel = "openai/gpt-oss-20b";
-      modelDisplayName = "GPT-OSS 20B High-Speed (Groq)";
+      modelDisplayName = "GPT-OSS 20B (High-Speed Execution)";
+    } else if (modelId === "qwen-27b" || modelId === "kimi") {
+      groqModel = "qwen/qwen3.8-27b";
+      modelDisplayName = "Qwen 3.8 27B (Market & Macro)";
+    } else {
+      groqModel = "openai/gpt-oss-120b";
+      modelDisplayName = "GPT-OSS 120B (Deep Reasoning)";
     }
 
     // Sparkline array (7 points ending at live price)
@@ -103,22 +103,28 @@ export async function POST(req: NextRequest) {
       Number(solPrice.toFixed(1)),
     ];
 
+    const walletContextStr = portfolio?.isLiveWallet
+      ? `Live Connected Solana Wallet (${portfolio.walletAddress ? `${portfolio.walletAddress.slice(0, 4)}..${portfolio.walletAddress.slice(-4)}` : "Active"}): ${solBalance.toFixed(4)} SOL ($${solVal.toFixed(2)}), ${usdcBalance} USDC`
+      : `Simulated Demo Portfolio: ${solBalance} SOL ($${solVal.toFixed(0)}), ${btcBalance} BTC ($${btcVal.toFixed(0)}), ${usdcBalance} USDC ($${usdcVal.toFixed(0)})`;
+
     // If Groq Key is available, make the live LLM API call
     if (groqKey) {
       try {
-        const systemPrompt = `You are a high-level autonomous financial AI advisor.
-Current real-time market data:
+        const systemPrompt = `You are StreetSync AI Copilot, an autonomous, institutional-grade financial and crypto trading intelligence assistant on the StreetSync platform, running on high-speed Groq Cloud open-source inference models (${modelDisplayName}).
+
+Live Real-Time Market Prices:
 - SOL: $${solPrice} (${prices.SOL.change24h >= 0 ? "+" : ""}${prices.SOL.change24h}% 24h)
 - BTC: $${btcPrice} (${prices.BTC.change24h >= 0 ? "+" : ""}${prices.BTC.change24h}% 24h)
 - ETH: $${ethPrice} (${prices.ETH.change24h >= 0 ? "+" : ""}${prices.ETH.change24h}% 24h)
 
-User current portfolio:
-- ${solBalance} SOL = $${solVal.toFixed(0)} (${solWeightPct.toFixed(1)}% of portfolio)
-- ${btcBalance} BTC = $${btcVal.toFixed(0)} (${btcWeightPct.toFixed(1)}% of portfolio)
-- ${usdcBalance} USDC = $${usdcVal.toFixed(0)} (${usdcWeightPct.toFixed(1)}% of portfolio)
-- Total Capital: $${totalPortfolioVal.toFixed(0)}
+User Portfolio Context:
+- ${walletContextStr}
+- Total Portfolio Value: $${totalPortfolioVal.toFixed(2)}
 
-Provide a sharp, authoritative, and structured market analysis in 2-3 concise paragraphs. Address their question directly. End with a 1-sentence actionable move.`;
+Instructions:
+1. If the user asks about your name, identity, who you are, or greets you: Introduce yourself warmly and concisely as "StreetSync AI Copilot" running on ${modelDisplayName}. Briefly state that you provide real-time market insights, portfolio auditing, risk guardrails, and Jupiter DEX execution analysis. Do NOT output an unsolicited, repetitive market recap when simply asked your name or greeted.
+2. If the user asks a question about crypto, prices, strategy, risk, or portfolio: Provide a sharp, structured, data-grounded financial analysis directly addressing their query. Reference real-time spot prices and the user's portfolio context where relevant. Conclude with a clear, concise actionable takeaway.
+3. Keep the tone professional, objective, and institutional.`;
 
         const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
           method: "POST",

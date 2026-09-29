@@ -16,9 +16,11 @@ import { AllocationDoughnut, DoughnutItem } from "./AllocationDoughnut";
 import { ActionCard } from "./ActionCard";
 import toast from "react-hot-toast";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
-import { OpenClawChatResponse } from "@/lib/openclaw/types";
+import { OpenClawChatResponse, SupportedModelId } from "@/lib/openclaw/types";
 import { getOpenClawConfig } from "@/lib/openclaw/skillsStore";
 import { executeOpenClawChat } from "@/lib/openclaw/clientChat";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 
 // ==========================================
 // CUSTOM CHAT MESSAGE TYPE
@@ -46,22 +48,31 @@ interface Message {
 
 export function MarketDataPro() {
   const { hasAccess, openSubscriptionModal, loading: subLoading } = useSubscription();
+  const { connection } = useConnection();
+  const { publicKey, connected } = useWallet();
+
   const [isMounted, setIsMounted] = useState(false);
   const [activeView, setActiveView] = useState<"Advisor" | "Portfolio">("Advisor");
   const [previewState, setPreviewState] = useState<"StateA" | "StateB">("StateB");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [chatInput, setChatInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<"deepseek" | "kimi" | "openai" | "groq">("deepseek");
+  const [selectedModel, setSelectedModel] = useState<SupportedModelId>("gpt-oss-120b");
   const chatBottomRef = useRef<HTMLDivElement>(null);
+
+  // Active Portfolio vs Demo Sandbox Mode
+  const [portfolioMode, setPortfolioMode] = useState<"live" | "demo">("demo");
+  const [liveSolBalance, setLiveSolBalance] = useState<number | null>(null);
+  const [liveUsdcBalance, setLiveUsdcBalance] = useState<number>(0);
+  const [isFetchingBalance, setIsFetchingBalance] = useState(false);
 
   // Custom subscription status overwrite for simulated demo purposes
   const [simulatedSubscribe, setSimulatedSubscribe] = useState(false);
 
-  // User balance details
+  // User simulated balance details (Demo Sandbox)
   const [solBalance, setSolBalance] = useState(12.0);
   const [btcBalance, setBtcBalance] = useState(0.3);
-  const [usdcBalance, setUsdcBalance] = useState(0);
+  const [usdcBalance, setUsdcBalance] = useState(2500);
 
   // Standard Mock Tokens
   const TOKENS: Record<string, TokenData> = {
@@ -89,6 +100,38 @@ export function MarketDataPro() {
     chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const fetchLiveBalances = async () => {
+    if (!publicKey || !connection) return;
+    try {
+      setIsFetchingBalance(true);
+      const lamports = await connection.getBalance(publicKey);
+      const sol = lamports / LAMPORTS_PER_SOL;
+      setLiveSolBalance(sol);
+
+      // Query SPL token accounts for USDC
+      try {
+        const tokenProgram = new PublicKey("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+        const tokenAccounts = await connection.getParsedTokenAccountsByOwner(publicKey, { programId: tokenProgram });
+        let usdc = 0;
+        tokenAccounts.value.forEach(({ account }) => {
+          const info = account?.data?.parsed?.info;
+          const mint = info?.mint;
+          const uiAmount = info?.tokenAmount?.uiAmount || 0;
+          if (mint === "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v" || mint === "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU") {
+            usdc += uiAmount;
+          }
+        });
+        setLiveUsdcBalance(usdc);
+      } catch {
+        // Non-blocking SPL query
+      }
+    } catch (e) {
+      console.warn("Live balance fetch error:", e);
+    } finally {
+      setIsFetchingBalance(false);
+    }
+  };
+
   useEffect(() => {
     setIsMounted(true);
     const cfg = getOpenClawConfig();
@@ -97,6 +140,15 @@ export function MarketDataPro() {
     }
     handleSwitchState("StateB");
   }, []);
+
+  useEffect(() => {
+    if (connected && publicKey) {
+      fetchLiveBalances();
+      setPortfolioMode("live");
+    } else {
+      setPortfolioMode("demo");
+    }
+  }, [connected, publicKey]);
 
   useEffect(() => {
     scrollToBottom();
@@ -127,6 +179,18 @@ export function MarketDataPro() {
     setChatInput("");
     setIsTyping(true);
 
+    const activeSol = portfolioMode === "live" && liveSolBalance !== null ? liveSolBalance : solBalance;
+    const activeBtc = portfolioMode === "live" ? 0 : btcBalance;
+    const activeUsdc = portfolioMode === "live" ? liveUsdcBalance : (usdcBalance || 2500);
+
+    const portfolioPayload = {
+      sol: activeSol,
+      btc: activeBtc,
+      usdc: activeUsdc,
+      isLiveWallet: portfolioMode === "live",
+      walletAddress: publicKey?.toBase58()
+    };
+
     try {
       let data: OpenClawChatResponse | null = null;
 
@@ -138,7 +202,7 @@ export function MarketDataPro() {
           body: JSON.stringify({
             message: rawText,
             modelId: selectedModel,
-            portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+            portfolio: portfolioPayload
           })
         });
 
@@ -154,7 +218,7 @@ export function MarketDataPro() {
         data = await executeOpenClawChat({
           message: rawText,
           modelId: selectedModel,
-          portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+          portfolio: portfolioPayload
         });
       }
 
@@ -176,7 +240,7 @@ export function MarketDataPro() {
         const fallback = await executeOpenClawChat({
           message: rawText,
           modelId: selectedModel,
-          portfolio: { sol: solBalance, btc: btcBalance, usdc: usdcBalance || 2500 }
+          portfolio: portfolioPayload
         });
         setMessages(prev => [
           ...prev,
@@ -257,14 +321,22 @@ export function MarketDataPro() {
     }
   };
 
-  // Mock portfolio assets details
-  const PORTFOLIO_DATA = [
-    { ...TOKENS.SOL, balance: solBalance, value: solBalance * TOKENS.SOL.price, sparkline: [120, 124, 128, 132, 135, 140, 142.5], isBullish: true },
-    { ...TOKENS.BTC, balance: btcBalance, value: btcBalance * TOKENS.BTC.price, sparkline: [62100, 63400, 62800, 64200, 63900, 64800, 64500], isBullish: true },
-    { ...TOKENS.ETH, balance: 0.8, value: 0.8 * TOKENS.ETH.price, sparkline: [3350, 3290, 3240, 3180, 3250, 3220, 3200], isBullish: false },
-    { ...TOKENS.JUP, balance: 350.0, value: 350.0 * TOKENS.JUP.price, sparkline: [1.05, 1.02, 0.98, 0.99, 1.01, 0.97, 0.95], isBullish: false },
-    { ...TOKENS.USDC, balance: usdcBalance || 2500, value: (usdcBalance || 2500) * TOKENS.USDC.price, sparkline: [1, 1, 1, 1, 1, 1, 1], isBullish: true }
-  ];
+  // Active vs Simulated Portfolio details
+  const activeSol = portfolioMode === "live" && liveSolBalance !== null ? liveSolBalance : solBalance;
+  const activeUsdc = portfolioMode === "live" ? liveUsdcBalance : (usdcBalance || 2500);
+
+  const PORTFOLIO_DATA = portfolioMode === "live"
+    ? [
+        { ...TOKENS.SOL, balance: activeSol, value: activeSol * TOKENS.SOL.price, sparkline: [120, 124, 128, 132, 135, 140, 142.5], isBullish: true },
+        ...(activeUsdc > 0 ? [{ ...TOKENS.USDC, balance: activeUsdc, value: activeUsdc * TOKENS.USDC.price, sparkline: [1, 1, 1, 1, 1, 1, 1], isBullish: true }] : [])
+      ]
+    : [
+        { ...TOKENS.SOL, balance: solBalance, value: solBalance * TOKENS.SOL.price, sparkline: [120, 124, 128, 132, 135, 140, 142.5], isBullish: true },
+        { ...TOKENS.BTC, balance: btcBalance, value: btcBalance * TOKENS.BTC.price, sparkline: [62100, 63400, 62800, 64200, 63900, 64800, 64500], isBullish: true },
+        { ...TOKENS.ETH, balance: 0.8, value: 0.8 * TOKENS.ETH.price, sparkline: [3350, 3290, 3240, 3180, 3250, 3220, 3200], isBullish: false },
+        { ...TOKENS.JUP, balance: 350.0, value: 350.0 * TOKENS.JUP.price, sparkline: [1.05, 1.02, 0.98, 0.99, 1.01, 0.97, 0.95], isBullish: false },
+        { ...TOKENS.USDC, balance: usdcBalance || 2500, value: (usdcBalance || 2500) * TOKENS.USDC.price, sparkline: [1, 1, 1, 1, 1, 1, 1], isBullish: true }
+      ];
 
   const totalPortfolioValue = PORTFOLIO_DATA.reduce((sum, item) => sum + item.value, 0);
 
@@ -480,10 +552,9 @@ export function MarketDataPro() {
                               onChange={(e) => setSelectedModel(e.target.value as any)}
                               className="bg-secondary/80 border border-border/60 rounded px-2.5 py-1 text-[10px] text-foreground font-mono font-bold outline-none cursor-pointer"
                             >
-                              <option value="deepseek">DeepSeek R1</option>
-                              <option value="kimi">Kimi 3</option>
-                              <option value="openai">GPT-4o Mini</option>
-                              <option value="groq">Llama 3.3 (Groq)</option>
+                              <option value="gpt-oss-120b">GPT-OSS 120B (Deep Reasoning)</option>
+                              <option value="gpt-oss-20b">GPT-OSS 20B (High-Speed)</option>
+                              <option value="qwen-27b">Qwen 3.8 27B (Market & Macro)</option>
                             </select>
                             
                             <button
@@ -615,7 +686,22 @@ export function MarketDataPro() {
                   <div className="max-w-2xl mx-auto flex flex-col gap-2 pointer-events-auto">
                     {/* Suggested mini pills and model switcher */}
                     <div className="flex items-center justify-between gap-2 py-1">
-                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
+                      <div className="flex gap-1.5 overflow-x-auto scrollbar-hide items-center">
+                        <button 
+                          onClick={() => setPortfolioMode(portfolioMode === "live" ? "demo" : "live")}
+                          className={`px-2 py-1 text-[9px] font-mono uppercase rounded-lg border transition-all shrink-0 cursor-pointer flex items-center gap-1.5 ${
+                            portfolioMode === "live"
+                              ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/40 font-bold"
+                              : "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                          }`}
+                          title={portfolioMode === "live" ? "Auditing Connected On-Chain Wallet" : "Using Simulated Demo Sandbox"}
+                        >
+                          <span className={`w-1.5 h-1.5 rounded-full ${portfolioMode === "live" ? "bg-emerald-400 animate-pulse" : "bg-amber-400"}`} />
+                          {portfolioMode === "live" 
+                            ? `Live: ${publicKey ? `${publicKey.toBase58().slice(0, 4)}..${publicKey.toBase58().slice(-4)}` : "Wallet"} (${activeSol.toFixed(2)} SOL)` 
+                            : "Demo Sandbox"}
+                        </button>
+
                         <button 
                           onClick={() => handleSendMessage("trim 20-30% SOL")}
                           className="px-2.5 py-1 text-[9px] font-mono uppercase bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg border border-border transition-all shrink-0 cursor-pointer"
@@ -643,10 +729,9 @@ export function MarketDataPro() {
                           onChange={(e) => setSelectedModel(e.target.value as any)}
                           className="bg-card/90 border border-border/60 rounded px-2 py-1 text-[9px] text-foreground font-mono font-bold outline-none cursor-pointer"
                         >
-                          <option value="deepseek">DeepSeek R1</option>
-                          <option value="kimi">Kimi 3</option>
-                          <option value="openai">GPT-4o Mini</option>
-                          <option value="groq">Llama 3.3 (Groq)</option>
+                          <option value="gpt-oss-120b">GPT-OSS 120B</option>
+                          <option value="gpt-oss-20b">GPT-OSS 20B</option>
+                          <option value="qwen-27b">Qwen 3.8 27B</option>
                         </select>
                       </div>
                     </div>
@@ -717,6 +802,66 @@ export function MarketDataPro() {
                         <span className="text-[9px] font-mono text-muted-foreground uppercase block font-black leading-none mb-1">24H Value Shift</span>
                         <span className="text-base font-black text-emerald-500 font-display">+5.85%</span>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Live Wallet Sync & Mode Control Bar */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-card/90 border border-border/80 rounded-2xl shadow-sm">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-3.5 h-3.5 rounded-full ${portfolioMode === "live" ? "bg-emerald-500 animate-pulse shadow-sm shadow-emerald-500/50" : "bg-amber-500"}`} />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs uppercase font-mono tracking-wider text-foreground">
+                            {portfolioMode === "live" ? "Live On-Chain Solana Wallet" : "Simulated Demo Sandbox"}
+                          </span>
+                          {connected && publicKey && portfolioMode === "live" && (
+                            <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded font-bold">
+                              {publicKey.toBase58().slice(0, 4)}...{publicKey.toBase58().slice(-4)}
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-muted-foreground font-sans mt-0.5">
+                          {portfolioMode === "live"
+                            ? `Auditing active on-chain balances: ${activeSol.toFixed(5)} SOL ${activeUsdc > 0 ? `+ ${activeUsdc.toFixed(2)} USDC` : ""}`
+                            : "Simulated scenario for risk modeling, rebalancing analysis, and testing."}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      {connected ? (
+                        <button
+                          onClick={() => setPortfolioMode(portfolioMode === "live" ? "demo" : "live")}
+                          className={`px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-lg border transition-all cursor-pointer ${
+                            portfolioMode === "live"
+                              ? "bg-secondary/80 border-border hover:bg-secondary text-muted-foreground hover:text-foreground"
+                              : "bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30"
+                          }`}
+                        >
+                          Switch to {portfolioMode === "live" ? "Demo Sandbox" : "Live Wallet"}
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => toast("Connect your Solana wallet in the top right to audit live assets!", { icon: "🔌" })}
+                          className="px-3 py-1.5 text-xs font-mono font-bold uppercase rounded-lg border border-border bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                        >
+                          Connect Wallet
+                        </button>
+                      )}
+
+                      {portfolioMode === "live" && connected && (
+                        <button
+                          onClick={() => {
+                            fetchLiveBalances();
+                            toast.success("Refreshed on-chain wallet balances");
+                          }}
+                          disabled={isFetchingBalance}
+                          className="p-2 rounded-lg border border-border bg-secondary/80 hover:bg-secondary text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                          title="Refresh on-chain balance"
+                        >
+                          <RefreshCw className={`w-3.5 h-3.5 ${isFetchingBalance ? "animate-spin" : ""}`} />
+                        </button>
+                      )}
                     </div>
                   </div>
 
