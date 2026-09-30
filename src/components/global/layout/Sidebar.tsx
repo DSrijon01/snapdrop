@@ -14,7 +14,7 @@ const NAV_ITEMS = [
   { label: "SS Scan", href: "/ss-scan", moduleId: "ss-scan", icon: Search },
   { label: "E-plays", href: "/e-plays", moduleId: "e-plays", icon: Zap },
   { label: "SS AI", href: "/openclaw", moduleId: "openclaw", icon: Bot },
-  { label: "SNBL", href: "/snbl", moduleId: "snbl", icon: PiggyBank },
+  { label: "SS Staking", href: "/snbl", moduleId: "snbl", icon: PiggyBank },
   { label: "Sessions", href: "/sessions", moduleId: "sessions", icon: Activity },
 ];
 

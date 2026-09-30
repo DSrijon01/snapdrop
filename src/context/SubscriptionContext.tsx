@@ -82,7 +82,7 @@ export const MODULE_NAMES: Record<string, string> = {
   "market-news": "Market News",
   "ss-scan": "SS Scan",
   "openclaw": "SS AI Terminal",
-  "snbl": "SNBL Staking",
+  "snbl": "SS Staking",
   "sessions": "Sessions Board",
 };
 

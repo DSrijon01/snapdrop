@@ -132,7 +132,7 @@ export const TradingTerminal: React.FC = () => {
   };
 
   // Handle execution from AI suggestions
-  const handleExecuteSuggestion = (suggestionSymbol: string, suggestionIsBuy: boolean, suggestionAmount: number) => {
+  const handleExecuteSuggestion = (suggestionIsBuy: boolean, suggestionSymbol: string, suggestionAmount: number) => {
     setActiveSymbol(suggestionSymbol);
     setIsBuy(suggestionIsBuy);
     setAmount(suggestionAmount.toString());

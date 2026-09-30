@@ -3,6 +3,7 @@
 This document maintains a quick-lookup index of recurring issues encountered on Solana Devnet across One-Click Launch, Treasury Custody, Candy Machines, and the NFT Marketplace, along with permanent solutions.
 
 For complete in-depth implementation patterns, architecture diagrams, and checklists, refer to the full [Solana Devnet Runbook](docs/SOLANA_DEVNET_RUNBOOK.md).  
+For build failures, compilation errors, and CI recalibration playbooks, see [Build Failures & Recalibration Guide](BUILD_FAILURES.md).  
 For planned stage pushes (Avatar, Arcade) and pending performance optimizations, see [Future Improvements & Roadmap](docs/FUTURE_IMPROVEMENTS_AND_ROADMAP.md).
 
 ---

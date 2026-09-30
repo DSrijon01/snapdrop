@@ -56,7 +56,7 @@ export function SnblPro() {
           <div>
             <h1 className="text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
               <Zap className="w-7 h-7 text-primary animate-pulse" />
-              SNBL Pro Staking
+              SS Staking Pro
             </h1>
             <p className="text-muted-foreground text-xs uppercase tracking-wider font-mono mt-0.5">
               Premium yield curves & dynamic APR simulators
@@ -93,7 +93,7 @@ export function SnblPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the SNBL Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
+                  Subscribe to the SS Staking Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export function SnblPro() {
                   href="/snbl"
                   className="w-full py-4 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-all rounded-xl font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
                 >
-                  Back to SNBL Staking
+                  Back to SS Staking
                 </Link>
               </div>
             </motion.div>
@@ -143,7 +143,7 @@ export function SnblPro() {
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground">
-                      SNBL Pro Staking Dashboard
+                      SS Staking Pro Dashboard
                     </h2>
                     <p className="text-muted-foreground text-xs md:text-sm mt-1 max-w-xl">
                       Utilize our high-yield simulator tools, claim premium reward boosts, and optimize your validator lockup settings.

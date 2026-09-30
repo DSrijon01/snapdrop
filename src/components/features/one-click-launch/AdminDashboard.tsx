@@ -357,7 +357,7 @@ export const AdminDashboard: FC = () => {
                             : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     }`}
                 >
-                    SNBL Staking
+                    SS Staking
                 </button>
             </div>
 
