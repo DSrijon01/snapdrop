@@ -120,7 +120,7 @@ export function generateSeedTransactions(): TreasuryTransaction[] {
       gasSpentSol: 0.000005,
       rentCostSol: 0,
       counterparty: "3jBv8Yg61kKL9hT7eXp1ZqW5uR2mCv8NpQ4mLaS9dFgH",
-      memo: "Street Sync Pro Tier: 30-Day Pass (SS AI + SS-Scan)",
+      memo: "Street Sync Pro Tier: 30-Day Pass (SS Terminal + SS-Scan)",
       status: "finalized",
       instructions: [
         { program: "System Program", type: "Transfer", details: "0.15 SOL Subscription Payment" },

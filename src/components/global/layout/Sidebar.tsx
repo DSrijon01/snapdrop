@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { LineChart, Newspaper, Zap, Bot, PiggyBank, Activity, Menu, X, Rocket, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { LineChart, Newspaper, Zap, Terminal, PiggyBank, Activity, Menu, X, Rocket, Search, ShieldCheck, Sparkles } from "lucide-react";
 import { UserAvatar } from "@/components/global/layout/UserAvatar";
 import { useSubscription } from "@/context/SubscriptionContext";
 
@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { label: "Market News", href: "/market-news", moduleId: "market-news", icon: Newspaper },
   { label: "SS Scan", href: "/ss-scan", moduleId: "ss-scan", icon: Search },
   { label: "E-plays", href: "/e-plays", moduleId: "e-plays", icon: Zap },
-  { label: "SS AI", href: "/openclaw", moduleId: "openclaw", icon: Bot },
+  { label: "SS Terminal", href: "/openclaw", moduleId: "openclaw", icon: Terminal },
   { label: "SS Staking", href: "/snbl", moduleId: "snbl", icon: PiggyBank },
   { label: "Sessions", href: "/sessions", moduleId: "sessions", icon: Activity },
 ];

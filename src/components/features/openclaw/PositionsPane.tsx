@@ -75,7 +75,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
 
     setIsFunding(true);
     try {
-      engine.addLog(`Initiating transfer of ${amountSol} SOL from your wallet to SS AI Agent Vault...`, "info");
+      engine.addLog(`Initiating transfer of ${amountSol} SOL from your wallet to SS Terminal Agent Vault...`, "info");
       
       const tx = new Transaction().add(
         SystemProgram.transfer({
@@ -237,13 +237,13 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
       {/* Bottom Section: Agent Vault & Network Mode / Nuke Controls */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/30">
         
-        {/* Native SS AI Agent Vault (Solana) */}
+        {/* Native SS Terminal Agent Vault (Solana) */}
         <div className="bg-muted/40 p-3.5 rounded-xl border border-border/40 text-xs space-y-2.5 flex flex-col justify-between">
           <div className="flex justify-between items-center text-[10px] font-mono font-bold text-muted-foreground uppercase border-b border-border/20 pb-2">
             <div className="flex items-center gap-1.5">
               <span className={`w-2 h-2 rounded-full ${onChainSol > 0.005 ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-500'}`} />
               <span className="text-foreground tracking-wider font-extrabold">
-                SS AI Agent Vault (Solana)
+                SS Terminal Agent Vault (Solana)
               </span>
             </div>
 
