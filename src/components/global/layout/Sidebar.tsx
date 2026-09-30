@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   { label: "Market News", href: "/market-news", moduleId: "market-news", icon: Newspaper },
   { label: "SS Scan", href: "/ss-scan", moduleId: "ss-scan", icon: Search },
   { label: "E-plays", href: "/e-plays", moduleId: "e-plays", icon: Zap },
-  { label: "Openclaw T cal", href: "/openclaw", moduleId: "openclaw", icon: Bot },
+  { label: "SS AI", href: "/openclaw", moduleId: "openclaw", icon: Bot },
   { label: "SNBL", href: "/snbl", moduleId: "snbl", icon: PiggyBank },
   { label: "Sessions", href: "/sessions", moduleId: "sessions", icon: Activity },
 ];

@@ -255,9 +255,20 @@ interface AgentControllerProps {
   rules: AgentRule[];
   logs: LogEntry[];
   prices: Record<string, TokenPrice>;
+  viewMode?: "all" | "config" | "tracking";
+  onRuleDeployed?: () => void;
+  onSwitchToConfig?: () => void;
 }
 
-export const AgentController: React.FC<AgentControllerProps> = ({ engine, rules, logs, prices }) => {
+export const AgentController: React.FC<AgentControllerProps> = ({ 
+  engine, 
+  rules, 
+  logs, 
+  prices,
+  viewMode = "all",
+  onRuleDeployed,
+  onSwitchToConfig
+}) => {
   // Selected Model State (DeepSeek, Kimi3, Claude, GPT 5.6)
   const [selectedModelId, setSelectedModelId] = useState<"DeepSeek" | "Kimi3" | "Claude" | "GPT 5.6">("DeepSeek");
   
@@ -310,346 +321,365 @@ export const AgentController: React.FC<AgentControllerProps> = ({ engine, rules,
     });
 
     engine.addLog(`[${selectedModel.name}] Active rule configured using ${selectedStrategy.name} strategy for ${symbol}.`, "success");
+    if (onRuleDeployed) {
+      onRuleDeployed();
+    }
   };
 
   const isEngineRunning = engine.isRunning();
 
-  return (
-    <div className="space-y-6">
-      
-      {/* -------------------------------------------------------------
-          TOP BAR: AI MODEL SELECTION PILLS (Tradermap Reference UI)
-          ------------------------------------------------------------- */}
-      <div className="bg-card/60 backdrop-blur-md border border-border rounded-2xl p-4 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        
-        {/* Model Picker Pills */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="flex items-center gap-2 mr-2">
-            <Cpu className="w-4 h-4 text-primary animate-pulse" />
-            <span className="text-xs font-mono font-black uppercase tracking-wider text-muted-foreground">Select AI Model:</span>
-          </div>
-
-          {AI_MODELS.map((model) => {
-            const isSelected = selectedModelId === model.id;
-            return (
-              <button
-                key={model.id}
-                onClick={() => setSelectedModelId(model.id)}
-                className={`relative px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer border ${
-                  isSelected
-                    ? `${model.borderColor} bg-card text-foreground shadow-md ring-1 ring-primary/40`
-                    : "bg-secondary/40 border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
-                }`}
-              >
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: model.color }} />
-                <span>{model.name}</span>
-                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${
-                  isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
-                }`}>
-                  {model.badge}
-                </span>
-                {isSelected && <Check className="w-3.5 h-3.5 text-primary ml-1" />}
-              </button>
-            );
-          })}
+  // 1. TOP BAR: AI MODEL SELECTION PILLS (Tradermap Reference UI)
+  const renderModelPickerBar = () => (
+    <div className="bg-card/60 backdrop-blur-md border border-border rounded-2xl p-4 shadow-lg flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {/* Model Picker Pills */}
+      <div className="flex flex-wrap items-center gap-2.5">
+        <div className="flex items-center gap-2 mr-2">
+          <Cpu className="w-4 h-4 text-primary animate-pulse" />
+          <span className="text-xs font-mono font-black uppercase tracking-wider text-muted-foreground">Select AI Model:</span>
         </div>
 
-        {/* Selected Model Performance Snippet */}
-        <div className="flex items-center gap-4 bg-muted/40 border border-border/60 px-4 py-2 rounded-xl w-full md:w-auto justify-between md:justify-end">
-          <div>
-            <div className="text-[9px] font-mono uppercase text-muted-foreground font-black">Active Win Rate</div>
-            <div className="text-xs font-black font-mono text-green-400">{selectedModel.winRate}%</div>
-          </div>
-          <div className="h-6 w-px bg-border/60" />
-          <div>
-            <div className="text-[9px] font-mono uppercase text-muted-foreground font-black">30D Return</div>
-            <div className="text-xs font-black font-mono text-primary">{selectedModel.pnl}</div>
-          </div>
-          <div className="h-6 w-px bg-border/60" />
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-            <span className="text-[10px] font-mono font-black uppercase text-green-400">{selectedModel.status}</span>
-          </div>
-        </div>
+        {AI_MODELS.map((model) => {
+          const isSelected = selectedModelId === model.id;
+          return (
+            <button
+              key={model.id}
+              onClick={() => setSelectedModelId(model.id)}
+              className={`relative px-4 py-2 rounded-xl text-xs font-bold font-mono transition-all flex items-center gap-2 cursor-pointer border ${
+                isSelected
+                  ? `${model.borderColor} bg-card text-foreground shadow-md ring-1 ring-primary/40`
+                  : "bg-secondary/40 border-border text-muted-foreground hover:text-foreground hover:bg-secondary"
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: model.color }} />
+              <span>{model.name}</span>
+              <span className={`text-[9px] px-1.5 py-0.5 rounded font-black uppercase ${
+                isSelected ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
+              }`}>
+                {model.badge}
+              </span>
+              {isSelected && <Check className="w-3.5 h-3.5 text-primary ml-1" />}
+            </button>
+          );
+        })}
       </div>
 
-      {/* -------------------------------------------------------------
-          MAIN PANES GRID
-          ------------------------------------------------------------- */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Pane A: MODEL SELECTION & TRADING STRATEGY CONFIGURATION */}
-        <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between shadow-lg">
-          <div>
-            
-            {/* Header with Run / Stop Engine Controls */}
-            <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
-              <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-foreground">
-                <Sparkles className="w-5 h-5 text-primary" />
-                Model Selection & Strategy Setup
-              </h3>
-              
-              {/* Engine Toggle */}
-              <button
-                onClick={() => isEngineRunning ? engine.stop() : engine.start()}
-                className={`px-4 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 border cursor-pointer ${
-                  isEngineRunning
-                    ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
-                    : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
-                }`}
-              >
-                {isEngineRunning ? (
-                  <><Square className="w-3 h-3 fill-current" /> Stop Engine</>
-                ) : (
-                  <><Play className="w-3 h-3 fill-current" /> Run Engine</>
-                )}
-              </button>
-            </div>
+      {/* Selected Model Performance Snippet */}
+      <div className="flex items-center gap-4 bg-muted/40 border border-border/60 px-4 py-2 rounded-xl w-full md:w-auto justify-between md:justify-end">
+        <div>
+          <div className="text-[9px] font-mono uppercase text-muted-foreground font-black">Active Win Rate</div>
+          <div className="text-xs font-black font-mono text-green-400">{selectedModel.winRate}%</div>
+        </div>
+        <div className="h-6 w-px bg-border/60" />
+        <div>
+          <div className="text-[9px] font-mono uppercase text-muted-foreground font-black">30D Return</div>
+          <div className="text-xs font-black font-mono text-primary">{selectedModel.pnl}</div>
+        </div>
+        <div className="h-6 w-px bg-border/60" />
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+          <span className="text-[10px] font-mono font-black uppercase text-green-400">{selectedModel.status}</span>
+        </div>
+      </div>
+    </div>
+  );
 
-            {/* Selected Model Header Card */}
-            <div className={`p-4 rounded-xl border ${selectedModel.borderColor} bg-gradient-to-r ${selectedModel.bgGradient} mb-5 flex items-center justify-between`}>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedModel.color }} />
-                  <span className="font-bold font-display text-sm uppercase tracking-wide text-foreground">{selectedModel.name}</span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-background/60 border border-border font-bold text-muted-foreground">
-                    {selectedModel.version}
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground font-mono">{selectedModel.tagline}</p>
-              </div>
-              <div className="text-right shrink-0">
-                <span className="text-[10px] font-mono text-muted-foreground uppercase font-black block">Engine</span>
-                <span className="text-xs font-bold font-mono text-foreground">{selectedModel.provider}</span>
-              </div>
-            </div>
-
-            {/* 1. TRADING STRATEGY SELECTOR (Requirement 2 & Image 2) */}
-            <div className="space-y-4">
-              
-              <div className="flex flex-col gap-1.5">
-                <label className="text-[10px] uppercase font-bold text-muted-foreground font-mono flex items-center justify-between">
-                  <span>Select Trading Strategy (15 Strategies)</span>
-                  <span className="text-primary">{selectedStrategy.category}</span>
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedStrategyId}
-                    onChange={(e) => handleStrategyChange(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl p-3 pr-10 outline-none focus:border-primary font-mono text-xs font-bold text-foreground appearance-none cursor-pointer"
-                  >
-                    {TRADING_STRATEGIES.map((strat) => (
-                      <option key={strat.id} value={strat.id}>
-                        {strat.name} — [{strat.category}]
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* 2. HOW IT WORKS CARD (Requirement 2 - Explain Strategy Mechanics) */}
-              <div className="p-4 bg-muted/30 border border-border/70 rounded-xl space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold font-display uppercase tracking-wide text-primary">
-                  <Info className="w-4 h-4 shrink-0" />
-                  <span>How It Works: {selectedStrategy.name}</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
-                  {selectedStrategy.howItWorks}
-                </p>
-              </div>
-
-              {/* 3. TARGET TOKEN & PARAMETERS */}
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Target Token</label>
-                  <select
-                    value={symbol}
-                    onChange={(e) => setSymbol(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary font-mono text-xs font-bold"
-                  >
-                    {Object.keys(prices).filter(s => s !== "USDC").map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Buy Trigger (-%)</label>
-                  <input
-                    type="number"
-                    value={buyTriggerPct}
-                    onChange={(e) => setBuyTriggerPct(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Sell Trigger (+%)</label>
-                  <input
-                    type="number"
-                    value={sellTriggerPct}
-                    onChange={(e) => setSellTriggerPct(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
-                  />
-                </div>
-
-                <div className="flex flex-col gap-1">
-                  <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Order Size</label>
-                  <input
-                    type="number"
-                    value={tradeAmount}
-                    onChange={(e) => setTradeAmount(e.target.value)}
-                    className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
-                  />
-                </div>
-              </div>
-
-            </div>
-          </div>
-
+  // 2. STRATEGY CONFIGURATION PANE
+  const renderStrategyConfig = () => (
+    <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between shadow-lg h-full">
+      <div>
+        {/* Header with Run / Stop Engine Controls */}
+        <div className="flex items-center justify-between mb-5 pb-3 border-b border-border">
+          <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-foreground">
+            <Sparkles className="w-5 h-5 text-primary" />
+            Model Selection & Strategy Setup
+          </h3>
+          
+          {/* Engine Toggle */}
           <button
-            onClick={handleAddRule}
-            className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-lg hover:shadow-primary/25 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer font-display"
+            onClick={() => isEngineRunning ? engine.stop() : engine.start()}
+            className={`px-4 py-1.5 rounded-full font-mono text-[10px] font-bold uppercase transition-all flex items-center gap-1.5 border cursor-pointer ${
+              isEngineRunning
+                ? 'bg-red-500/10 text-red-400 border-red-500/20 hover:bg-red-500/20'
+                : 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
+            }`}
           >
-            <Plus className="w-4 h-4" />
-            Deploy Agent Rule ({selectedModel.name} | {selectedStrategy.name})
+            {isEngineRunning ? (
+              <><Square className="w-3 h-3 fill-current" /> Stop Engine</>
+            ) : (
+              <><Play className="w-3 h-3 fill-current" /> Run Engine</>
+            )}
           </button>
         </div>
 
-        {/* Pane B: LIVE RULES & AI EXECUTION FEED */}
-        <div className="grid grid-rows-2 gap-4 h-full">
-          
-          {/* Sub-Pane 1: Active Rules (Showing AI Model & Trading Strategy in Action) */}
-          <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col h-72 overflow-hidden shadow-lg">
-            <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/30">
-              <span className="text-xs uppercase font-bold text-muted-foreground tracking-widest font-mono flex items-center gap-2">
-                <Zap className="w-3.5 h-3.5 text-primary" />
-                Active Deployed Rules ({rules.length})
+        {/* Selected Model Header Card */}
+        <div className={`p-4 rounded-xl border ${selectedModel.borderColor} bg-gradient-to-r ${selectedModel.bgGradient} mb-5 flex items-center justify-between`}>
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: selectedModel.color }} />
+              <span className="font-bold font-display text-sm uppercase tracking-wide text-foreground">{selectedModel.name}</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-background/60 border border-border font-bold text-muted-foreground">
+                {selectedModel.version}
               </span>
-              <span className="text-[10px] font-mono text-muted-foreground">Model & Strategy Verified</span>
             </div>
-            
-            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1 scrollbar-hide">
-              {rules.map((rule) => {
-                const modelBadge = rule.modelName || rule.model || "DeepSeek 4.5";
-                const stratName = rule.strategyName || rule.type.toUpperCase();
+            <p className="text-xs text-muted-foreground font-mono">{selectedModel.tagline}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <span className="text-[10px] font-mono text-muted-foreground uppercase font-black block">Engine</span>
+            <span className="text-xs font-bold font-mono text-foreground">{selectedModel.provider}</span>
+          </div>
+        </div>
 
-                return (
-                  <div key={rule.id} className="bg-background/80 border border-border/60 p-3.5 rounded-xl space-y-2 transition-colors hover:border-primary/40">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${rule.isActive ? 'bg-green-400 animate-pulse' : 'bg-muted'}`} />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-black uppercase tracking-wider font-mono text-xs text-foreground">
-                              {stratName}
-                            </span>
-                            <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-bold">
-                              {modelBadge}
-                            </span>
-                            <span className="text-[9px] font-mono text-muted-foreground font-bold uppercase">
-                              [{rule.symbol}]
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button 
-                          onClick={() => engine.toggleRule(rule.id)}
-                          className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                          title={rule.isActive ? "Pause Rule" : "Activate Rule"}
-                        >
-                          {rule.isActive ? <ToggleRight className="w-5 h-5 text-primary" /> : <ToggleLeft className="w-5 h-5" />}
-                        </button>
-                        <button 
-                          onClick={() => engine.deleteRule(rule.id)}
-                          className="p-1 hover:bg-red-500/10 hover:text-red-400 text-muted-foreground rounded-lg transition-colors cursor-pointer"
-                          title="Delete Rule"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Strategy How It Works Summary */}
-                    {rule.howItWorks && (
-                      <p className="text-[11px] text-muted-foreground leading-relaxed font-sans font-medium pl-5 border-l-2 border-primary/20">
-                        {rule.howItWorks}
-                      </p>
-                    )}
-
-                    <div className="text-[10px] text-muted-foreground font-mono flex items-center gap-4 pt-1 border-t border-border/20">
-                      <span>Base Price: <strong className="text-foreground">${rule.params.gridBasePrice?.toFixed(2)}</strong></span>
-                      <span>Buy: <strong className="text-green-400">-{rule.params.buyTriggerPct}%</strong></span>
-                      <span>Sell: <strong className="text-red-400">+{rule.params.sellTriggerPct}%</strong></span>
-                      <span>Size: <strong className="text-foreground">{rule.params.tradeAmount} {rule.symbol}</strong></span>
-                    </div>
-                  </div>
-                );
-              })}
-              
-              {rules.length === 0 && (
-                <div className="text-center text-muted-foreground text-xs font-mono py-12 space-y-2">
-                  <p className="font-bold">No active agent rules deployed.</p>
-                  <p className="text-[10px] opacity-70">Select an AI Model (DeepSeek, Kimi3, Claude, GPT 5.6) and Trading Strategy above to deploy rules.</p>
-                </div>
-              )}
+        {/* 1. TRADING STRATEGY SELECTOR */}
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[10px] uppercase font-bold text-muted-foreground font-mono flex items-center justify-between">
+              <span>Select Trading Strategy (15 Strategies)</span>
+              <span className="text-primary">{selectedStrategy.category}</span>
+            </label>
+            <div className="relative">
+              <select
+                value={selectedStrategyId}
+                onChange={(e) => handleStrategyChange(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl p-3 pr-10 outline-none focus:border-primary font-mono text-xs font-bold text-foreground appearance-none cursor-pointer"
+              >
+                {TRADING_STRATEGIES.map((strat) => (
+                  <option key={strat.id} value={strat.id}>
+                    {strat.name} — [{strat.category}]
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             </div>
           </div>
 
-          {/* Sub-Pane 2: AI Execution & Rationale Feed (Tradermap Image 3 Reference) */}
-          <div className="bg-card border border-border rounded-2xl p-5 flex flex-col h-72 overflow-hidden shadow-sm">
-            <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2">
-              <span className="text-xs uppercase font-bold text-foreground tracking-widest font-mono flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
-                {selectedModel.name} AI Rationale & Execution Feed
-              </span>
-              <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">Live Engine</span>
-              </div>
+          {/* 2. HOW IT WORKS CARD */}
+          <div className="p-4 bg-muted/30 border border-border/70 rounded-xl space-y-2">
+            <div className="flex items-center gap-2 text-xs font-bold font-display uppercase tracking-wide text-primary">
+              <Info className="w-4 h-4 shrink-0" />
+              <span>How It Works: {selectedStrategy.name}</span>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed font-sans font-medium">
+              {selectedStrategy.howItWorks}
+            </p>
+          </div>
+
+          {/* 3. TARGET TOKEN & PARAMETERS */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-2">
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Target Token</label>
+              <select
+                value={symbol}
+                onChange={(e) => setSymbol(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary font-mono text-xs font-bold"
+              >
+                {Object.keys(prices).filter(s => s !== "USDC").map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
             </div>
             
-            <div className="flex-1 overflow-y-auto space-y-1.5 pr-1 font-mono text-[11px] leading-relaxed scrollbar-hide">
-              {logs.map((log, i) => (
-                <div key={i} className="flex gap-2 items-start py-1 border-b border-border/20 last:border-0">
-                  <span className="text-muted-foreground select-none shrink-0 font-semibold text-[10px]">[{log.timestamp}]</span>
-                  <span className={`font-medium flex-1 ${
-                    log.type === "success" ? "text-emerald-600 dark:text-emerald-400" :
-                    log.type === "warning" ? "text-amber-600 dark:text-amber-400" :
-                    log.type === "error" ? "text-rose-600 dark:text-rose-400" :
-                    log.type === "trade" ? "text-cyan-600 dark:text-cyan-400 font-bold" :
-                    "text-foreground/90 font-medium"
-                  }`}>
-                    {log.message}
-                    {log.txHash && log.txHash !== "On-Chain Confirmed" && (
-                      <a
-                        href={`https://solscan.io/tx/${log.txHash}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="ml-2 inline-flex items-center gap-1 text-[9px] font-mono text-cyan-600 dark:text-cyan-300 hover:underline font-bold"
-                      >
-                        <span>Solscan</span>
-                        <ExternalLink className="w-2.5 h-2.5" />
-                      </a>
-                    )}
-                  </span>
-                </div>
-              ))}
-              {logs.length === 0 && (
-                <div className="text-center text-muted-foreground py-12 uppercase tracking-wider text-xs">
-                  Feed idle. Deploy an AI model rule to begin autonomous trading loop.
-                </div>
-              )}
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Buy Trigger (-%)</label>
+              <input
+                type="number"
+                value={buyTriggerPct}
+                onChange={(e) => setBuyTriggerPct(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Sell Trigger (+%)</label>
+              <input
+                type="number"
+                value={sellTriggerPct}
+                onChange={(e) => setSellTriggerPct(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="text-[9px] uppercase font-bold text-muted-foreground font-mono">Order Size</label>
+              <input
+                type="number"
+                value={tradeAmount}
+                onChange={(e) => setTradeAmount(e.target.value)}
+                className="w-full bg-background border border-border rounded-xl p-3 outline-none focus:border-primary text-center font-mono text-xs font-bold"
+              />
             </div>
           </div>
 
         </div>
+      </div>
 
+      <button
+        onClick={handleAddRule}
+        className="w-full mt-6 bg-primary text-primary-foreground font-bold py-3.5 rounded-xl hover:bg-primary-hover shadow-lg hover:shadow-primary/25 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider cursor-pointer font-display"
+      >
+        <Plus className="w-4 h-4" />
+        Deploy Agent Rule ({selectedModel.name} | {selectedStrategy.name})
+      </button>
+    </div>
+  );
+
+  // 3. TRACKING PANES (ACTIVE RULES + AI FEED) - Compact & Scrollable
+  const renderTrackingPanes = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      
+      {/* Sub-Pane 1: Active Rules */}
+      <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-4 flex flex-col h-[280px] overflow-hidden shadow-lg">
+        <div className="flex items-center justify-between mb-2.5 pb-2 border-b border-border/30 shrink-0">
+          <span className="text-xs uppercase font-bold text-muted-foreground tracking-widest font-mono flex items-center gap-2">
+            <Zap className="w-3.5 h-3.5 text-primary" />
+            Active Deployed Rules ({rules.length})
+          </span>
+          <span className="text-[10px] font-mono text-muted-foreground">Model & Strategy Verified</span>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-2 pr-1.5 custom-scrollbar min-h-0">
+          {rules.map((rule) => {
+            const modelBadge = rule.modelName || rule.model || "DeepSeek 4.5";
+            const stratName = rule.strategyName || rule.type.toUpperCase();
+
+            return (
+              <div key={rule.id} className="bg-background/80 border border-border/60 p-2.5 rounded-xl space-y-1.5 transition-colors hover:border-primary/40 text-xs">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${rule.isActive ? 'bg-green-400 animate-pulse' : 'bg-muted'}`} />
+                    <span className="font-black uppercase tracking-wider font-mono text-xs text-foreground">
+                      {stratName}
+                    </span>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary font-bold">
+                      {modelBadge}
+                    </span>
+                    <span className="text-[9px] font-mono text-muted-foreground font-bold uppercase">
+                      [{rule.symbol}]
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1">
+                    <button 
+                      onClick={() => engine.toggleRule(rule.id)}
+                      className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      title={rule.isActive ? "Pause Rule" : "Activate Rule"}
+                    >
+                      {rule.isActive ? <ToggleRight className="w-4 h-4 text-primary" /> : <ToggleLeft className="w-4 h-4" />}
+                    </button>
+                    <button 
+                      onClick={() => engine.deleteRule(rule.id)}
+                      className="p-1 hover:bg-red-500/10 hover:text-red-400 text-muted-foreground rounded-lg transition-colors cursor-pointer"
+                      title="Delete Rule"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[10px] text-muted-foreground font-mono flex flex-wrap items-center gap-x-3 gap-y-0.5 pt-1 border-t border-border/20">
+                  <span>Base Price: <strong className="text-foreground">${rule.params.gridBasePrice ? (rule.params.gridBasePrice >= 10 ? rule.params.gridBasePrice.toFixed(2) : rule.params.gridBasePrice.toFixed(4)) : "0.00"}</strong></span>
+                  <span>Buy: <strong className="text-green-400">-{rule.params.buyTriggerPct}%</strong></span>
+                  <span>Sell: <strong className="text-red-400">+{rule.params.sellTriggerPct}%</strong></span>
+                  <span>Size: <strong className="text-foreground">{rule.params.tradeAmount} {rule.symbol}</strong></span>
+                </div>
+              </div>
+            );
+          })}
+          
+          {rules.length === 0 && (
+            <div className="text-center text-muted-foreground text-xs font-mono py-8 space-y-2 my-auto">
+              <p className="font-bold text-foreground">No active agent rules deployed.</p>
+              <p className="text-[10px] opacity-75 max-w-xs mx-auto">
+                Select an AI Model and Trading Strategy to deploy rules.
+              </p>
+              {onSwitchToConfig && (
+                <button
+                  onClick={onSwitchToConfig}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold font-mono uppercase hover:bg-primary-hover transition-all shadow-sm cursor-pointer mt-1"
+                >
+                  <Plus className="w-3 h-3" />
+                  Configure Strategy
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sub-Pane 2: AI Execution & Rationale Feed */}
+      <div className="bg-card border border-border rounded-2xl p-4 flex flex-col h-[280px] overflow-hidden shadow-sm">
+        <div className="flex items-center justify-between border-b border-border/40 pb-2 mb-2 shrink-0">
+          <span className="text-xs uppercase font-bold text-foreground tracking-widest font-mono flex items-center gap-2">
+            <FileText className="w-4 h-4 text-primary" />
+            {selectedModel.name} AI Rationale & Execution Feed
+          </span>
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+            <span className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase">Live Engine</span>
+          </div>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-1.5 pr-1.5 font-mono text-[10px] leading-relaxed custom-scrollbar min-h-0">
+          {logs.map((log, i) => (
+            <div key={i} className="flex gap-2 items-start py-0.5 border-b border-border/15 last:border-0">
+              <span className="text-muted-foreground select-none shrink-0 font-semibold text-[9px]">[{log.timestamp}]</span>
+              <span className={`font-medium flex-1 ${
+                log.type === "success" ? "text-emerald-600 dark:text-emerald-400" :
+                log.type === "warning" ? "text-amber-600 dark:text-amber-400" :
+                log.type === "error" ? "text-rose-600 dark:text-rose-400" :
+                log.type === "trade" ? "text-cyan-600 dark:text-cyan-400 font-bold" :
+                "text-foreground/90 font-medium"
+              }`}>
+                {log.message}
+                {log.txHash && log.txHash !== "On-Chain Confirmed" && (
+                  <a
+                    href={`https://solscan.io/tx/${log.txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 inline-flex items-center gap-1 text-[9px] font-mono text-cyan-600 dark:text-cyan-300 hover:underline font-bold"
+                  >
+                    <span>Solscan</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </span>
+            </div>
+          ))}
+          {logs.length === 0 && (
+            <div className="text-center text-muted-foreground py-8 uppercase tracking-wider text-xs">
+              Feed idle. Deploy an AI model rule to begin autonomous trading loop.
+            </div>
+          )}
+        </div>
       </div>
 
     </div>
   );
+
+  if (viewMode === "config") {
+    return (
+      <div className="space-y-6">
+        {renderModelPickerBar()}
+        {renderStrategyConfig()}
+      </div>
+    );
+  }
+
+  if (viewMode === "tracking") {
+    return (
+      <div className="space-y-6">
+        {renderTrackingPanes()}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {renderModelPickerBar()}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {renderStrategyConfig()}
+        {renderTrackingPanes()}
+      </div>
+    </div>
+  );
 };
+

@@ -75,7 +75,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
 
     setIsFunding(true);
     try {
-      engine.addLog(`Initiating transfer of ${amountSol} SOL from your wallet to OpenClaw Agent Vault...`, "info");
+      engine.addLog(`Initiating transfer of ${amountSol} SOL from your wallet to SS AI Agent Vault...`, "info");
       
       const tx = new Transaction().add(
         SystemProgram.transfer({
@@ -189,11 +189,11 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
   }, 0);
 
   return (
-    <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 flex flex-col justify-between h-full shadow-lg gap-5">
+    <div className="bg-card/45 backdrop-blur-md border border-border rounded-2xl p-5 shadow-lg space-y-4">
       
       {/* Top Section: Balances & Header */}
       <div>
-        <div className="flex items-center justify-between mb-4 border-b border-border pb-3">
+        <div className="flex items-center justify-between mb-3 border-b border-border pb-2.5">
           <h3 className="font-bold font-display uppercase tracking-tight flex items-center gap-2 text-foreground">
             <Wallet className="w-5 h-5 text-primary" />
             Wallet & Positions
@@ -203,35 +203,47 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
           </span>
         </div>
 
-        {/* Tokens List */}
-        <div className="space-y-2 mb-4">
-          {Object.keys(balances).map((symbol) => {
-            const bal = balances[symbol] || 0;
-            const price = prices[symbol]?.price || 0;
-            const val = bal * price;
+        {/* Tokens List - Compact & Scrollable */}
+        <div className="max-h-44 overflow-y-auto custom-scrollbar pr-1 mb-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            {Object.keys(balances).map((symbol) => {
+              const bal = balances[symbol] || 0;
+              const price = prices[symbol]?.price || 0;
+              const val = bal * price;
 
-            return (
-              <div key={symbol} className="bg-background/60 border border-border/40 p-3 rounded-xl flex items-center justify-between">
-                <div>
-                  <span className="font-bold font-display text-sm block text-foreground">{symbol}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono block">Price: ${price.toLocaleString(undefined, { minimumFractionDigits: symbol === "SNAP" ? 4 : 2 })}</span>
+              return (
+                <div key={symbol} className="bg-background/70 border border-border/50 px-3 py-2 rounded-xl flex items-center justify-between text-xs hover:border-primary/40 transition-colors">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold font-display text-xs text-foreground uppercase tracking-wide">{symbol}</span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                      ${price >= 10 ? price.toFixed(1) : price.toFixed(symbol === "BONK" ? 6 : symbol === "SNAP" ? 4 : 2)}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold font-mono text-xs block text-foreground leading-tight">
+                      {bal.toLocaleString(undefined, { maximumFractionDigits: symbol === "BONK" ? 0 : 4 })}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono block leading-tight">
+                      ${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="font-bold font-mono text-sm block text-foreground">{bal.toLocaleString(undefined, { maximumFractionDigits: 4 })}</span>
-                  <span className="text-[10px] text-muted-foreground font-mono block">${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
+      </div>
 
-        {/* Native OpenClaw Agent Vault (Solana) */}
-        <div className="bg-muted/40 p-4 rounded-xl border border-border/40 text-xs space-y-3">
+      {/* Bottom Section: Agent Vault & Network Mode / Nuke Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-border/30">
+        
+        {/* Native SS AI Agent Vault (Solana) */}
+        <div className="bg-muted/40 p-3.5 rounded-xl border border-border/40 text-xs space-y-2.5 flex flex-col justify-between">
           <div className="flex justify-between items-center text-[10px] font-mono font-bold text-muted-foreground uppercase border-b border-border/20 pb-2">
             <div className="flex items-center gap-1.5">
               <span className={`w-2 h-2 rounded-full ${onChainSol > 0.005 ? 'bg-emerald-500 animate-pulse' : 'bg-cyan-500'}`} />
               <span className="text-foreground tracking-wider font-extrabold">
-                OpenClaw Agent Vault (Solana)
+                SS AI Agent Vault (Solana)
               </span>
             </div>
 
@@ -239,7 +251,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
               <button 
                 onClick={refreshBalance} 
                 disabled={isRefreshing}
-                className="hover:text-foreground transition-colors p-1"
+                className="hover:text-foreground transition-colors p-1 cursor-pointer"
                 title="Refresh On-Chain Balance"
               >
                 <RefreshCw className={`w-3 h-3 ${isRefreshing ? 'animate-spin text-primary' : ''}`} />
@@ -247,7 +259,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
 
               <button 
                 onClick={handleCopy}
-                className="flex items-center gap-1 hover:text-foreground transition-colors font-bold"
+                className="flex items-center gap-1 hover:text-foreground transition-colors font-bold cursor-pointer"
                 title="Copy Address"
               >
                 <Copy className="w-3 h-3" />
@@ -256,7 +268,7 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
 
               <button 
                 onClick={handleResetKey}
-                className="hover:text-amber-400 transition-colors p-1"
+                className="hover:text-amber-400 transition-colors p-1 cursor-pointer"
                 title="Generate Fresh Agent Key"
               >
                 <RotateCcw className="w-3 h-3" />
@@ -264,9 +276,9 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
             </div>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {/* Address & Live Balance Row */}
-            <div className="font-mono text-[11px] break-all font-bold select-all bg-muted/50 p-2.5 rounded-lg border border-border flex justify-between items-center gap-2">
+            <div className="font-mono text-[11px] break-all font-bold select-all bg-muted/50 p-2 rounded-lg border border-border flex justify-between items-center gap-2">
               <span className="text-muted-foreground truncate">{agentAddress}</span>
               <span className="text-[10px] font-mono font-black uppercase text-foreground bg-primary/20 px-2 py-0.5 rounded border border-primary/30 shrink-0">
                 {onChainSol.toFixed(3)} SOL
@@ -278,85 +290,82 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
               <button
                 onClick={() => handleFundFromWallet(0.5)}
                 disabled={isFunding}
-                className="flex items-center justify-center gap-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-primary text-center cursor-pointer disabled:opacity-50"
+                className="flex items-center justify-center gap-1 bg-primary/10 hover:bg-primary/20 border border-primary/30 p-1.5 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-primary text-center cursor-pointer disabled:opacity-50"
               >
                 <ArrowDownLeft className="w-3 h-3" />
-                {isFunding ? "Funding..." : "Fund 0.5 SOL"}
+                {isFunding ? "Funding..." : "Fund 0.5"}
               </button>
 
               <button
                 onClick={handleDevnetAirdrop}
                 disabled={isAirdropping}
-                className="flex items-center justify-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-emerald-400 text-center cursor-pointer disabled:opacity-50"
+                className="flex items-center justify-center gap-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 p-1.5 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-emerald-400 text-center cursor-pointer disabled:opacity-50"
               >
                 <Sparkles className="w-3 h-3" />
-                {isAirdropping ? "Airdropping..." : "Airdrop 1 SOL"}
+                {isAirdropping ? "Airdropping..." : "Airdrop 1"}
               </button>
 
               <button
                 onClick={handleWithdrawAll}
                 disabled={isWithdrawing || onChainSol <= 0.005}
-                className="flex items-center justify-center gap-1 bg-background/80 hover:bg-muted border border-border p-2 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-muted-foreground hover:text-foreground text-center cursor-pointer disabled:opacity-40"
+                className="flex items-center justify-center gap-1 bg-background/80 hover:bg-muted border border-border p-1.5 rounded-lg text-[10px] font-bold font-mono uppercase transition-colors text-muted-foreground hover:text-foreground text-center cursor-pointer disabled:opacity-40"
               >
                 <ArrowUpRight className="w-3 h-3" />
                 {isWithdrawing ? "Sweeping..." : "Withdraw"}
               </button>
             </div>
-
-            <p className="text-[9px] text-muted-foreground leading-tight italic pt-0.5">
-              • Dedicated autonomous signing key running inside your OpenClaw session. Fund directly from your connected wallet to execute live on Solana.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom Section: Network Mode & Nuke Button */}
-      <div className="space-y-4 pt-3 border-t border-border/40">
-        
-        {/* Simulator / Live Mode Toggle */}
-        <div className="flex items-center justify-between bg-muted/40 p-3 rounded-xl border border-border/20">
-          <div className="flex items-center gap-1.5">
-            <ShieldCheck className="w-4 h-4 text-primary" />
-            <span className="text-xs uppercase font-bold font-display tracking-tight text-foreground/80">Network Mode</span>
-          </div>
-          <div className="flex bg-background border border-border p-0.5 rounded-lg text-[10px] font-mono font-bold uppercase">
-            <button
-              onClick={() => engine.setSimulator(true)}
-              className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-                isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Sandbox
-            </button>
-            <button
-              onClick={() => engine.setSimulator(false)}
-              className={`px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
-                !isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Live On-Chain
-            </button>
           </div>
         </div>
 
-        {/* Confirm-to-Confirm NUKE button */}
-        <button
-          onClick={handleNukeClick}
-          className={`w-full py-4 rounded-xl font-bold uppercase tracking-widest text-sm transition-all duration-300 flex items-center justify-center gap-2.5 border cursor-pointer ${
-            nukeArmed
-              ? 'bg-red-600 border-red-700 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
-              : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-600 shadow-md hover:shadow-red-500/20'
-          }`}
-        >
-          <Skull className={`w-5 h-5 ${nukeArmed ? 'animate-bounce' : ''}`} />
-          {nukeArmed ? (
-            <span className="font-black">NUKE ARMED! CLICK TO CONFIRM ({countdown}s)</span>
-          ) : (
-            <span className="font-black">NUKE POSITIONS</span>
-          )}
-        </button>
+        {/* Network Mode & Nuke Button */}
+        <div className="space-y-3 flex flex-col justify-between">
+          {/* Simulator / Live Mode Toggle */}
+          <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-xl border border-border/20">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-primary" />
+              <span className="text-xs uppercase font-bold font-display tracking-tight text-foreground/80">Network Mode</span>
+            </div>
+            <div className="flex bg-background border border-border p-0.5 rounded-lg text-[10px] font-mono font-bold uppercase">
+              <button
+                onClick={() => engine.setSimulator(true)}
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                  isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Sandbox
+              </button>
+              <button
+                onClick={() => engine.setSimulator(false)}
+                className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+                  !isSimulator ? 'bg-primary text-primary-foreground font-black' : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Live On-Chain
+              </button>
+            </div>
+          </div>
+
+          {/* Confirm-to-Confirm NUKE button */}
+          <button
+            onClick={handleNukeClick}
+            className={`w-full py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all duration-300 flex items-center justify-center gap-2 border cursor-pointer ${
+              nukeArmed
+                ? 'bg-red-600 border-red-700 text-white animate-pulse shadow-[0_0_20px_rgba(239,68,68,0.5)] scale-[1.02]'
+                : 'bg-red-500/10 border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white hover:border-red-600 shadow-md hover:shadow-red-500/20'
+            }`}
+          >
+            <Skull className={`w-4 h-4 ${nukeArmed ? 'animate-bounce' : ''}`} />
+            {nukeArmed ? (
+              <span className="font-black">NUKE ARMED! CONFIRM ({countdown}s)</span>
+            ) : (
+              <span className="font-black">NUKE POSITIONS</span>
+            )}
+          </button>
+        </div>
+
       </div>
 
     </div>
   );
 };
+

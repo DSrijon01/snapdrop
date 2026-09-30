@@ -101,7 +101,7 @@ export class AgentExecutionEngine {
   constructor() {
     this.initSessionWallet();
     this.loadRules();
-    this.addLog("OpenClaw Sovereign Agent Engine Initialized.", "info");
+    this.addLog("SS AI Sovereign Agent Engine Initialized.", "info");
     this.addLog("Sandbox Mode active. Zero-risk strategy testing on local orderbook.", "info");
     this.refreshOnChainBalance();
   }
@@ -136,7 +136,7 @@ export class AgentExecutionEngine {
     }
     this.sessionKeypair = kp;
     this.onChainSolBalance = 0;
-    this.addLog(`Generated fresh OpenClaw Agent Key: ${kp.publicKey.toBase58().slice(0, 4)}...${kp.publicKey.toBase58().slice(-4)}`, "warning");
+    this.addLog(`Generated fresh SS AI Agent Key: ${kp.publicKey.toBase58().slice(0, 4)}...${kp.publicKey.toBase58().slice(-4)}`, "warning");
     this.onStateChange();
     return kp.publicKey.toBase58();
   }

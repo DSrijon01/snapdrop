@@ -56,7 +56,7 @@ export function OpenClawPro() {
           <div>
             <h1 className="text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
               <Zap className="w-7 h-7 text-primary animate-pulse" />
-              OpenClaw Pro
+              SS AI Pro
             </h1>
             <p className="text-muted-foreground text-xs uppercase tracking-wider font-mono mt-0.5">
               Premium GPU-accelerated autonomous AI execution
@@ -93,7 +93,7 @@ export function OpenClawPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the OpenClaw Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
+                  Subscribe to the SS AI Pro tier starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
@@ -122,7 +122,7 @@ export function OpenClawPro() {
                   href="/openclaw"
                   className="w-full py-4 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-all rounded-xl font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
                 >
-                  Back to OpenClaw
+                  Back to SS AI Terminal
                 </Link>
               </div>
             </motion.div>
@@ -143,7 +143,7 @@ export function OpenClawPro() {
                   </div>
                   <div>
                     <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground">
-                      OpenClaw Pro Dashboard
+                      SS AI Pro Dashboard
                     </h2>
                     <p className="text-muted-foreground text-xs md:text-sm mt-1 max-w-xl">
                       Utilize dedicated GPU compute power to spawn multiple trading nodes, adjust fine-grained prompt constraints, and automate trade execution.
