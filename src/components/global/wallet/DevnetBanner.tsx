@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ExternalLink } from "lucide-react";
 
 export const DevnetBanner = () => {
   const [isVisible, setIsVisible] = useState(true);
@@ -21,7 +22,18 @@ export const DevnetBanner = () => {
             <span className="text-xl">⚠️</span>
             <p className="text-sm font-medium">
               <span className="font-bold">Solana Devnet Required:</span> This project runs on <span className="font-mono font-bold underline">Solana Devnet</span> (NOT Testnet Mode). 
-              In Phantom: ⚙️ Settings ➔ Developer Settings ➔ Change Network ➔ Select <span className="font-bold underline">Solana Devnet</span>.
+              In Phantom: ⚙️ Settings ➔ Developer Settings ➔ Change Network ➔ Select <span className="font-bold underline">Solana Devnet</span>.{" "}
+              Need Devnet SOL? Airdrop via{" "}
+              <a
+                href="https://faucet.solana.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-bold underline hover:opacity-80 transition-opacity inline-flex items-center gap-0.5"
+              >
+                SolFaucet
+                <ExternalLink className="w-3 h-3 inline ml-0.5" />
+              </a>
+              .
             </p>
           </div>
           <button
