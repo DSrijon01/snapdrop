@@ -217,213 +217,205 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-1 sm:px-3 py-0 space-y-2 animate-in fade-in duration-500 flex-1 min-h-0 flex flex-col justify-start">
-            {/* Main Stage Grid: Interactive 3D Turntable & Buy Details on Left, Asset Selector on Right */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 lg:gap-4 items-start flex-1 min-h-0">
-                {/* Left Column: 3D Turntable Viewport + Compact Details & Buy Section (7 Cols) */}
-                <div className="lg:col-span-7 space-y-2 flex flex-col">
-                    {/* 3D Turntable Viewport */}
-                    <div className="bg-card/95 border border-border/80 rounded-2xl overflow-hidden shadow-xl relative h-[210px] sm:h-[235px] lg:h-[250px] flex flex-col shrink-0">
-                        {/* Viewport Header Controls */}
-                        <div className="absolute top-2 left-2 right-2 z-20 flex items-center justify-between pointer-events-none">
-                            <div className="bg-black/60 backdrop-blur-md px-2 py-0.5 rounded-lg border border-white/10 text-xs font-mono font-bold text-white flex items-center gap-1.5 pointer-events-auto">
-                                <Box size={12} className="text-primary" />
-                                <span className="truncate max-w-[150px] sm:max-w-none">{selectedItem.name}</span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5 pointer-events-auto">
-                                <button
-                                    onClick={handleReset}
-                                    className="p-1 bg-black/60 hover:bg-black/90 border border-white/10 hover:border-primary/40 text-muted-foreground hover:text-white rounded-lg backdrop-blur-md transition-colors shadow-md cursor-pointer"
-                                    title="Reset View"
-                                >
-                                    <RotateCw size={12} />
-                                </button>
-                                <button
-                                    onClick={() => setAutoRotate((prev) => !prev)}
-                                    className={`p-1 border rounded-lg backdrop-blur-md transition-colors shadow-md cursor-pointer ${
-                                        autoRotate
-                                            ? "bg-primary/20 border-primary/50 text-primary"
-                                            : "bg-black/60 border-white/10 text-muted-foreground hover:text-white"
-                                    }`}
-                                    title={autoRotate ? "Pause Auto-Rotate" : "Start Auto-Rotate"}
-                                >
-                                    {autoRotate ? <Pause size={12} /> : <Play size={12} />}
-                                </button>
-                                <button
-                                    onClick={handleFlip}
-                                    className="px-2 py-0.5 bg-black/60 hover:bg-black/90 border border-white/10 hover:border-primary/40 text-[10px] font-mono font-bold text-white rounded-lg backdrop-blur-md transition-colors shadow-md cursor-pointer"
-                                    title="Flip Card"
-                                >
-                                    Flip 180°
-                                </button>
-                            </div>
+        <div className="container mx-auto px-4 py-6 space-y-6 animate-in fade-in duration-500">
+            {/* Main Stage Grid: Interactive 3D Turntable on Left, Info & Gallery on Right */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* 3D Turntable Viewport (7 Cols) */}
+                <div className="lg:col-span-7 bg-card/95 border border-border/80 rounded-3xl overflow-hidden shadow-2xl relative h-[520px] flex flex-col">
+                    {/* Viewport Header Controls */}
+                    <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
+                        <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-xs font-mono font-bold text-white flex items-center gap-2 pointer-events-auto">
+                            <Box size={14} className="text-primary" />
+                            <span>{selectedItem.name}</span>
                         </div>
 
-                        {/* Three.js Canvas */}
-                        <div className="w-full flex-1 cursor-grab active:cursor-grabbing">
-                            <Canvas
-                                shadows
-                                dpr={[1, 2]}
-                                camera={{ position: [0, 0, 4.4], fov: 45 }}
-                                gl={{ antialias: true, alpha: true }}
+                        <div className="flex items-center gap-2 pointer-events-auto">
+                            <button
+                                onClick={handleReset}
+                                className="p-2 bg-black/60 hover:bg-black/90 border border-white/10 hover:border-primary/40 text-muted-foreground hover:text-white rounded-xl backdrop-blur-md transition-colors shadow-md"
+                                title="Reset View"
                             >
-                                <Suspense fallback={null}>
-                                    <ambientLight intensity={0.7} />
-                                    <directionalLight position={[4, 5, 4]} intensity={1.4} />
-                                    <directionalLight position={[-4, -5, -4]} intensity={0.5} />
-
-                                    <EmbeddedCardMesh
-                                        item={selectedItem}
-                                        targetRotationY={targetRotationY}
-                                    />
-
-                                    <Sparkles count={25} scale={5} size={2.5} speed={0.4} opacity={0.5} color="#4ade80" />
-
-                                    <OrbitControls
-                                        ref={controlsRef}
-                                        autoRotate={autoRotate}
-                                        autoRotateSpeed={1.0}
-                                        enablePan={false}
-                                        minDistance={2.4}
-                                        maxDistance={6.0}
-                                        dampingFactor={0.06}
-                                        enableDamping
-                                    />
-                                    <Environment preset="city" />
-                                </Suspense>
-                            </Canvas>
-                        </div>
-
-                        {/* Viewport Footer Hint */}
-                        <div className="absolute bottom-1.5 inset-x-0 text-center pointer-events-none">
-                            <div className="inline-block bg-black/60 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[9px] font-mono font-medium text-gray-300 border border-white/5">
-                                Drag to rotate in 3D • Scroll to zoom • Click Fullscreen for details
-                            </div>
+                                <RotateCw size={14} />
+                            </button>
+                            <button
+                                onClick={() => setAutoRotate((prev) => !prev)}
+                                className={`p-2 border rounded-xl backdrop-blur-md transition-colors shadow-md ${
+                                    autoRotate
+                                        ? "bg-primary/20 border-primary/50 text-primary"
+                                        : "bg-black/60 border-white/10 text-muted-foreground hover:text-white"
+                                }`}
+                                title={autoRotate ? "Pause Auto-Rotate" : "Start Auto-Rotate"}
+                            >
+                                {autoRotate ? <Pause size={14} /> : <Play size={14} />}
+                            </button>
+                            <button
+                                onClick={handleFlip}
+                                className="px-2.5 py-1.5 bg-black/60 hover:bg-black/90 border border-white/10 hover:border-primary/40 text-xs font-mono font-bold text-white rounded-xl backdrop-blur-md transition-colors shadow-md"
+                                title="Flip Card"
+                            >
+                                Flip 180°
+                            </button>
                         </div>
                     </div>
 
-                    {/* Selected Item Details & Buy Action Card (Directly Under 3D Viewer) */}
-                    <div className="p-2 sm:p-2.5 rounded-xl bg-card border border-border shadow-sm space-y-1.5 shrink-0">
-                        <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2 min-w-0">
-                                <span className="text-[9px] font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded-full shrink-0">
-                                    Rank #{selectedItem.rank}
-                                </span>
-                                <h3 className="text-sm sm:text-base font-black text-foreground font-display uppercase tracking-tight truncate">
-                                    {selectedItem.name}
-                                </h3>
-                                <span className="text-[10px] text-muted-foreground font-mono hidden sm:inline truncate">
-                                    • {selectedItem.collection}
-                                </span>
-                            </div>
+                    {/* Three.js Canvas */}
+                    <div className="w-full flex-1 cursor-grab active:cursor-grabbing">
+                        <Canvas
+                            shadows
+                            dpr={[1, 2]}
+                            camera={{ position: [0, 0, 4.4], fov: 45 }}
+                            gl={{ antialias: true, alpha: true }}
+                        >
+                            <Suspense fallback={null}>
+                                <ambientLight intensity={0.7} />
+                                <directionalLight position={[4, 5, 4]} intensity={1.4} />
+                                <directionalLight position={[-4, -5, -4]} intensity={0.5} />
 
-                            {selectedItem.price !== undefined && (
-                                <span className="text-base sm:text-lg font-black font-mono text-primary shrink-0">
+                                <EmbeddedCardMesh
+                                    item={selectedItem}
+                                    targetRotationY={targetRotationY}
+                                />
+
+                                <Sparkles count={35} scale={5} size={2.5} speed={0.4} opacity={0.5} color="#4ade80" />
+
+                                <OrbitControls
+                                    ref={controlsRef}
+                                    autoRotate={autoRotate}
+                                    autoRotateSpeed={1.0}
+                                    enablePan={false}
+                                    minDistance={2.4}
+                                    maxDistance={6.0}
+                                    dampingFactor={0.06}
+                                    enableDamping
+                                />
+                                <Environment preset="city" />
+                            </Suspense>
+                        </Canvas>
+                    </div>
+
+                    {/* Viewport Footer Hint */}
+                    <div className="absolute bottom-4 inset-x-0 text-center pointer-events-none">
+                        <div className="inline-block bg-black/60 backdrop-blur-md px-4 py-1 rounded-full text-[11px] font-mono font-medium text-gray-300 border border-white/5">
+                            Drag to rotate in 3D • Scroll to zoom • Click Fullscreen for details
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right Panel: Selected Item Details & Quick Selector (5 Cols) */}
+                <div className="lg:col-span-5 space-y-6">
+                    {/* Item Card */}
+                    <div className="p-6 rounded-3xl bg-card border border-border shadow-xl space-y-4">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs font-mono font-bold text-primary bg-primary/10 border border-primary/20 px-3 py-1 rounded-full">
+                                Rank #{selectedItem.rank}
+                            </span>
+                            {selectedItem.price && (
+                                <span className="text-2xl font-black font-mono text-primary">
                                     {selectedItem.price} <span className="text-xs text-muted-foreground font-sans">SOL</span>
                                 </span>
                             )}
                         </div>
 
-                        {selectedItem.description && (
-                            <p className="text-[11px] text-muted-foreground line-clamp-1 leading-tight">
-                                {selectedItem.description}
+                        <div>
+                            <h3 className="text-2xl font-black text-foreground font-display uppercase tracking-tight">
+                                {selectedItem.name}
+                            </h3>
+                            <p className="text-xs text-muted-foreground font-mono mt-0.5">
+                                {selectedItem.collection}
                             </p>
-                        )}
+                        </div>
+
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            {selectedItem.description}
+                        </p>
 
                         {/* Dedicated Buy & Action Section */}
-                        <div className="pt-1.5 border-t border-border/50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
-                            <div className="flex-1 min-w-0">
-                                {onBuy && selectedItem.price !== undefined ? (
-                                    currentWallet && (selectedItem as any).raw?.seller === currentWallet ? (
-                                        <button
-                                            disabled
-                                            className="w-full py-1.5 px-3 bg-muted text-muted-foreground border border-border rounded-lg text-xs font-mono font-bold cursor-not-allowed flex items-center justify-center gap-2"
-                                        >
-                                            You Listed This Item
-                                        </button>
-                                    ) : (
-                                        <button
-                                            onClick={() => onBuy((selectedItem as any).raw || selectedItem)}
-                                            disabled={isBuying === selectedItem.id}
-                                            className="w-full py-1.5 px-3 bg-primary hover:bg-primary/90 text-primary-foreground font-display uppercase tracking-wider font-bold rounded-lg text-xs shadow-sm shadow-primary/20 transition-all hover:scale-[1.005] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-                                        >
-                                            <ShoppingCart size={13} />
-                                            <span>{isBuying === selectedItem.id ? "Processing..." : `Buy Now for ${selectedItem.price} SOL`}</span>
-                                        </button>
-                                    )
-                                ) : null}
-                            </div>
+                        <div className="pt-2 space-y-3">
+                            {onBuy && selectedItem.price !== undefined ? (
+                                currentWallet && (selectedItem as any).raw?.seller === currentWallet ? (
+                                    <button
+                                        disabled
+                                        className="w-full py-3.5 bg-muted text-muted-foreground border border-border rounded-2xl text-xs font-mono font-bold cursor-not-allowed flex items-center justify-center gap-2"
+                                    >
+                                        You Listed This Item
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => onBuy((selectedItem as any).raw || selectedItem)}
+                                        disabled={isBuying === selectedItem.id}
+                                        className="w-full py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-display uppercase tracking-wider font-bold rounded-2xl text-xs shadow-xl shadow-primary/25 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                                    >
+                                        <ShoppingCart size={15} />
+                                        <span>{isBuying === selectedItem.id ? "Processing Purchase..." : `Buy Now for ${selectedItem.price} SOL`}</span>
+                                    </button>
+                                )
+                            ) : null}
 
-                            <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-                                <div className="hidden md:flex flex-col text-right">
-                                    <span className="text-[8px] font-mono uppercase text-muted-foreground">Mint</span>
-                                    <span className="text-[10px] font-mono font-bold text-foreground truncate max-w-[100px]">
-                                        {selectedItem.mint || "Verified"}
+                            <div className="pt-3 border-t border-border/60 flex items-center justify-between gap-3">
+                                <div className="min-w-0">
+                                    <span className="text-[10px] font-mono uppercase text-muted-foreground block">
+                                        Solana Mint
+                                    </span>
+                                    <span className="text-xs font-mono font-bold text-foreground truncate block max-w-[150px]">
+                                        {selectedItem.mint || "Verified Asset"}
                                     </span>
                                 </div>
 
                                 <button
                                     onClick={() => setIsFullscreenViewerOpen(true)}
-                                    className="px-2 py-1.5 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/25 rounded-lg text-xs font-mono font-bold flex items-center gap-1 transition-all shadow-sm shrink-0 cursor-pointer"
-                                    title="Fullscreen 3D"
+                                    className="px-3.5 py-2 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/25 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm shrink-0"
                                 >
-                                    <Maximize2 size={11} />
-                                    <span className="hidden sm:inline">Fullscreen</span>
+                                    <Maximize2 size={13} />
+                                    <span>Fullscreen 3D</span>
                                 </button>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Right Column: Asset Selector List (5 Cols) */}
-                <div className="lg:col-span-5 bg-card/50 backdrop-blur-sm border border-border rounded-xl p-2.5 shadow-sm flex flex-col space-y-1.5 shrink-0">
-                    <div className="flex items-center justify-between pb-1 border-b border-border/40 shrink-0">
-                        <h4 className="text-xs font-mono uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-1.5">
-                            <Layers size={12} className="text-primary" />
+                    {/* Selector Carousel / Thumbnails */}
+                    <div className="space-y-3">
+                        <h4 className="text-xs font-mono uppercase tracking-wider text-muted-foreground font-bold flex items-center gap-2">
+                            <Layers size={14} className="text-primary" />
                             Select Asset to Load into 3D Stage
                         </h4>
-                        <span className="text-[10px] font-mono text-muted-foreground bg-muted/60 px-2 py-0.5 rounded-md font-bold">
-                            {galleryItems.length} Assets
-                        </span>
-                    </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-2 gap-1.5 max-h-[285px] sm:max-h-[310px] overflow-y-auto custom-scrollbar overscroll-contain p-0.5">
-                        {galleryItems.map((item) => {
-                            const isSelected = selectedItem.id === item.id;
-                            return (
-                                <div
-                                    key={item.id}
-                                    onClick={() => setSelectedItem(item)}
-                                    className={`group relative p-1.5 rounded-lg border cursor-pointer transition-all duration-150 flex items-center gap-2 ${
-                                        isSelected
-                                            ? "bg-primary/10 border-primary shadow-sm shadow-primary/15"
-                                            : "bg-card/80 hover:bg-muted/60 border-border"
-                                    }`}
-                                >
-                                    <div className="w-9 h-9 rounded-md overflow-hidden shrink-0 border border-white/10 relative">
-                                        <img
-                                            src={item.image}
-                                            alt={item.name}
-                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                        />
-                                        {/* 3D Badge on thumbnail */}
-                                        <div className="absolute top-0.5 right-0.5 bg-black/70 backdrop-blur-sm px-1 py-0.2 rounded text-[7px] font-mono font-bold text-primary">
-                                            3D
+                        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3 max-h-[360px] overflow-y-auto custom-scrollbar p-1">
+                            {galleryItems.map((item) => {
+                                const isSelected = selectedItem.id === item.id;
+                                return (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => setSelectedItem(item)}
+                                        className={`group relative p-2.5 rounded-2xl border cursor-pointer transition-all duration-300 flex items-center gap-3 ${
+                                            isSelected
+                                                ? "bg-primary/10 border-primary shadow-lg shadow-primary/15"
+                                                : "bg-card hover:bg-muted/50 border-border"
+                                        }`}
+                                    >
+                                        <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 border border-white/10 relative">
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                            />
+                                            {/* 3D Badge on thumbnail */}
+                                            <div className="absolute top-1 right-1 bg-black/70 backdrop-blur-sm px-1 py-0.5 rounded text-[8px] font-mono font-bold text-primary">
+                                                3D
+                                            </div>
+                                        </div>
+
+                                        <div className="min-w-0 flex-1">
+                                            <h5 className="font-bold text-foreground text-sm truncate font-display uppercase">
+                                                {item.name}
+                                            </h5>
+                                            <p className="text-[11px] text-muted-foreground font-mono truncate">
+                                                #{item.rank} • {item.price ? `${item.price} SOL` : "Asset"}
+                                            </p>
                                         </div>
                                     </div>
-
-                                    <div className="min-w-0 flex-1">
-                                        <h5 className="font-bold text-foreground text-xs truncate font-display uppercase leading-none">
-                                            {item.name}
-                                        </h5>
-                                        <p className="text-[9px] text-muted-foreground font-mono truncate mt-0.5">
-                                            #{item.rank} • {item.price ? `${item.price} SOL` : "Asset"}
-                                        </p>
-                                    </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             </div>

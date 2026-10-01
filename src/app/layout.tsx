@@ -79,7 +79,7 @@ export default function RootLayout({
                 <GlobalHeader />
                 <div className="flex flex-1 overflow-hidden relative">
                   <Sidebar />
-                  <main className="flex-1 overflow-y-auto relative w-full overscroll-none">
+                  <main className="flex-1 overflow-y-auto relative w-full">
                     <WalletGate>
                       {children}
                     </WalletGate>

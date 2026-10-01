@@ -286,11 +286,7 @@ export const ForSale: FC = () => {
     }
 
     return (
-        <div className={`container mx-auto px-3 sm:px-6 animate-in fade-in duration-500 ${
-            viewMode === '3d' 
-                ? 'py-1.5 sm:py-2 flex-1 min-h-0 flex flex-col overflow-hidden' 
-                : 'py-2 sm:py-3'
-        }`}>
+        <div className="container mx-auto p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
              <NFT3DViewer 
                 isOpen={!!selected3DItem} 
                 onClose={() => setSelected3DItem(null)} 
@@ -304,50 +300,50 @@ export const ForSale: FC = () => {
             />
 
             {/* Header / Filter Bar */}
-            <div className="flex flex-col md:flex-row gap-2.5 mb-2 items-center justify-between p-2 sm:p-2.5 rounded-xl border border-border bg-card shadow-sm shrink-0">
+            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-md">
                 {/* Search */}
-                <div className="relative w-full md:w-80">
+                <div className="relative w-full md:w-96">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                         <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                     </div>
                     <input
                         type="text"
                         placeholder="Search listings..."
-                        className="w-full bg-muted border border-border rounded-xl py-1.5 pl-9 pr-4 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all font-display"
+                        className="w-full bg-muted border border-border rounded-xl py-3 pl-10 pr-4 text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all font-display"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
                 </div>
 
                 {/* Filters */}
-                <div className="flex items-center gap-2.5 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0">
                     <button 
                         onClick={toggleSort}
-                        className="px-3 py-1.5 bg-muted hover:bg-muted/80 border border-border rounded-xl text-xs font-bold text-foreground whitespace-nowrap transition-colors flex items-center gap-2 font-display uppercase tracking-wide cursor-pointer"
+                        className="px-4 py-2.5 bg-muted hover:bg-muted/80 border border-border rounded-xl text-sm font-bold text-foreground whitespace-nowrap transition-colors flex items-center gap-2 font-display uppercase tracking-wide"
                     >
                         Price: {sortOrder === 'asc' ? 'Low to High' : 'High to Low'}
-                        <svg className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-300 ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                        <svg className={`w-4 h-4 text-muted-foreground transition-transform duration-300 ${sortOrder === 'desc' ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
                     </button>
                     
-                     <div className="h-7 w-px bg-border mx-1" />
+                     <div className="h-8 w-px bg-border mx-1" />
 
                      {/* View Toggles */}
                      <div className="flex bg-muted rounded-xl p-1 border border-border">
                         <button 
                             onClick={() => setViewMode('grid')}
-                            className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                             title="Grid View"
                             aria-label="Grid View"
                         >
-                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
+                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" /></svg>
                         </button>
                         <button 
                             onClick={() => setViewMode('3d')}
-                            className={`px-2 py-1 rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === '3d' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                            className={`px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${viewMode === '3d' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
                             title="3D NFT View"
                             aria-label="3D NFT View"
                         >
-                            <Box size={14} />
+                            <Box size={16} />
                             <span className="text-xs font-mono font-bold">3D</span>
                         </button>
                      </div>
@@ -356,14 +352,12 @@ export const ForSale: FC = () => {
 
             {/* Viewport Content */}
             {viewMode === '3d' ? (
-                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <NFT3DGallery 
-                        items={filteredItems} 
-                        onBuy={handleBuy} 
-                        currentWallet={wallet?.publicKey?.toBase58()} 
-                        isBuying={isBuying} 
-                    />
-                </div>
+                <NFT3DGallery 
+                    items={filteredItems} 
+                    onBuy={handleBuy} 
+                    currentWallet={wallet?.publicKey?.toBase58()} 
+                    isBuying={isBuying} 
+                />
             ) : (
                 /* Grid */
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
