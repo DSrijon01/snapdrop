@@ -27,7 +27,7 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="w-full min-h-[40px] h-auto py-2 bg-background border-t border-border flex flex-wrap items-center justify-between gap-y-2 px-3 sm:px-6 text-[10px] sm:text-[11px] font-bold text-muted-foreground mt-auto shrink-0 z-50">
+    <footer className="hidden md:flex w-full min-h-[40px] h-auto py-2 bg-background border-t border-border items-center justify-between gap-y-2 px-3 sm:px-6 text-[10px] sm:text-[11px] font-bold text-muted-foreground mt-auto shrink-0 z-40">
       
       {/* First Section: Links & Socials */}
       <div className="flex items-center space-x-3 sm:space-x-4 flex-wrap gap-y-1">

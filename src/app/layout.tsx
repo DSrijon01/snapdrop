@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/components/global/theme-logo/ThemeProvider";
 import { Sidebar } from "@/components/global/layout/Sidebar";
 import { GlobalHeader } from "@/components/global/layout/GlobalHeader";
 import { Footer } from "@/components/global/layout/Footer";
+import { MobileNavDock } from "@/components/global/layout/MobileNavDock";
 import { WalletGate } from "@/components/global/wallet/WalletGate";
 import { WalletContextProvider } from "@/components/global/wallet/WalletContextProvider";
 import { Toaster } from "react-hot-toast";
@@ -79,13 +80,14 @@ export default function RootLayout({
                 <GlobalHeader />
                 <div className="flex flex-1 overflow-hidden relative">
                   <Sidebar />
-                  <main className="flex-1 overflow-y-auto relative w-full">
+                  <main className="flex-1 overflow-y-auto relative w-full pb-20 md:pb-0">
                     <WalletGate>
                       {children}
                     </WalletGate>
                   </main>
                 </div>
                 <Footer />
+                <MobileNavDock />
               </div>
               <InstallPromptModal />
               <Toaster position="bottom-right" />

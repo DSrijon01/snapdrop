@@ -64,8 +64,8 @@ export function InstallPromptModal() {
 
   return (
     <>
-      {/* Floating Bottom Quick Install Banner */}
-      <div className="fixed bottom-14 md:bottom-6 right-4 z-40 animate-in fade-in slide-in-from-bottom-5 duration-300">
+      {/* Floating Bottom Quick Install Banner - Clears mobile navigation dock */}
+      <div className="fixed bottom-20 md:bottom-6 right-4 z-40 animate-in fade-in slide-in-from-bottom-5 duration-300">
         <div className="flex items-center gap-2 p-2 px-3 bg-zinc-900/90 dark:bg-zinc-900/90 text-white border border-primary/40 backdrop-blur-md rounded-full shadow-2xl hover:border-primary transition-all">
           <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white shrink-0">
             <Smartphone className="w-4 h-4" />

@@ -41,30 +41,9 @@ export function Sidebar() {
   if (!connected) return null;
 
   return (
-    <>
-      {/* Mobile Hamburger Button (Floating Action Button) */}
-      <button
-        onClick={toggleSidebar}
-        className="md:hidden fixed bottom-16 right-4 z-[60] p-3 rounded-full bg-primary text-primary-foreground shadow-xl shadow-primary/20 hover:scale-105 transition-all focus:outline-none"
-        aria-label="Toggle Navigation"
-      >
-        {isOpen ? <X size={24} /> : <Menu size={24} />}
-      </button>
-
-      {/* Mobile Overlay */}
-      {isOpen && (
-        <div 
-          className="md:hidden fixed inset-0 bg-background/80 backdrop-blur-sm z-40 transition-opacity" 
-          onClick={toggleSidebar}
-        />
-      )}
-
-      {/* Sidebar Container */}
-      <aside
-        className={`group fixed md:sticky top-0 z-50 h-[100dvh] md:h-full w-64 md:w-20 md:hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out flex flex-col overflow-hidden ${
-          isOpen ? "left-0" : "-left-64 md:left-0"
-        }`}
-      >
+    <aside
+      className="hidden md:flex group sticky top-0 z-40 h-full w-20 hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out flex-col overflow-hidden shrink-0"
+    >
         {/* User Avatar Area (Highest Element) */}
         <div className="px-5 border-b border-border shrink-0 bg-secondary/20 flex items-center md:h-[96px] h-[88px]">
           <UserAvatar />
@@ -125,7 +104,6 @@ export function Sidebar() {
           </Link>
         </div>
       </aside>
-    </>
   );
 }
 
