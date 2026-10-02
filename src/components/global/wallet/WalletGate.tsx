@@ -54,6 +54,15 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
           <div className="flex justify-center">
              <WalletMultiButton className="!py-4 !px-10 !h-auto !text-lg !bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!scale-105 transition-all !rounded-xl !font-bold !uppercase !tracking-widest !shadow-lg !font-display" />
           </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 text-[11px] font-mono text-muted-foreground/80">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-border">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              Solana Mobile &amp; MWA
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted/50 border border-border">
+              🛡️ Seed Vault Ready
+            </span>
+          </div>
         </div>
 
         {/* Animated Bottts Robot Avatar on the Right */}

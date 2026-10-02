@@ -21,6 +21,7 @@
     "@metaplex-foundation/umi-uploader-irys": "^1.4.1",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
+    "@solana-mobile/wallet-standard-mobile": "^0.6.0",
     "@solana/spl-token": "^0.4.14",
     "@solana/spl-token-metadata": "^0.1.6",
     "@solana/wallet-adapter-base": "^0.9.27",

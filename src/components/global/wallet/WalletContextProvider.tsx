@@ -1,9 +1,10 @@
 "use client";
 
-import { FC, ReactNode, useMemo } from "react";
+import { FC, ReactNode, useMemo, useEffect } from "react";
 import {
   ConnectionProvider,
   WalletProvider,
+  useWallet,
 } from "@solana/wallet-adapter-react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
 import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
@@ -11,8 +12,18 @@ import {
   WalletModalProvider,
   useWalletModal,
 } from "@solana/wallet-adapter-react-ui";
-import { useWallet } from "@solana/wallet-adapter-react";
-import { useEffect } from "react";
+import {
+  SolanaMobileWalletAdapter,
+  createDefaultAddressSelector,
+  createDefaultAuthorizationResultCache,
+  createDefaultWalletNotFoundHandler as createMwaAdapterNotFoundHandler,
+} from "@solana-mobile/wallet-adapter-mobile";
+import {
+  registerMwa,
+  createDefaultAuthorizationCache,
+  createDefaultChainSelector,
+  createDefaultWalletNotFoundHandler as createMwaStandardNotFoundHandler,
+} from "@solana-mobile/wallet-standard-mobile";
 import { clusterApiUrl } from "@solana/web3.js";
 import toast from "react-hot-toast";
 
@@ -22,16 +33,18 @@ import "@solana/wallet-adapter-react-ui/styles.css";
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
 
 /**
- * Listens for newly installed wallet extensions and handles auto-reconnect on reload
+ * Listens for newly installed wallet extensions on desktop and handles auto-reconnect on reload
  * without forcing the user to manually retype the URL.
+ * Automatically bypassed on mobile devices where Mobile Wallet Adapter (MWA) handles native apps.
  */
 const WalletExtensionWatcher: FC = () => {
   const { setVisible } = useWalletModal();
   const { connected } = useWallet();
 
-  // 1. Auto-open modal after reload
+  // 1. Auto-open modal after reload (desktop browser extensions only)
   useEffect(() => {
     if (typeof window === "undefined" || connected) return;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
 
     const autoOpen = sessionStorage.getItem("street_sync_auto_open_modal");
     if (autoOpen === "true") {
@@ -50,9 +63,10 @@ const WalletExtensionWatcher: FC = () => {
     }
   }, [setVisible, connected]);
 
-  // 2. Tab focus listener when install is pending
+  // 2. Tab focus listener when install is pending (desktop browser extensions only)
   useEffect(() => {
     if (typeof window === "undefined" || connected) return;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
 
     const handleTabFocus = () => {
       const isPending = sessionStorage.getItem("street_sync_install_pending");
@@ -120,11 +134,59 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     [network]
   );
 
+  // Register Solana Mobile Wallet Standard (MWA) for mobile web and Solana Mobile WebShell
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const origin = window.location.origin.startsWith("http")
+        ? window.location.origin
+        : "https://streetsync-ss.com";
+
+      registerMwa({
+        appIdentity: {
+          name: "Street Sync",
+          uri: origin,
+          icon: "/pwa-192x192.png",
+        },
+        authorizationCache: createDefaultAuthorizationCache(),
+        chains: [
+          network === WalletAdapterNetwork.Devnet
+            ? ("solana:devnet" as const)
+            : ("solana:mainnet" as const),
+        ] as any,
+        chainSelector: createDefaultChainSelector(),
+        onWalletNotFound: createMwaStandardNotFoundHandler(),
+      });
+    } catch (e) {
+      // Non-fatal if environment doesn't allow registration (e.g. non-secure dev context or unsupported browser)
+      console.debug("MWA auto-registration note:", e);
+    }
+  }, [network]);
+
   const wallets = useMemo(
-    () => [
-      new PhantomWalletAdapter(),
-      new SolflareWalletAdapter(),
-    ],
+    () => {
+      const origin =
+        typeof window !== "undefined" && window.location.origin.startsWith("http")
+          ? window.location.origin
+          : "https://streetsync-ss.com";
+
+      return [
+        // Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
+        new SolanaMobileWalletAdapter({
+          addressSelector: createDefaultAddressSelector(),
+          appIdentity: {
+            name: "Street Sync",
+            uri: origin,
+            icon: "/pwa-192x192.png",
+          },
+          authorizationResultCache: createDefaultAuthorizationResultCache(),
+          chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
+          onWalletNotFound: createMwaAdapterNotFoundHandler(),
+        }),
+        new PhantomWalletAdapter(),
+        new SolflareWalletAdapter(),
+      ];
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [network]
   );
@@ -140,3 +202,4 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     </ConnectionProvider>
   );
 };
+
