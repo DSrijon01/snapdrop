@@ -1,0 +1,13 @@
+{
+  "fallbackType": "webview",
+  "generatorApp": "solana-mobile",
+  "host": "streetsync-ss.com",
+  "launcherName": "Street Sync",
+  "name": "Street Sync",
+  "packageId": "com.streetsync.app",
+  "startUrl": "/",
+  "signingKey": {
+    "alias": "streetsync",
+    "path": "android/android.keystore"
+  }
+}

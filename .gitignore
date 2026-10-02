@@ -79,4 +79,14 @@ Anchor.toml
 # Sub-codebase (Proprietary Rust project)
 /kerosene-main/
 
+# Android build outputs & signing keys
+*.apk
+*.aab
+/android/.gradle/
+/android/build/
+/android/app/build/
+/android/local.properties
+/android/*.keystore
+/android/android/
+
 
