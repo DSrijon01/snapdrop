@@ -76,6 +76,8 @@ interface DetailsProps {
     fiat: string;         // e.g. "USD"
     favorites?: string[];
     setFavorites?: (favs: string[]) => void;
+    onSelectCoin?: (coin: string) => void;
+    onOpenWatchlist?: () => void;
 }
 
 const CIRCULATING_SUPPLIES: Record<string, number> = {
@@ -100,7 +102,7 @@ const TIMEFRAMES = [
     { label: 'ALL', interval: '1w', limit: 1000 },
 ];
 
-export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: DetailsProps) => {
+export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites, onSelectCoin, onOpenWatchlist }: DetailsProps) => {
     const { rates, formatPrice } = useExchangeRates();
     const [ticker, setTicker] = useState<any>(null);
     const [chartData, setChartData] = useState<any[]>([]);
@@ -247,8 +249,35 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
     };
 
     return (
-        <div className="flex flex-col h-full bg-background p-2 md:p-6 lg:px-8 py-2 md:py-4 animate-in fade-in slide-in-from-right-4 overflow-hidden">
+        <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 pb-32 md:pb-6 animate-in fade-in slide-in-from-right-4 overflow-y-auto">
             
+            {/* Mobile Quick Favorite Coin Selector Chips */}
+            {favorites && favorites.length > 0 && (
+                <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide shrink-0">
+                    {favorites.map((coin) => (
+                        <button
+                            key={coin}
+                            onClick={() => onSelectCoin?.(coin)}
+                            className={`px-3 py-1 rounded-full text-xs font-mono font-bold shrink-0 transition-all ${
+                                selectedCoin === coin
+                                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25 scale-105'
+                                    : 'bg-muted text-muted-foreground hover:text-foreground'
+                            }`}
+                        >
+                            <span>{coin}</span>
+                        </button>
+                    ))}
+                    {onOpenWatchlist && (
+                        <button
+                            onClick={onOpenWatchlist}
+                            className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold text-primary bg-primary/10 hover:bg-primary/20 shrink-0 transition-colors"
+                        >
+                            + All Coins
+                        </button>
+                    )}
+                </div>
+            )}
+
             {/* Massive Header */}
             <div className="mb-2 md:mb-4 shrink-0 flex items-start justify-between gap-2">
                 <div>
@@ -258,10 +287,10 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                     </div>
                     
                     <div className="flex flex-col mt-1">
-                        <span className="text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
+                        <span className="text-2xl sm:text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
                             {currentPrice}
                         </span>
-                        <span className={`text-sm md:text-xl font-bold font-mono ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
+                        <span className={`text-xs sm:text-sm md:text-xl font-bold font-mono ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
                             {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
                         </span>
                     </div>
@@ -365,37 +394,37 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
             </div>
 
             {/* Main Interactive Chart */}
-            <div className="flex-1 w-full min-h-[100px] md:min-h-[250px] max-h-[500px] mb-2 md:mb-4 relative">
+            <div className="w-full h-[280px] sm:h-[340px] md:h-[440px] mb-4 relative shrink-0">
                 {isLoadingChart && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity">
-                        <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse">Loading Chart...</div>
+                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity rounded-2xl">
+                        <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse font-mono">Loading Chart...</div>
                     </div>
                 )}
                 <ResponsiveContainer width="99%" height="100%">
                     {chartType === 'line' ? (
-                        <LineChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                        <LineChart data={chartData} margin={{ top: 10, right: 0, left: -10, bottom: 0 }}>
                             <XAxis 
                                 dataKey="date" 
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
-                                minTickGap={65}
-                                tickMargin={12}
+                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                                minTickGap={35}
+                                tickMargin={8}
                             />
                             <YAxis 
                                 domain={['dataMin', 'dataMax']} 
                                 orientation="right"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
                                 tickFormatter={(val) => {
                                     if (val >= 1000) {
                                         return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
                                     }
                                     return Number.isInteger(val) ? val.toString() : val.toFixed(2);
                                 }}
-                                tickMargin={12}
-                                width={50}
+                                tickMargin={8}
+                                width={44}
                             />
                             <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
                             <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
@@ -415,24 +444,24 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites }: D
                                 dataKey="date" 
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
-                                minTickGap={65}
-                                tickMargin={12}
+                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                                minTickGap={35}
+                                tickMargin={8}
                             />
                             <YAxis 
                                 domain={['dataMin', 'dataMax']} 
                                 orientation="right"
                                 axisLine={false}
                                 tickLine={false}
-                                tick={{ fontSize: 13, fill: '#888', fontWeight: 600 }}
+                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
                                 tickFormatter={(val) => {
                                     if (val >= 1000) {
                                         return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
                                     }
                                     return Number.isInteger(val) ? val.toString() : val.toFixed(2);
                                 }}
-                                tickMargin={12}
-                                width={50}
+                                tickMargin={8}
+                                width={44}
                             />
                             <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
                             <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />

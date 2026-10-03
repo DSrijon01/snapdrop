@@ -9,9 +9,10 @@ interface SidebarProps {
     setSelectedCoin: (coin: string) => void;
     fiat: string;
     setFiat: (fiat: string) => void;
+    onSelectCoin?: (coin: string) => void;
 }
 
-export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelectedCoin, fiat, setFiat }: SidebarProps) => {
+export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelectedCoin, fiat, setFiat, onSelectCoin }: SidebarProps) => {
     const [tickers, setTickers] = useState<any[]>([]);
     const [allTickers, setAllTickers] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
@@ -85,13 +86,16 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
         }
         setSearchQuery('');
         setSelectedCoin(base);
+        onSelectCoin?.(base);
     };
 
     const handleRemoveFavorite = (base: string, e: React.MouseEvent) => {
         e.stopPropagation();
         setFavorites(favorites.filter(f => f !== base));
         if (selectedCoin === base && favorites.length > 1) {
-            setSelectedCoin(favorites.find(f => f !== base) || favorites[0]);
+            const next = favorites.find(f => f !== base) || favorites[0];
+            setSelectedCoin(next);
+            onSelectCoin?.(next);
         }
     };
 
@@ -110,10 +114,10 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
     };
 
     return (
-        <div className="flex flex-col h-full bg-card border-r border-border">
+        <div className="flex flex-col h-full bg-card border-r-0 md:border-r border-border">
             
             {/* Search Top Bar */}
-            <div className="p-4 border-b border-border/50 gap-3 flex flex-col pt-6">
+            <div className="p-3 sm:p-4 border-b border-border/50 gap-2.5 sm:gap-3 flex flex-col pt-3 sm:pt-6">
                 
                 <div className="flex justify-between items-center mb-1">
                     <h2 className="text-xl font-bold font-display text-foreground">Watchlist</h2>
@@ -184,7 +188,10 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                         return (
                             <div 
                                 key={`fav-${baseSymbol}`}
-                                onClick={() => setSelectedCoin(baseSymbol)}
+                                onClick={() => {
+                                    setSelectedCoin(baseSymbol);
+                                    onSelectCoin?.(baseSymbol);
+                                }}
                                 className={`relative flex items-center justify-between pl-4 pr-12 py-3 cursor-pointer border-b border-border/20 transition-colors group
                                     ${isSelected ? 'bg-primary/20 border-l-4 border-l-primary' : 'hover:bg-muted border-l-4 border-l-transparent'}
                                 `}
@@ -215,7 +222,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                 </div>
                                 
                                 {/* Delete Hover Action */}
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center">
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-75 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center">
                                      <button onClick={(e) => handleRemoveFavorite(baseSymbol, e)} className="p-1.5 bg-destructive/80 hover:bg-destructive rounded-md text-destructive-foreground transition-colors shadow-sm">
                                         <X className="w-3.5 h-3.5" />
                                      </button>
@@ -231,7 +238,7 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                         <div className="px-4 py-2 mt-2 bg-muted/30 border-y border-border/50 sticky top-0 z-10 backdrop-blur-md">
                             <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Top Market</span>
                         </div>
-                        <div className="pb-10">
+                        <div className="pb-32 md:pb-10">
                             {allTickers.slice(0, 100).map((coin: any) => {
                                 const baseSymbol = coin.symbol.replace('USDT', '');
                                 // Skip if already in favorites to avoid double-listing
@@ -245,7 +252,10 @@ export const MarketSidebar = ({ favorites, setFavorites, selectedCoin, setSelect
                                 return (
                                     <div 
                                         key={`global-${baseSymbol}`}
-                                        onClick={() => setSelectedCoin(baseSymbol)}
+                                        onClick={() => {
+                                            setSelectedCoin(baseSymbol);
+                                            onSelectCoin?.(baseSymbol);
+                                        }}
                                         className={`relative flex items-center justify-between pl-4 pr-12 py-3 cursor-pointer border-b border-border/10 transition-colors group
                                             ${isSelected ? 'bg-primary/10 border-l-4 border-l-primary' : 'hover:bg-muted/50 border-l-4 border-l-transparent'}
                                         `}
