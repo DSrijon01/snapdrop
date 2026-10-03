@@ -38,26 +38,44 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-4 text-center h-full w-full self-center justify-self-center my-auto">
-      <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 max-w-4xl mx-auto mt-12 md:mt-24">
+      <div className="flex flex-col lg:flex-row items-center justify-center gap-8 lg:gap-16 max-w-4xl mx-auto my-auto w-full">
         {/* Main Login Card */}
-        <div className="p-8 sm:p-10 rounded-3xl bg-card border border-border max-w-lg shadow-xl mx-auto flex-1">
-          <h2 className="text-4xl md:text-6xl font-black mb-6 text-foreground tracking-tight font-display">
+        <div className="p-6 sm:p-8 lg:p-10 rounded-2xl sm:rounded-3xl bg-card border border-border max-w-sm sm:max-w-lg shadow-xl mx-auto flex-1 w-full">
+          {/* Mobile-only compact bot avatar badge */}
+          <div className="lg:hidden flex items-center justify-center mb-4">
+            <div 
+              onClick={cycleNext}
+              className="relative cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/80 border border-border shadow-sm active:scale-95 transition-transform"
+            >
+              <img
+                src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
+                alt="Street Sync Bot"
+                className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+              />
+              <span className="text-[11px] font-black uppercase tracking-widest font-display text-foreground">
+                {BOT_ITEMS[itemIndex].word}
+              </span>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+            </div>
+          </div>
+
+          <h2 className="text-3xl sm:text-4xl lg:text-6xl font-black mb-3 sm:mb-6 text-foreground tracking-tight font-display">
             {showExitMessage ? (
               <span>System <span className="text-destructive">Disconnected</span>.</span>
             ) : (
               <span>Sync Your <span className="text-primary">Street</span>.</span>
             )}
           </h2>
-          <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed font-light">
+          <p className="text-sm sm:text-base lg:text-xl text-muted-foreground mb-6 sm:mb-8 leading-relaxed font-light">
             The next generation of digital collectibles. Connect your wallet to access the marketplace.
           </p>
           <div className="flex justify-center">
-             <WalletMultiButton className="!py-4 !px-10 !h-auto !text-lg !bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!scale-105 transition-all !rounded-xl !font-bold !uppercase !tracking-widest !shadow-lg !font-display" />
+             <WalletMultiButton className="!py-3 sm:!py-4 !px-6 sm:!px-10 !h-auto !text-base sm:!text-lg !bg-primary !text-primary-foreground hover:!bg-primary/90 hover:!scale-105 transition-all !rounded-xl !font-bold !uppercase !tracking-widest !shadow-lg !font-display" />
           </div>
         </div>
 
-        {/* Animated Bottts Robot Avatar on the Right */}
-        <div className="flex flex-col items-center justify-center shrink-0">
+        {/* Animated Bottts Robot Avatar on the Right (Desktop Only) */}
+        <div className="hidden lg:flex flex-col items-center justify-center shrink-0">
           <div 
             onClick={cycleNext}
             title="Click to cycle"
