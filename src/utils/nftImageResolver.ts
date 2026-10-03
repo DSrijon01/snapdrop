@@ -94,12 +94,6 @@ export function getFallbackImage(title: string = "Digital Collectible", seed: st
   <rect x="135" y="40" width="130" height="22" rx="11" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
   <text x="200" y="55" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="9" font-weight="900" letter-spacing="2" fill="#38bdf8" text-anchor="middle">STREET SYNC</text>
 
-  <!-- Title Text -->
-  <text x="200" y="280" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="16" font-weight="900" letter-spacing="0.5" fill="#ffffff" text-anchor="middle">${escapeXml(safeTitle)}</text>
-
-  <!-- Subtitle Tag -->
-  <text x="200" y="304" font-family="'Courier New', monospace" font-size="10" font-weight="600" letter-spacing="1.5" fill="rgba(255,255,255,0.45)" text-anchor="middle">ON-CHAIN METADATA</text>
-
   <!-- Bottom Accent Bar -->
   <rect x="60" y="345" width="280" height="2" rx="1" fill="url(#accentGrad)" opacity="0.6"/>
 </svg>

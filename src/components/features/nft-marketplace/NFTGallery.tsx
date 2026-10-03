@@ -6,10 +6,11 @@ import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
 import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-adapters";
 import { fetchAllDigitalAssetByOwner, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
 import { publicKey as toPublicKey } from "@metaplex-foundation/umi";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { ListingModal } from "./ListingModal";
 import { NFT3DViewer } from "./NFT3DViewer";
-import { Box } from "lucide-react";
+import { Box, ShieldCheck, Check, Copy, ExternalLink, X, ArrowUpRight, Sparkles } from "lucide-react";
 import { Program, AnchorProvider } from "@coral-xyz/anchor";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { IDL, PROGRAM_ID, findListingAddress, findEscrowAddress } from "@/utils/program";
@@ -74,6 +75,15 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
     const [viewer3DNft, setViewer3DNft] = useState<any | null>(null);
     const [listingNft, setListingNft] = useState<NFT | null>(null);
     const [delistingId, setDelistingId] = useState<string | null>(null);
+    const [copiedMint, setCopiedMint] = useState(false);
+
+    const handleCopyMint = (mint: string) => {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(mint);
+            setCopiedMint(true);
+            setTimeout(() => setCopiedMint(false), 2000);
+        }
+    };
 
     const handleListComplete = (price: number, signature: string) => {
         // In a real app, we'd update the backend state here.
@@ -368,12 +378,12 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-60 group-hover:opacity-80 transition-opacity" />
 
                         {/* Content */}
-                        <div className="absolute inset-0 p-2.5 flex flex-col justify-end translate-y-3 group-hover:translate-y-0 transition-transform duration-300">
-                            <h4 className="text-white font-bold truncate text-sm mb-1 drop-shadow-md font-display">{nft.name || nft.json?.name || `NFT #${i}`}</h4>
+                        <div className="absolute inset-0 p-2.5 flex flex-col justify-end">
+                            <h4 className="text-white font-bold truncate text-xs sm:text-sm drop-shadow-md font-display mb-1">{nft.name || nft.json?.name || `NFT #${i}`}</h4>
                             
                             {/* Attribute Badge */}
                             {nft.json?.attributes && (
-                                <div className="mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                                <div className="mb-1.5 hidden sm:block opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
                                     <span className="bg-white/10 px-1.5 py-0.5 rounded text-[8px] uppercase font-bold text-gray-300 border border-white/5">
                                         {nft.json.attributes.length} Attrs
                                     </span>
@@ -381,8 +391,8 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                             )}
 
                             {/* Owner Info */}
-                            <div className="flex items-center gap-1.5 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
-                                <div className="w-5 h-5 rounded-full bg-gradient-to-tr from-purple-500 to-blue-500 flex items-center justify-center text-[9px] font-bold text-white">
+                            <div className="hidden sm:flex items-center gap-1.5 mb-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-100">
+                                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[9px] font-bold text-primary-foreground">
                                     {nft.ownerName?.[0] || "U"}
                                 </div>
                                 <div className="flex flex-col">
@@ -391,7 +401,7 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                                 </div>
                             </div>
 
-                            <button className="w-full py-1.5 bg-gradient-to-r from-primary to-primary/80 rounded-lg text-primary-foreground text-[10px] font-bold uppercase tracking-wider transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all shadow-lg shadow-primary/20">
+                            <button className="hidden sm:block w-full py-1.5 bg-gradient-to-r from-primary to-primary/80 rounded-lg text-primary-foreground text-[10px] font-bold uppercase tracking-wider transform scale-95 opacity-0 group-hover:scale-100 group-hover:opacity-100 transition-all shadow-lg shadow-primary/20">
                                 Details
                             </button>
                         </div>
@@ -483,144 +493,267 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
 
 
             {/* Details Modal */}
-            <AnimatePresence>
-                {selectedNft && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {typeof document !== 'undefined' && createPortal(
+                <AnimatePresence>
+                    {selectedNft && (
                         <motion.div 
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+                            className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 md:p-6 bg-black/60 backdrop-blur-md"
                             onClick={() => setSelectedNft(null)}
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            className="relative bg-card border border-border rounded-2xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col md:flex-row shadow-2xl"
                         >
-                            <button 
-                                onClick={() => setSelectedNft(null)}
-                                className="absolute top-4 right-4 z-10 p-2 bg-background/50 hover:bg-foreground/10 rounded-full text-foreground transition-colors"
+                            <motion.div 
+                                initial={{ opacity: 0, scale: 0.95, y: 25 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 25 }}
+                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                className="w-full max-w-4xl h-[92vh] md:h-[82vh] max-h-[820px] rounded-2xl md:rounded-3xl overflow-hidden shadow-2xl border border-border bg-card text-foreground flex flex-col relative select-none"
+                                onClick={(e) => e.stopPropagation()}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                            </button>
-
-                            {/* Image Section */}
-                            <div className="w-full md:w-1/2 bg-gray-100 aspect-square md:aspect-auto relative group">
-                                <img 
-                                    src={resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name)} 
-                                    alt={selectedNft.name}
-                                    className="w-full h-full object-contain"
-                                    onError={(e) => {
-                                        handleImageFallback(e, selectedNft.name);
-                                    }}
-                                />
-                            </div>
-
-                             <div className="w-full md:w-1/2 p-6 md:p-8 overflow-y-auto bg-card custom-scrollbar">
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                    <div className="flex items-center gap-2">
-                                        <div className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold border border-primary/20 uppercase tracking-wider">
-                                            Verified Collection
+                                {/* Top Header Bar */}
+                                <div className="px-4 sm:px-6 md:px-8 py-3.5 border-b border-border bg-card/90 backdrop-blur-md flex items-center justify-between z-20 shrink-0">
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[10px] font-mono font-bold uppercase tracking-wider shrink-0">
+                                            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                                            <span>Verified Asset</span>
                                         </div>
                                         {selectedNft.json?.symbol && (
-                                            <span className="text-muted-foreground text-xs font-mono font-bold tracking-tight">{selectedNft.json.symbol}</span>
+                                            <span className="text-muted-foreground text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-muted border border-border shrink-0">
+                                                {selectedNft.json.symbol}
+                                            </span>
                                         )}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setViewer3DNft({
-                                                name: selectedNft.name,
-                                                image: resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name),
-                                                mint: selectedNft.mint,
-                                                description: selectedNft.description,
-                                                attributes: selectedNft.json?.attributes,
-                                                price: selectedNft.listingPrice,
-                                            });
-                                        }}
-                                        className="px-2.5 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/25 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                                        title="Inspect in 3D"
-                                    >
-                                        <Box size={13} />
-                                        <span>3D View</span>
-                                    </button>
-                                </div>
-                               
-                                <h2 className="text-3xl font-black text-foreground mb-4 leading-tight font-display uppercase tracking-tight">{selectedNft.name || selectedNft.json?.name}</h2>
-                                
-                                <div className="space-y-6">
-                                    <div>
-                                        <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-2">
-                                            Description
+                                        <h3 className="text-sm sm:text-base font-bold text-foreground truncate hidden sm:block">
+                                            {selectedNft.name || selectedNft.json?.name}
                                         </h3>
-                                        <p className="text-foreground leading-relaxed text-sm bg-muted p-4 rounded-xl border border-border">
-                                            {selectedNft.description || selectedNft.json?.description || "No description provided."}
-                                        </p>
                                     </div>
 
-                                    {selectedNft.json?.attributes && (
-                                        <div>
-                                            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                Attributes <span className="text-foreground">({selectedNft.json.attributes.length})</span>
-                                            </h3>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                {selectedNft.json.attributes.map((attr, idx) => (
-                                                    <div key={idx} className="p-3 bg-muted rounded-lg border border-border hover:border-muted-foreground/30 transition-colors group">
-                                                        <p className="text-[10px] text-muted-foreground uppercase font-bold mb-1 group-hover:text-foreground transition-colors">{attr.trait_type}</p>
-                                                        <p className="text-sm text-foreground font-bold truncate" title={attr.value}>{attr.value}</p>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setViewer3DNft({
+                                                    name: selectedNft.name,
+                                                    image: resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name),
+                                                    mint: selectedNft.mint,
+                                                    description: selectedNft.description,
+                                                    attributes: selectedNft.json?.attributes,
+                                                    price: selectedNft.listingPrice,
+                                                });
+                                            }}
+                                            className="px-2.5 py-1.5 bg-muted hover:bg-primary text-foreground hover:text-primary-foreground border border-border hover:border-primary/50 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
+                                            title="Inspect in 3D"
+                                        >
+                                            <Box size={13} />
+                                            <span className="hidden sm:inline">3D View</span>
+                                        </button>
+
+                                        <button 
+                                            type="button"
+                                            onClick={() => setSelectedNft(null)}
+                                            className="p-2 sm:p-2.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground rounded-full transition-all border border-border active:scale-95 shadow-sm"
+                                            title="Close Modal"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Modal Content: Desktop Split & Mobile Scrollable Flow */}
+                                <div className="flex-1 overflow-hidden flex flex-col md:flex-row relative z-10">
+                                    {/* Left Pane (Desktop): Hero Artwork */}
+                                    <div className="hidden md:flex md:w-[48%] h-full flex-col items-center justify-center p-8 bg-muted/20 border-r border-border relative overflow-hidden">
+                                        <div className="relative w-full max-w-[320px] aspect-square rounded-2xl overflow-hidden border border-border shadow-md bg-muted group">
+                                            <img 
+                                                src={resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name)} 
+                                                alt={selectedNft.name}
+                                                className="w-full h-full object-cover relative z-10 group-hover:scale-105 transition-transform duration-500"
+                                                onError={(e) => {
+                                                    handleImageFallback(e, selectedNft.name);
+                                                }}
+                                            />
+                                            {/* 3D button overlay */}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setViewer3DNft({
+                                                        name: selectedNft.name,
+                                                        image: resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name),
+                                                        mint: selectedNft.mint,
+                                                        description: selectedNft.description,
+                                                        attributes: selectedNft.json?.attributes,
+                                                        price: selectedNft.listingPrice,
+                                                    });
+                                                }}
+                                                className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1.5 rounded-xl bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground font-mono font-bold text-xs backdrop-blur-md border border-border hover:border-primary/50 shadow-md flex items-center gap-1.5 transition-all"
+                                            >
+                                                <Box size={14} />
+                                                <span>Interactive 3D</span>
+                                            </button>
+                                        </div>
+
+                                        {/* Mint Hash chip below image */}
+                                        {selectedNft.mint && (
+                                            <div className="flex items-center gap-2 mt-4 px-3 py-1.5 rounded-xl bg-muted border border-border text-xs font-mono">
+                                                <span className="text-muted-foreground">Mint:</span>
+                                                <span className="text-foreground font-bold">{selectedNft.mint.slice(0, 8)}...{selectedNft.mint.slice(-6)}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleCopyMint(selectedNft.mint!)}
+                                                    className="p-1 rounded hover:bg-background/80 text-muted-foreground hover:text-foreground transition-colors"
+                                                    title="Copy Mint"
+                                                >
+                                                    {copiedMint ? <Check size={12} className="text-primary" /> : <Copy size={12} />}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Right Pane (Desktop) & Full Content (Mobile) */}
+                                    <div className="w-full md:w-[52%] h-full overflow-y-auto custom-scrollbar p-5 sm:p-7 md:p-8 flex flex-col justify-between space-y-6 pb-24 md:pb-8 bg-card">
+                                        <div className="space-y-5">
+                                            {/* Mobile Artwork Preview */}
+                                            <div className="md:hidden">
+                                                <div className="relative w-full max-w-[260px] mx-auto aspect-square rounded-2xl overflow-hidden border border-border shadow-md bg-muted group my-2">
+                                                    <img 
+                                                        src={resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name)} 
+                                                        alt={selectedNft.name}
+                                                        className="w-full h-full object-cover relative z-10"
+                                                        onError={(e) => {
+                                                            handleImageFallback(e, selectedNft.name);
+                                                        }}
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setViewer3DNft({
+                                                                name: selectedNft.name,
+                                                                image: resolveNftImageUrl(selectedNft.json?.image || selectedNft.image, selectedNft.name),
+                                                                mint: selectedNft.mint,
+                                                                description: selectedNft.description,
+                                                                attributes: selectedNft.json?.attributes,
+                                                                price: selectedNft.listingPrice,
+                                                            });
+                                                        }}
+                                                        className="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-20 px-3 py-1 rounded-xl bg-background/90 hover:bg-primary text-foreground hover:text-primary-foreground font-mono font-bold text-xs backdrop-blur-md border border-border flex items-center gap-1.5 shadow-md"
+                                                    >
+                                                        <Box size={13} />
+                                                        <span>Interactive 3D</span>
+                                                    </button>
+                                                </div>
+
+                                                {selectedNft.mint && (
+                                                    <div className="flex items-center justify-center gap-2 mt-2 text-[11px] font-mono">
+                                                        <span className="text-muted-foreground">Mint:</span>
+                                                        <span className="text-foreground font-bold bg-muted px-2 py-0.5 rounded-lg border border-border">
+                                                            {selectedNft.mint.slice(0, 8)}...{selectedNft.mint.slice(-6)}
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCopyMint(selectedNft.mint!)}
+                                                            className="p-1 rounded bg-muted border border-border text-muted-foreground hover:text-foreground"
+                                                            title="Copy Mint"
+                                                        >
+                                                            {copiedMint ? <Check size={11} className="text-primary" /> : <Copy size={11} />}
+                                                        </button>
                                                     </div>
-                                                ))}
+                                                )}
+                                            </div>
+
+                                            {/* Title */}
+                                            <div>
+                                                <h2 className="text-2xl sm:text-3xl font-black text-foreground leading-tight font-display uppercase tracking-tight">
+                                                    {selectedNft.name || selectedNft.json?.name}
+                                                </h2>
+                                                {selectedNft.isListed && selectedNft.listingPrice && (
+                                                    <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-xl bg-primary/10 border border-primary/20">
+                                                        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Listed For</span>
+                                                        <span className="text-base font-mono font-black text-primary">{selectedNft.listingPrice} SOL</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Description */}
+                                            <div>
+                                                <h4 className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                    <Sparkles size={12} className="text-primary" />
+                                                    <span>Description</span>
+                                                </h4>
+                                                <p className="text-foreground leading-relaxed text-xs sm:text-sm bg-muted p-4 rounded-xl border border-border">
+                                                    {selectedNft.description || selectedNft.json?.description || "No description provided."}
+                                                </p>
+                                            </div>
+
+                                            {/* Attributes Grid */}
+                                            {selectedNft.json?.attributes && selectedNft.json.attributes.length > 0 && (
+                                                <div>
+                                                    <h4 className="text-[10px] font-mono font-bold text-muted-foreground uppercase tracking-widest mb-2.5 flex items-center justify-between">
+                                                        <span>Attributes</span>
+                                                        <span className="text-muted-foreground font-mono">({selectedNft.json.attributes.length})</span>
+                                                    </h4>
+                                                    <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto custom-scrollbar pr-1">
+                                                        {selectedNft.json.attributes.map((attr, idx) => (
+                                                            <div key={idx} className="p-2.5 bg-muted rounded-xl border border-border hover:border-primary/40 transition-colors">
+                                                                <p className="text-[9px] text-muted-foreground font-mono uppercase font-bold truncate mb-0.5">{attr.trait_type}</p>
+                                                                <p className="text-xs text-foreground font-bold truncate" title={attr.value}>{attr.value}</p>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Security specs badge */}
+                                            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-1">
+                                                <div className="p-2.5 rounded-xl bg-muted border border-border">
+                                                    <span className="text-muted-foreground block mb-0.5">Asset Type</span>
+                                                    <span className="text-foreground font-bold">Metaplex Digital Asset</span>
+                                                </div>
+                                                <div className="p-2.5 rounded-xl bg-muted border border-border">
+                                                    <span className="text-muted-foreground block mb-0.5">Network</span>
+                                                    <span className="text-primary font-bold">Solana Devnet</span>
+                                                </div>
                                             </div>
                                         </div>
-                                    )}
-                                    
-                                    {/* Action Buttons */}
-                                    <div className="pt-4 flex flex-col gap-3">
-                                        <div className="flex flex-col sm:flex-row gap-3">
-                                            <a 
-                                                href={`https://solscan.io/token/${selectedNft.mint || ''}?cluster=devnet`} 
-                                                target="_blank" 
-                                                rel="noreferrer"
-                                                className="flex-1 py-3 rounded-xl bg-muted border border-border text-foreground font-bold text-center text-sm hover:bg-muted/80 transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <span>View on Solscan</span>
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
-                                            </a>
-                                            
-                                            {/* List Button (Scope A: Only if owner - simulated check for now as we are the owner of what we fetch) */}
-                                            {/* Logic: fetchAllDigitalAssetByOwner fetches OUR assets, so we are always the owner */}
-                                            {/* List or Delist Button */}
-                                            {selectedNft.isListed ? (
-                                                <div className="flex-1 flex flex-col gap-1">
-                                                     <button 
+
+                                        {/* Action Buttons */}
+                                        <div className="pt-4 border-t border-border mt-auto space-y-2.5">
+                                            <div className="flex flex-col sm:flex-row gap-2.5">
+                                                <a 
+                                                    href={`https://solscan.io/token/${selectedNft.mint || ''}?cluster=devnet`} 
+                                                    target="_blank" 
+                                                    rel="noreferrer"
+                                                    className="flex-1 py-3 px-4 rounded-xl bg-muted hover:bg-muted/80 border border-border text-foreground font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 hover:border-border/80 active:scale-98"
+                                                >
+                                                    <span>View on Solscan</span>
+                                                    <ArrowUpRight size={14} className="text-muted-foreground" />
+                                                </a>
+
+                                                {selectedNft.isListed ? (
+                                                    <button 
                                                         onClick={() => handleDelist(selectedNft)}
                                                         disabled={!!delistingId}
-                                                        className="w-full py-3 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl font-bold text-sm uppercase tracking-wide shadow-lg shadow-destructive/20 transition-all disabled:opacity-50"
+                                                        className="flex-1 py-3 px-4 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl font-bold text-xs uppercase tracking-wider font-mono transition-all disabled:opacity-50 active:scale-98 shadow-md"
                                                     >
-                                                        {delistingId === selectedNft.mint ? "Delisting..." : "Delist Item"}
+                                                        {delistingId === selectedNft.mint ? "Delisting Asset..." : "Delist Item"}
                                                     </button>
-                                                    <p className="text-[10px] text-center text-muted-foreground font-bold">
-                                                        *Gas fees only
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <button 
-                                                    onClick={() => setListingNft(selectedNft)}
-                                                    className="flex-1 py-3 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-bold text-sm uppercase tracking-wide shadow-lg shadow-primary/20 transition-all"
-                                                >
-                                                    List for Sale
-                                                </button>
-                                            )}
+                                                ) : (
+                                                    <button 
+                                                        onClick={() => setListingNft(selectedNft)}
+                                                        className="flex-1 py-3 px-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl font-black text-xs uppercase tracking-wider font-display transition-all shadow-md active:scale-98 hover:scale-[1.01]"
+                                                    >
+                                                        List for Sale
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
+                            </motion.div>
                         </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
 
             {/* 3D NFT Viewer Modal */}
             <NFT3DViewer 
