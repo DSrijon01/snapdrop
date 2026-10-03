@@ -2,11 +2,13 @@
 
 import { FC, Suspense, useRef, useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Float, RoundedBox, Sparkles, Environment } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { X, Box, RotateCw, Play, Pause, ExternalLink, Copy, Check, Eye, ShoppingCart } from "lucide-react";
+import { NFT3DViewerMobileHUD } from "@/components/responsive/NFT3DViewerMobileHUD";
+import { useResponsive } from "@/components/responsive/useResponsive";
 
 export interface NFT3DViewerProps {
     isOpen: boolean;
@@ -289,7 +291,20 @@ const NFTCardSlab: FC<{
     );
 };
 
+// Synchronizes camera position and projection matrix dynamically based on device viewport
+const ResponsiveCameraSync: FC<{ isMobile: boolean }> = ({ isMobile }) => {
+    const { camera } = useThree();
+    useEffect(() => {
+        const targetZ = isMobile ? 6.2 : 4.5;
+        camera.position.set(0, 0, targetZ);
+        camera.lookAt(0, 0, 0);
+        camera.updateProjectionMatrix();
+    }, [camera, isMobile]);
+    return null;
+};
+
 export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy, isBuying, currentWallet }) => {
+    const { isMobile } = useResponsive();
     const [mounted, setMounted] = useState(false);
     const [autoRotate, setAutoRotate] = useState(true);
     const [targetRotationY, setTargetRotationY] = useState(0);
@@ -335,6 +350,11 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
     const handleResetView = () => {
         if (controlsRef.current) {
             controlsRef.current.reset();
+            if (controlsRef.current.object) {
+                controlsRef.current.object.position.set(0, 0, isMobile ? 6.2 : 4.5);
+                controlsRef.current.target?.set(0, 0, 0);
+                controlsRef.current.update();
+            }
         }
         setTargetRotationY(0);
         setAutoRotate(true);
@@ -368,8 +388,21 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/95 backdrop-blur-2xl select-none"
                 >
-                    {/* Top Right Controls & Close */}
-                    <div className="absolute top-6 right-6 z-[100000] flex items-center gap-3">
+                    {/* Mobile-Only HUD & Expandable Details Sheet */}
+                    <NFT3DViewerMobileHUD
+                        item={item}
+                        autoRotate={autoRotate}
+                        onToggleAutoRotate={() => setAutoRotate((prev) => !prev)}
+                        onFlip={handleFlip}
+                        onResetView={handleResetView}
+                        onClose={onClose}
+                        onBuy={onBuy}
+                        isBuying={isBuying}
+                        currentWallet={currentWallet}
+                    />
+
+                    {/* Top Right Controls & Close (Desktop Only) */}
+                    <div className="hidden md:flex absolute top-6 right-6 z-[100000] items-center gap-3">
                         <button
                             onClick={handleResetView}
                             className="p-2.5 bg-card/60 hover:bg-card border border-border/60 hover:border-primary/50 rounded-xl text-muted-foreground hover:text-foreground transition-all shadow-lg backdrop-blur-md"
@@ -411,8 +444,8 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
                         </button>
                     </div>
 
-                    {/* Left HUD Panel: NFT Metadata */}
-                    <div className="absolute top-6 left-6 z-[100000] max-w-sm w-full pointer-events-none">
+                    {/* Left HUD Panel: NFT Metadata (Desktop Only) */}
+                    <div className="hidden md:block absolute top-6 left-6 z-[100000] max-w-sm w-full pointer-events-none">
                         <motion.div
                             initial={{ x: -40, opacity: 0 }}
                             animate={{ x: 0, opacity: 1 }}
@@ -530,14 +563,15 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
                     </div>
 
                     {/* 3D Canvas Viewport */}
-                    <div className="w-full h-full cursor-grab active:cursor-grabbing">
+                    <div className="w-full h-full cursor-grab active:cursor-grabbing touch-none">
                         <Canvas
                             shadows
                             dpr={[1, 2]}
-                            camera={{ position: [0, 0, 4.5], fov: 45 }}
+                            camera={{ position: [0, 0, isMobile ? 6.2 : 4.5], fov: isMobile ? 46 : 45 }}
                             gl={{ antialias: true, alpha: true }}
                         >
                             <Suspense fallback={null}>
+                                <ResponsiveCameraSync isMobile={isMobile} />
                                 <ambientLight intensity={0.7} />
                                 <directionalLight position={[4, 5, 4]} intensity={1.4} castShadow />
                                 <directionalLight position={[-4, -5, -4]} intensity={0.5} />
@@ -555,8 +589,8 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
                                     autoRotate={autoRotate}
                                     autoRotateSpeed={0.9}
                                     enablePan={false}
-                                    minDistance={2.4}
-                                    maxDistance={6.5}
+                                    minDistance={2.0}
+                                    maxDistance={isMobile ? 10.0 : 6.5}
                                     dampingFactor={0.06}
                                     enableDamping
                                 />
@@ -564,8 +598,8 @@ export const NFT3DViewer: FC<NFT3DViewerProps> = ({ isOpen, onClose, item, onBuy
                             </Suspense>
                         </Canvas>
 
-                        {/* Bottom Interaction Guide */}
-                        <div className="absolute bottom-8 inset-x-0 text-center pointer-events-none z-[100000]">
+                        {/* Bottom Interaction Guide (Desktop Only) */}
+                        <div className="hidden md:block absolute bottom-8 inset-x-0 text-center pointer-events-none z-[100000]">
                             <div className="inline-flex items-center gap-2 bg-card/70 backdrop-blur-md px-4 py-1.5 rounded-full text-[11px] font-mono font-medium text-muted-foreground border border-border/50 shadow-lg">
                                 <Eye size={13} className="text-primary" />
                                 <span>Left-click + Drag to Rotate • Scroll to Zoom • Press [Space] to Pause</span>

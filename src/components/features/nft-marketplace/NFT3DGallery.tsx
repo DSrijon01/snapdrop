@@ -1,13 +1,14 @@
 "use client";
 
 import { FC, useState, Suspense, useRef, useEffect, useMemo } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Float, RoundedBox, Sparkles, Environment } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import * as THREE from "three";
 import { Box, RotateCw, Play, Pause, Maximize2, ExternalLink, Sparkles as SparklesIcon, Layers, ShoppingCart } from "lucide-react";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useResponsive } from "@/components/responsive/useResponsive";
 
 export interface Gallery3DItem {
     id: string;
@@ -170,8 +171,21 @@ export interface NFT3DGalleryProps {
     isBuying?: string | null;
 }
 
+// Synchronizes camera position and projection matrix dynamically for the embedded gallery stage
+const GalleryCameraSync: FC<{ isMobile: boolean }> = ({ isMobile }) => {
+    const { camera } = useThree();
+    useEffect(() => {
+        const targetZ = isMobile ? 5.4 : 4.4;
+        camera.position.set(0, 0, targetZ);
+        camera.lookAt(0, 0, 0);
+        camera.updateProjectionMatrix();
+    }, [camera, isMobile]);
+    return null;
+};
+
 export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWallet, isBuying }) => {
     const { connected } = useWallet();
+    const { isMobile } = useResponsive();
 
     const galleryItems: Gallery3DItem[] = useMemo(() => {
         if (items && items.length > 0) {
@@ -211,6 +225,11 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
     const handleReset = () => {
         if (controlsRef.current) {
             controlsRef.current.reset();
+            if (controlsRef.current.object) {
+                controlsRef.current.object.position.set(0, 0, isMobile ? 5.4 : 4.4);
+                controlsRef.current.target?.set(0, 0, 0);
+                controlsRef.current.update();
+            }
         }
         setTargetRotationY(0);
         setAutoRotate(true);
@@ -223,7 +242,7 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
                 {/* Left Column (7 Cols): 3D Turntable Viewport + Item Card Underneath */}
                 <div className="lg:col-span-7 space-y-5">
                     {/* 3D Turntable Viewport */}
-                    <div className="bg-card/95 border border-border/80 rounded-3xl overflow-hidden shadow-2xl relative h-[420px] sm:h-[450px] flex flex-col">
+                    <div className="bg-card/95 border border-border/80 rounded-3xl overflow-hidden shadow-2xl relative h-[360px] sm:h-[450px] flex flex-col">
                         {/* Viewport Header Controls */}
                         <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between pointer-events-none">
                             <div className="bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 text-xs font-mono font-bold text-white flex items-center gap-2 pointer-events-auto">
@@ -261,14 +280,15 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
                         </div>
 
                         {/* Three.js Canvas */}
-                        <div className="w-full flex-1 cursor-grab active:cursor-grabbing">
+                        <div className="w-full flex-1 cursor-grab active:cursor-grabbing touch-none">
                             <Canvas
                                 shadows
                                 dpr={[1, 2]}
-                                camera={{ position: [0, 0, 4.4], fov: 45 }}
+                                camera={{ position: [0, 0, isMobile ? 5.4 : 4.4], fov: 45 }}
                                 gl={{ antialias: true, alpha: true }}
                             >
                                 <Suspense fallback={null}>
+                                    <GalleryCameraSync isMobile={isMobile} />
                                     <ambientLight intensity={0.7} />
                                     <directionalLight position={[4, 5, 4]} intensity={1.4} />
                                     <directionalLight position={[-4, -5, -4]} intensity={0.5} />
@@ -285,8 +305,8 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
                                         autoRotate={autoRotate}
                                         autoRotateSpeed={1.0}
                                         enablePan={false}
-                                        minDistance={2.4}
-                                        maxDistance={6.0}
+                                        minDistance={2.0}
+                                        maxDistance={isMobile ? 8.0 : 6.0}
                                         dampingFactor={0.06}
                                         enableDamping
                                     />
@@ -297,8 +317,10 @@ export const NFT3DGallery: FC<NFT3DGalleryProps> = ({ items, onBuy, currentWalle
 
                         {/* Viewport Footer Hint */}
                         <div className="absolute bottom-3 inset-x-0 text-center pointer-events-none">
-                            <div className="inline-block bg-black/60 backdrop-blur-md px-4 py-1 rounded-full text-[11px] font-mono font-medium text-gray-300 border border-white/5">
-                                Drag to rotate in 3D • Scroll to zoom • Click Fullscreen for details
+                            <div className="inline-block bg-black/60 backdrop-blur-md px-3.5 py-1 rounded-full text-[10px] sm:text-[11px] font-mono font-medium text-gray-300 border border-white/5">
+                                {isMobile
+                                    ? "Drag to rotate • Pinch to zoom • Tap Fullscreen"
+                                    : "Drag to rotate in 3D • Scroll to zoom • Click Fullscreen for details"}
                             </div>
                         </div>
                     </div>
