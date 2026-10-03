@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Search, Flame, Award, Clock, DollarSign, BookOpen, AlertCircle, RefreshCw } from "lucide-react";
+import { Search, Flame, Award, Clock, DollarSign, BookOpen, AlertCircle, RefreshCw, MessageSquare, Activity } from "lucide-react";
 import { 
   Post, 
   BoardComment,
@@ -26,6 +26,7 @@ export function SessionsBoard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTicker, setActiveTicker] = useState<string | null>(null);
   const [activeSort, setActiveSort] = useState<"hot" | "new" | "top" | "yolo" | "porn">("hot");
+  const [mobileTab, setMobileTab] = useState<"feed" | "chat" | "trending">("feed");
 
   // Prevent hydration mismatch
   useEffect(() => {
@@ -318,54 +319,92 @@ export function SessionsBoard() {
   }
 
   return (
-    <div className="container mx-auto px-4 md:px-6 py-6 space-y-6">
+    <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 pb-28 sm:pb-12">
       {/* Board Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-border p-6 md:p-8 bg-gradient-to-r from-background via-secondary/10 to-primary/5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 bg-gradient-to-r from-background via-secondary/10 to-primary/5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-green-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 
-        <div className="space-y-2 relative z-10">
-          <div className="flex items-center gap-3">
-            <span className="bg-primary text-primary-foreground font-black font-display text-[10px] tracking-widest uppercase px-3 py-1 rounded-full shadow-md shadow-primary/20">
+        <div className="space-y-1.5 sm:space-y-2 relative z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="bg-primary text-primary-foreground font-black font-display text-[9px] sm:text-[10px] tracking-widest uppercase px-2.5 py-0.5 sm:py-1 rounded-full shadow-md shadow-primary/20">
               StreetSync
             </span>
-            <span className="flex items-center gap-1.5 text-xs font-mono font-bold text-green-500 bg-green-500/10 border border-green-500/20 px-2.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1.5 text-[11px] sm:text-xs font-mono font-bold text-green-500 bg-green-500/10 border border-green-500/20 px-2 sm:px-2.5 py-0.5 rounded-full">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
               142k Online
             </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight text-foreground">
+          <h2 className="text-2xl sm:text-4xl md:text-5xl font-black font-display uppercase tracking-tight text-foreground">
             Street Sync <span className="text-primary">Posting Board</span>
-          </h1>
-          <p className="text-muted-foreground max-w-xl text-sm md:text-base font-medium">
+          </h2>
+          <p className="text-muted-foreground max-w-xl text-xs sm:text-sm md:text-base font-medium">
             Sync your trades, Due Diligence, gains, and losses with the street. Not financial advice. Positions or ban!
           </p>
         </div>
 
         {/* Clear/Reset board button */}
-        <div className="relative z-10 shrink-0">
+        <div className="relative z-10 shrink-0 flex items-center gap-2">
           <button 
             onClick={handleResetBoard}
-            className="px-4 py-2 text-xs font-mono font-bold uppercase border border-border hover:bg-secondary/40 rounded-xl transition-all"
+            className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-mono font-bold uppercase border border-border hover:bg-secondary/40 rounded-xl transition-all"
           >
             Reset Feed to Default
           </button>
         </div>
       </div>
 
+      {/* Mobile Tab Switcher (Visible on < lg screens) */}
+      <div className="flex lg:hidden items-center p-1 bg-secondary/30 rounded-xl border border-border gap-1">
+        <button
+          onClick={() => setMobileTab("feed")}
+          className={`flex-1 py-2 text-xs font-bold font-display uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === "feed"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <MessageSquare size={14} />
+          <span>Feed ({filteredPosts.length})</span>
+        </button>
+        <button
+          onClick={() => setMobileTab("chat")}
+          className={`flex-1 py-2 text-xs font-bold font-display uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === "chat"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Activity size={14} />
+          <span>Live Chat</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+        </button>
+        <button
+          onClick={() => setMobileTab("trending")}
+          className={`flex-1 py-2 text-xs font-bold font-display uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === "trending"
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Flame size={14} />
+          <span>Trending</span>
+        </button>
+      </div>
+
       {/* Main Board Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 items-start">
         
         {/* Left Column - Posting Feed & Form (2/3 width on desktop) */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={`lg:col-span-2 space-y-4 sm:space-y-6 ${mobileTab !== "feed" ? "hidden lg:block" : "block"}`}>
           {/* Post Creation Form */}
           <PostCreator onAddPost={handleAddPost} />
 
           {/* Filtering and Search Area */}
-          <div className="glass-card p-4 rounded-2xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="glass-card p-3 sm:p-4 rounded-2xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
             
             {/* Sort Tabs */}
-            <div className="flex flex-wrap gap-1 bg-secondary/20 p-1 rounded-xl border border-border/40 w-fit">
+            <div className="overflow-x-auto no-scrollbar flex items-center gap-1 bg-secondary/20 p-1 rounded-xl border border-border/40 w-full sm:w-fit shrink-0">
               {(["hot", "new", "top", "yolo", "porn"] as const).map((sort) => {
                 const isActive = activeSort === sort;
                 const getLabel = () => {
@@ -382,7 +421,7 @@ export function SessionsBoard() {
                   <button
                     key={sort}
                     onClick={() => setActiveSort(sort)}
-                    className={`px-3 py-1.5 text-xs font-bold uppercase font-display rounded-lg transition-all ${
+                    className={`whitespace-nowrap px-2.5 sm:px-3 py-1.5 text-xs font-bold uppercase font-display rounded-lg transition-all shrink-0 ${
                       isActive
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
                         : "text-muted-foreground hover:text-foreground hover:bg-secondary/30"
@@ -395,14 +434,14 @@ export function SessionsBoard() {
             </div>
 
             {/* Search Input */}
-            <div className="relative flex-1 max-w-md w-full">
+            <div className="relative flex-1 w-full md:max-w-md">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search posts or tickers..."
-                className="w-full bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl pl-10 pr-4 py-2 text-sm text-foreground placeholder-muted-foreground/60 outline-none transition-all"
+                className="w-full bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl pl-10 pr-12 py-2 text-xs sm:text-sm text-foreground placeholder-muted-foreground/60 outline-none transition-all"
               />
               {searchQuery && (
                 <button
@@ -418,7 +457,7 @@ export function SessionsBoard() {
           {/* Active Ticker Filter Alert */}
           {activeTicker && (
             <div className="flex items-center justify-between p-3.5 rounded-xl bg-primary/10 border border-primary/20 text-foreground animate-in slide-in-from-top-1">
-              <span className="text-sm font-bold font-display uppercase tracking-wide flex items-center gap-2">
+              <span className="text-xs sm:text-sm font-bold font-display uppercase tracking-wide flex items-center gap-2">
                 <Flame size={16} className="text-primary" />
                 Filtering by Ticker: <span className="text-primary">${activeTicker}</span>
               </span>
@@ -434,9 +473,9 @@ export function SessionsBoard() {
           {/* Posts List */}
           <div className="space-y-4">
             {filteredPosts.length === 0 ? (
-              <div className="glass-card rounded-2xl border border-border p-12 text-center space-y-3">
+              <div className="glass-card rounded-2xl border border-border p-8 sm:p-12 text-center space-y-3">
                 <AlertCircle className="mx-auto text-muted-foreground animate-bounce" size={32} />
-                <p className="font-display font-bold uppercase tracking-wider text-muted-foreground text-sm">
+                <p className="font-display font-bold uppercase tracking-wider text-muted-foreground text-xs sm:text-sm">
                   No post matches your search or filters.
                 </p>
                 <button
@@ -464,45 +503,54 @@ export function SessionsBoard() {
         </div>
 
         {/* Right Column - Sidebar (1/3 width on desktop) */}
-        <div className="space-y-6 lg:sticky lg:top-[90px]">
+        <div className={`space-y-4 sm:space-y-6 lg:sticky lg:top-[90px] ${mobileTab === "feed" ? "hidden lg:block" : "block"}`}>
           
-          {/* Trending Tickers */}
-          <TrendingTickers 
-            posts={posts} 
-            activeTicker={activeTicker} 
-            onSelectTicker={setActiveTicker} 
-          />
+          {/* Live Chat Wall (shows first on mobile if chat tab is active) */}
+          <div className={mobileTab === "trending" ? "hidden lg:block" : "block"}>
+            <LiveChatWall 
+              messages={chatMessages} 
+              onSendMessage={handleSendChatMessage} 
+            />
+          </div>
 
-          {/* Live Chat Wall */}
-          <LiveChatWall 
-            messages={chatMessages} 
-            onSendMessage={handleSendChatMessage} 
-          />
+          {/* Trending Tickers */}
+          <div className={mobileTab === "chat" ? "hidden lg:block" : "block"}>
+            <TrendingTickers 
+              posts={posts} 
+              activeTicker={activeTicker} 
+              onSelectTicker={(ticker) => {
+                setActiveTicker(ticker);
+                setMobileTab("feed");
+              }} 
+            />
+          </div>
 
           {/* Wendy's Rules Board */}
-          <div className="glass-card p-5 rounded-2xl border border-border shadow-lg space-y-4">
-            <h3 className="text-sm font-black font-display uppercase tracking-wider flex items-center gap-2 text-foreground">
-              <BookOpen size={16} className="text-primary" />
-              Board Guidelines
-            </h3>
-            <ul className="space-y-2.5 font-sans text-xs text-muted-foreground leading-relaxed pl-1">
-              <li className="flex items-start gap-2">
-                <span className="font-mono text-primary font-bold">01.</span>
-                <span>Positions or ban: YOLO, Gain, and Loss posts must attach real trade values.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-mono text-primary font-bold">02.</span>
-                <span>We like the stock: Support your fellow degens. Paper hands will be mocked.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-mono text-primary font-bold">03.</span>
-                <span>Sir, this is a Wendy\'s: Keep the discussions lighthearted and meme-friendly.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="font-mono text-primary font-bold">04.</span>
-                <span>Not Financial Advice: Do not complain if you liquidated your wallet on 50x leverage.</span>
-              </li>
-            </ul>
+          <div className={mobileTab === "chat" ? "hidden lg:block" : "block"}>
+            <div className="glass-card p-4 sm:p-5 rounded-2xl border border-border shadow-lg space-y-4">
+              <h3 className="text-sm font-black font-display uppercase tracking-wider flex items-center gap-2 text-foreground">
+                <BookOpen size={16} className="text-primary" />
+                Board Guidelines
+              </h3>
+              <ul className="space-y-2.5 font-sans text-xs text-muted-foreground leading-relaxed pl-1">
+                <li className="flex items-start gap-2">
+                  <span className="font-mono text-primary font-bold">01.</span>
+                  <span>Positions or ban: YOLO, Gain, and Loss posts must attach real trade values.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-mono text-primary font-bold">02.</span>
+                  <span>We like the stock: Support your fellow degens. Paper hands will be mocked.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-mono text-primary font-bold">03.</span>
+                  <span>Sir, this is a Wendy\'s: Keep the discussions lighthearted and meme-friendly.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="font-mono text-primary font-bold">04.</span>
+                  <span>Not Financial Advice: Do not complain if you liquidated your wallet on 50x leverage.</span>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
 

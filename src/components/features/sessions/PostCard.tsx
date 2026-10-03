@@ -96,45 +96,45 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
         </div>
 
         {/* Position Stats Grid */}
-        <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase text-muted-foreground font-mono font-bold">Asset</span>
-            <p className="text-base font-black font-display text-foreground">${ticker}</p>
+        <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4">
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono font-bold">Asset</span>
+            <p className="text-sm sm:text-base font-black font-display text-foreground">${ticker}</p>
           </div>
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase text-muted-foreground font-mono font-bold">Entry Price</span>
-            <p className="text-base font-bold font-mono text-foreground">${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono font-bold">Entry Price</span>
+            <p className="text-sm sm:text-base font-bold font-mono text-foreground">${entryPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase text-muted-foreground font-mono font-bold">Mark Price</span>
-            <p className="text-base font-bold font-mono text-foreground">${livePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono font-bold">Mark Price</span>
+            <p className="text-sm sm:text-base font-bold font-mono text-foreground">${livePrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
           </div>
-          <div className="space-y-1">
-            <span className="text-[10px] uppercase text-muted-foreground font-mono font-bold">Position Size</span>
-            <p className="text-base font-bold font-mono text-foreground">{size.toLocaleString()} tokens</p>
+          <div className="space-y-0.5 sm:space-y-1">
+            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono font-bold">Position Size</span>
+            <p className="text-sm sm:text-base font-bold font-mono text-foreground truncate">{size.toLocaleString()} tokens</p>
           </div>
         </div>
 
         {/* P&L Panel */}
-        <div className={`p-4 border-t border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-secondary/10`}>
+        <div className={`p-3 sm:p-4 border-t border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-secondary/10`}>
           <div>
-            <span className="text-[10px] uppercase text-muted-foreground font-mono font-bold">Estimated P&L</span>
-            <div className="flex items-baseline gap-2.5">
-              <span className={`text-xl sm:text-2xl font-black font-mono ${isProfit ? "text-green-500" : "text-red-500"}`}>
+            <span className="text-[9px] sm:text-[10px] uppercase text-muted-foreground font-mono font-bold">Estimated P&L</span>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-lg sm:text-2xl font-black font-mono ${isProfit ? "text-green-500" : "text-red-500"}`}>
                 {isProfit ? "+" : ""}${pnlAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-              <span className={`text-sm font-black font-mono ${isProfit ? "text-green-500" : "text-red-500"}`}>
+              <span className={`text-xs sm:text-sm font-black font-mono ${isProfit ? "text-green-500" : "text-red-500"}`}>
                 ({isProfit ? "+" : ""}{pnlPercent.toFixed(2)}%)
               </span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             {isProfit ? (
-              <span className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[10px] font-mono font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 sm:py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-500 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider">
                 Printing Cash 💸
               </span>
             ) : (
-              <span className="px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-mono font-bold uppercase tracking-wider">
+              <span className="px-2.5 py-0.5 sm:py-1 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider">
                 Paper Losses 📄
               </span>
             )}
@@ -169,7 +169,7 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
   };
 
   return (
-    <div className="glass-card rounded-2xl border border-border shadow-lg p-5 flex gap-4 transition-all hover:border-border/80 duration-300">
+    <div className="glass-card rounded-2xl border border-border shadow-lg p-3.5 sm:p-5 flex gap-3 sm:gap-4 transition-all hover:border-border/80 duration-300">
       {/* Vote Panel (Desktop Sidebar) */}
       <div className="hidden sm:flex flex-col items-center gap-1.5 shrink-0 bg-secondary/20 p-2 rounded-xl h-fit border border-border/40">
         <button
@@ -208,32 +208,34 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
       {/* Main Post Section */}
       <div className="flex-1 min-w-0 space-y-3">
         {/* Post Metadata Header */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-secondary border border-border overflow-hidden shrink-0 flex items-center justify-center p-0.5">
-            <img
-              src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.avatarSeed}&backgroundColor=transparent`}
-              alt={post.author}
-              className="w-full h-full object-contain"
-            />
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-            <span className="text-sm font-black font-display text-foreground tracking-tight">
-              {getAuthorDisplay(post.author)}
-            </span>
-            <span className="text-xs text-muted-foreground font-mono">
-              • {new Date(post.createdAt).toLocaleDateString()} at {new Date(post.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-            </span>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-secondary border border-border overflow-hidden shrink-0 flex items-center justify-center p-0.5">
+              <img
+                src={`https://api.dicebear.com/7.x/bottts/svg?seed=${post.avatarSeed}&backgroundColor=transparent`}
+                alt={post.author}
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
+              <span className="text-xs sm:text-sm font-black font-display text-foreground tracking-tight truncate">
+                {getAuthorDisplay(post.author)}
+              </span>
+              <span className="text-[10px] sm:text-xs text-muted-foreground font-mono">
+                • {new Date(post.createdAt).toLocaleDateString()}
+              </span>
+            </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             {/* Flair Badge */}
-            <span className={`px-2.5 py-0.5 border rounded-full text-[10px] font-mono font-black uppercase tracking-wider ${getFlairStyle(post.flair)}`}>
+            <span className={`px-2 py-0.5 border rounded-full text-[9px] sm:text-[10px] font-mono font-black uppercase tracking-wider ${getFlairStyle(post.flair)}`}>
               {post.flair}
             </span>
 
             {/* Sentiment Badge */}
             {post.sentiment !== "NEUTRAL" && (
-              <span className={`px-2.5 py-0.5 border rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 ${
+              <span className={`px-2 py-0.5 border rounded-full text-[9px] sm:text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 ${
                 post.sentiment === "BULLISH"
                   ? "bg-green-500/10 border-green-500/30 text-green-500"
                   : "bg-red-500/10 border-red-500/30 text-red-500"
@@ -245,17 +247,17 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
         </div>
 
         {/* Post Content */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {/* Ticker Indicator prefix if exists */}
-          <h2 className="text-lg font-black font-display uppercase tracking-tight text-foreground leading-tight">
+          <h2 className="text-base sm:text-lg font-black font-display uppercase tracking-tight text-foreground leading-snug break-words">
             {post.ticker && (
-              <span className="mr-2 text-primary font-mechanical border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5 text-sm align-middle tracking-wider">
+              <span className="mr-1.5 text-primary font-mechanical border border-primary/20 px-1.5 py-0.5 rounded bg-primary/5 text-xs sm:text-sm align-middle tracking-wider">
                 ${post.ticker}
               </span>
             )}
             <span className="align-middle">{post.title}</span>
           </h2>
-          <p className="text-muted-foreground text-sm font-medium leading-relaxed break-words whitespace-pre-line font-sans">
+          <p className="text-muted-foreground text-xs sm:text-sm font-medium leading-relaxed break-words whitespace-pre-line font-sans">
             {post.content}
           </p>
         </div>
@@ -264,42 +266,42 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
         {renderPositionCard()}
 
         {/* Bottom Actions Row & Mobile Votes */}
-        <div className="flex items-center justify-between border-t border-border/40 pt-3 text-muted-foreground text-xs font-mono font-bold uppercase tracking-wider">
+        <div className="flex items-center justify-between border-t border-border/40 pt-2.5 sm:pt-3 text-muted-foreground text-xs font-mono font-bold uppercase tracking-wider">
           {/* Mobile Upvote/Downvote actions */}
           <div className="flex sm:hidden items-center gap-1 bg-secondary/30 rounded-xl p-1 border border-border/40 shrink-0">
             <button
               onClick={() => onVote(post.id, "up")}
-              className={`p-1.5 rounded-lg ${post.userVote === "up" ? "text-primary" : ""}`}
+              className={`p-1.5 rounded-lg active:scale-90 transition-transform ${post.userVote === "up" ? "text-primary" : ""}`}
             >
-              <ChevronUp size={18} />
+              <ChevronUp size={16} />
             </button>
-            <span className="px-1 text-foreground font-mono">{post.upvotes}</span>
+            <span className="px-1 text-foreground font-mono text-xs">{post.upvotes}</span>
             <button
               onClick={() => onVote(post.id, "down")}
-              className={`p-1.5 rounded-lg ${post.userVote === "down" ? "text-red-500" : ""}`}
+              className={`p-1.5 rounded-lg active:scale-90 transition-transform ${post.userVote === "down" ? "text-red-500" : ""}`}
             >
-              <ChevronDown size={18} />
+              <ChevronDown size={16} />
             </button>
           </div>
 
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5 ml-auto sm:ml-0">
             {/* Comments toggle */}
             <button
               onClick={() => setShowComments(!showComments)}
-              className={`flex items-center gap-2 hover:text-foreground transition-colors py-1.5 px-3 rounded-lg hover:bg-secondary/40 ${
+              className={`flex items-center gap-1.5 sm:gap-2 hover:text-foreground transition-colors py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-lg hover:bg-secondary/40 text-xs ${
                 showComments ? "text-foreground bg-secondary/20" : ""
               }`}
             >
-              <MessageSquare size={16} />
-              <span>{post.comments.length} Comments</span>
+              <MessageSquare size={15} />
+              <span>{post.comments.length} <span className="hidden sm:inline">Comments</span></span>
             </button>
 
             {/* Share button */}
             <button
               onClick={handleShare}
-              className="flex items-center gap-2 hover:text-foreground transition-colors py-1.5 px-3 rounded-lg hover:bg-secondary/40"
+              className="flex items-center gap-1.5 sm:gap-2 hover:text-foreground transition-colors py-1 sm:py-1.5 px-2.5 sm:px-3 rounded-lg hover:bg-secondary/40 text-xs"
             >
-              <Share2 size={16} />
+              <Share2 size={15} />
               <span className="hidden sm:inline">Share</span>
             </button>
           </div>
