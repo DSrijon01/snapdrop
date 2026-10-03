@@ -319,9 +319,11 @@ export function SessionsBoard() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6 pb-28 sm:pb-12">
+    <div className={`w-full max-w-6xl mx-auto space-y-3 sm:space-y-6 ${mobileTab === 'chat' ? 'pb-2 sm:pb-12' : 'pb-28 sm:pb-12'}`}>
       {/* Board Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 bg-gradient-to-r from-background via-secondary/10 to-primary/5 shadow-xl flex flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6">
+      <div className={`relative overflow-hidden rounded-2xl sm:rounded-3xl border border-border p-4 sm:p-6 md:p-8 bg-gradient-to-r from-background via-secondary/10 to-primary/5 shadow-xl flex-col md:flex-row md:items-center justify-between gap-4 sm:gap-6 ${
+        mobileTab === 'chat' ? 'hidden lg:flex' : 'flex'
+      }`}>
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="absolute bottom-0 left-0 w-80 h-80 bg-green-500/5 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20" />
 

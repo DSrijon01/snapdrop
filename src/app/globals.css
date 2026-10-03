@@ -174,6 +174,19 @@
     @apply bg-card/80 backdrop-blur-sm border border-border;
   }
 
+  /* Full-Height Trading Chat Wall */
+  @media (max-width: 1023px) {
+    .live-chat-card {
+      height: calc(100dvh - 200px) !important;
+      min-height: 480px !important;
+    }
+  }
+  @media (min-width: 1024px) {
+    .live-chat-card {
+      height: 420px !important;
+    }
+  }
+
   .font-technical {
     @apply font-mono font-bold;
   }
