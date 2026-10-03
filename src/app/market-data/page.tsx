@@ -5,7 +5,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MarketSidebar } from '@/components/features/market-data/MarketSidebar';
 import { MarketDetails } from '@/components/features/market-data/MarketDetails';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
-import { LineChart as ChartIcon, ListFilter } from 'lucide-react';
+import { LineChart as ChartIcon, ListFilter, Activity } from 'lucide-react';
 
 const DEFAULT_FAVORITES = ['BTC', 'BNB', 'SOL', 'ETH', 'XRP'];
 
@@ -16,7 +16,7 @@ export default function MarketDataPage() {
     
     // Session state
     const [selectedCoin, setSelectedCoin] = useState<string>('BTC');
-    const [mobileTab, setMobileTab] = useState<'chart' | 'watchlist'>('chart');
+    const [mobileTab, setMobileTab] = useState<'chart' | 'quote' | 'watchlist'>('chart');
     const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
@@ -49,27 +49,38 @@ export default function MarketDataPage() {
 
             {/* Mobile Tab Switcher (Visible only on mobile) */}
             <div className="md:hidden px-3 pt-2 pb-1 border-b border-border/30 bg-muted/20 shrink-0">
-                <div className="grid grid-cols-2 gap-1 p-1 bg-muted/60 rounded-xl">
+                <div className="grid grid-cols-3 gap-1 p-1 bg-muted/60 rounded-xl">
                     <button
                         onClick={() => setMobileTab('chart')}
-                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
                             mobileTab === 'chart'
                                 ? 'bg-card text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        <ChartIcon className="w-3.5 h-3.5 text-primary" />
-                        <span className="truncate">{selectedCoin} Chart & Stats</span>
+                        <ChartIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="truncate">{selectedCoin} Chart</span>
+                    </button>
+                    <button
+                        onClick={() => setMobileTab('quote')}
+                        className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                            mobileTab === 'quote'
+                                ? 'bg-card text-foreground shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
+                        }`}
+                    >
+                        <Activity className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="truncate">Key Quote</span>
                     </button>
                     <button
                         onClick={() => setMobileTab('watchlist')}
-                        className={`flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-bold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
                             mobileTab === 'watchlist'
                                 ? 'bg-card text-foreground shadow-sm'
                                 : 'text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        <ListFilter className="w-3.5 h-3.5 text-primary" />
+                        <ListFilter className="w-3.5 h-3.5 text-primary shrink-0" />
                         <span className="truncate">Watchlist ({favorites?.length || 0})</span>
                     </button>
                 </div>
@@ -91,9 +102,9 @@ export default function MarketDataPage() {
                     />
                 </div>
             
-                {/* Main Details (Chart, Key Stats, Metrics) */}
-                <div className={`flex-1 overflow-y-auto bg-background min-h-0 ${
-                    mobileTab === 'chart' ? 'flex flex-col flex-1 h-full' : 'hidden md:flex md:flex-col'
+                {/* Mobile View: Chart Tab (Full height, zero scroll, zero blank space) */}
+                <div className={`flex-1 overflow-hidden bg-background min-h-0 md:hidden ${
+                    mobileTab === 'chart' ? 'flex flex-col flex-1 h-full' : 'hidden'
                 }`}>
                     <MarketDetails 
                        selectedCoin={selectedCoin}
@@ -102,10 +113,41 @@ export default function MarketDataPage() {
                        setFavorites={setFavorites}
                        onSelectCoin={handleSelectCoin}
                        onOpenWatchlist={() => setMobileTab('watchlist')}
+                       onOpenChart={() => setMobileTab('chart')}
+                       viewMode="chart"
+                    />
+                </div>
+
+                {/* Mobile View: Key Quote Tab (Rich Dashboard) */}
+                <div className={`flex-1 overflow-y-auto bg-background min-h-0 md:hidden ${
+                    mobileTab === 'quote' ? 'flex flex-col flex-1 h-full' : 'hidden'
+                }`}>
+                    <MarketDetails 
+                       selectedCoin={selectedCoin}
+                       fiat={fiat}
+                       favorites={favorites}
+                       setFavorites={setFavorites}
+                       onSelectCoin={handleSelectCoin}
+                       onOpenWatchlist={() => setMobileTab('watchlist')}
+                       onOpenChart={() => setMobileTab('chart')}
+                       viewMode="quote"
+                    />
+                </div>
+
+                {/* Desktop View: Both Chart and Key Quote Section */}
+                <div className="hidden md:flex md:flex-col flex-1 overflow-y-auto bg-background min-h-0">
+                    <MarketDetails 
+                       selectedCoin={selectedCoin}
+                       fiat={fiat}
+                       favorites={favorites}
+                       setFavorites={setFavorites}
+                       onSelectCoin={handleSelectCoin}
+                       onOpenWatchlist={() => setMobileTab('watchlist')}
+                       onOpenChart={() => setMobileTab('chart')}
+                       viewMode="both"
                     />
                 </div>
             </div>
         </div>
     );
 }
-

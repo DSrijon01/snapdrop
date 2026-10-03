@@ -1,5 +1,14 @@
 import { useState, useEffect } from 'react';
-import { ChevronDown, ChevronUp, LineChart as LucideLineChart } from 'lucide-react';
+import Link from 'next/link';
+import { 
+    LineChart as LucideLineChart, 
+    Activity, 
+    TrendingUp, 
+    TrendingDown, 
+    BarChart2, 
+    Flame, 
+    Zap 
+} from 'lucide-react';
 import { useExchangeRates } from '../../../hooks/useExchangeRates';
 import { 
     ResponsiveContainer, 
@@ -78,6 +87,8 @@ interface DetailsProps {
     setFavorites?: (favs: string[]) => void;
     onSelectCoin?: (coin: string) => void;
     onOpenWatchlist?: () => void;
+    onOpenChart?: () => void;
+    viewMode?: 'chart' | 'quote' | 'both';
 }
 
 const CIRCULATING_SUPPLIES: Record<string, number> = {
@@ -102,14 +113,22 @@ const TIMEFRAMES = [
     { label: 'ALL', interval: '1w', limit: 1000 },
 ];
 
-export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites, onSelectCoin, onOpenWatchlist }: DetailsProps) => {
+export const MarketDetails = ({ 
+    selectedCoin, 
+    fiat, 
+    favorites, 
+    setFavorites, 
+    onSelectCoin, 
+    onOpenWatchlist,
+    onOpenChart,
+    viewMode = 'both'
+}: DetailsProps) => {
     const { rates, formatPrice } = useExchangeRates();
     const [ticker, setTicker] = useState<any>(null);
     const [chartData, setChartData] = useState<any[]>([]);
     const [currentTimeframe, setCurrentTimeframe] = useState(TIMEFRAMES[0]);
     const [chartType, setChartType] = useState<'line' | 'candlestick'>('line');
     const [isLoadingChart, setIsLoadingChart] = useState(false);
-    const [isStatsExpanded, setIsStatsExpanded] = useState(false);
 
     // Fetch live Ticker stats
     useEffect(() => {
@@ -138,105 +157,112 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites, onS
                     const daysSinceJan1 = Math.floor((new Date().getTime() - new Date(new Date().getFullYear(), 0, 1).getTime()) / (1000 * 60 * 60 * 24));
                     limit = Math.max(daysSinceJan1, 2); // default minimal safety
                 }
-
-                const url = `https://api.binance.com/api/v3/uiKlines?symbol=${selectedCoin}USDT&interval=${currentTimeframe.interval}&limit=${limit}`;
+                const url = `https://api.binance.com/api/v3/klines?symbol=${selectedCoin}USDT&interval=${currentTimeframe.interval}&limit=${limit}`;
                 const res = await fetch(url);
                 const data = await res.json();
                 
                 if (Array.isArray(data)) {
-                    const tf = currentTimeframe.label;
-                    const showYear = ['1Y', '2Y', '5Y', '10Y', 'ALL'].includes(tf);
-                    const is1D = tf === '1D';
-
-                    // Mapping to { date, price, open, high, low, close }
-                    const mapped = data.map(candle => {
-                        const open = parseFloat(candle[1]);
-                        const high = parseFloat(candle[2]);
-                        const low = parseFloat(candle[3]);
-                        let close = parseFloat(candle[4]);
+                    // Formatting data for chart
+                    const formatted = data.map((d: any) => {
+                        const open = parseFloat(d[1]);
+                        const high = parseFloat(d[2]);
+                        const low = parseFloat(d[3]);
+                        const close = parseFloat(d[4]);
                         
-                        // Prevent division by zero in scaling calculations for Doji candles
-                        if (open === close) {
-                            close = open + (open * 0.0001 || 0.0001);
-                        }
-
                         return {
-                            date: new Date(candle[0]).toLocaleDateString(undefined, { 
+                            date: new Date(d[0]).toLocaleDateString(undefined, { 
                                 month: 'short', 
-                                day: showYear && tf !== '1Y' ? undefined : 'numeric', 
-                                year: showYear ? 'numeric' : undefined,
-                                hour: is1D ? '2-digit' : undefined,
-                                minute: is1D ? '2-digit' : undefined 
+                                day: 'numeric',
+                                ...(currentTimeframe.label === '1D' ? { hour: '2-digit', minute: '2-digit' } : {}) 
                             }),
+                            rawPrice: close,
+                            formattedPrice: formatPrice(close, fiat),
                             open,
                             high,
                             low,
                             close,
-                            rawPrice: close,
-                            range: [open, close]
+                            range: [low, high]
                         };
                     });
-                    setChartData(mapped);
+                    setChartData(formatted);
                 }
             } catch (e) {
-                console.error("Failed to fetch chart", e);
+                console.error("Failed to load historical chart", e);
             } finally {
                 setIsLoadingChart(false);
             }
         };
         fetchChart();
-    }, [selectedCoin, currentTimeframe.label]);
+    }, [selectedCoin, currentTimeframe, fiat]);
 
-    if (!selectedCoin) {
-        return <div className="flex h-full items-center justify-center text-muted-foreground">Select a coin to view details</div>;
-    }
-
-    // Calculations for UI
-    const currentPriceRaw = ticker ? parseFloat(ticker.lastPrice) : 0;
-    const currentPrice = formatPrice(currentPriceRaw, fiat);
+    // Parse metric values
+    const high = ticker?.highPrice ? parseFloat(ticker.highPrice) : 0;
+    const low = ticker?.lowPrice ? parseFloat(ticker.lowPrice) : 0;
+    const last = ticker?.lastPrice ? parseFloat(ticker.lastPrice) : 0;
+    const baseVolumeNum = ticker?.volume ? parseFloat(ticker.volume) : 0;
+    const quoteVolumeNum = ticker?.quoteVolume ? parseFloat(ticker.quoteVolume) : 0;
+    const tradesCount = ticker?.count ? Number(ticker.count) : null;
     
-    // Percentage from ticker (24h)
+    // 24h range percent calculation (0% to 100%)
+    const rangePercent = (high > low && last >= low)
+        ? Math.min(Math.max(((last - low) / (high - low)) * 100, 2), 98)
+        : 50;
+
+    // Intraday volatility
+    const volatilityPercent = (low > 0 && high >= low)
+        ? (((high - low) / low) * 100).toFixed(2)
+        : '0.00';
+
+    // Market capitalization
+    const circulatingSupply = CIRCULATING_SUPPLIES[selectedCoin];
+    const marketCap = (circulatingSupply && last > 0)
+        ? circulatingSupply * last
+        : null;
+
+    // Helper for compact currency formatting
+    const formatCompact = (val: number, cur: string) => {
+        const rate = rates[cur] || 1;
+        const converted = val * rate;
+        const symbol = cur === 'THB' ? '฿' : cur === 'BDT' ? '৳' : '$';
+        const formatted = new Intl.NumberFormat('en-US', {
+            notation: "compact",
+            compactDisplay: "short",
+            maximumFractionDigits: 2
+        }).format(converted);
+        return `${symbol}${formatted}`;
+    };
+
+    const currentPrice = ticker ? formatPrice(last, fiat) : '---';
     const pctChange24h = ticker ? parseFloat(ticker.priceChangePercent) : 0;
     const isPositive24h = pctChange24h >= 0;
 
-    // Calculate chart color based on timeframe open vs close
-    const chartIsPositive = chartData.length > 0 
-        ? chartData[chartData.length - 1].rawPrice >= chartData[0].rawPrice 
-        : isPositive24h;
-    
-    const strokeColor = chartIsPositive ? '#10b981' : '#ef4444'; // Apple Stocks Green/Red
-    const baselinePrice = chartData.length > 0 ? chartData[0].rawPrice : currentPriceRaw;
+    // Dynamic stroke color for LineChart based on net change
+    const baselinePrice = chartData.length > 0 ? chartData[0].close : 0;
+    const latestPrice = chartData.length > 0 ? chartData[chartData.length - 1].close : 0;
+    const isUpTrend = latestPrice >= baselinePrice;
+    const strokeColor = isUpTrend ? '#10b981' : '#ef4444'; // Green or Red
 
-    // Custom Tooltip component for Recharts supporting Line & Candlestick modes
+    // Custom Interactive Tooltip
     const CustomTooltip = ({ active, payload, label }: any) => {
         if (active && payload && payload.length) {
-            const dataItem = payload[0].payload;
-            
-            // Render detailed OHLC values in Candlestick mode
-            if (dataItem && typeof dataItem.open === 'number') {
+            const data = payload[0].payload;
+            if (chartType === 'candlestick') {
                 return (
-                    <div className="bg-black/95 backdrop-blur-md text-white px-4 py-3 rounded-xl border border-border shadow-2xl text-xs space-y-1.5 font-mono">
-                        <div className="font-sans font-bold text-sm border-b border-border/40 pb-1 mb-1.5 text-muted-foreground">{label}</div>
-                        <div className="flex justify-between gap-6">
+                    <div className="bg-black/90 backdrop-blur-md text-white px-3.5 py-2.5 rounded-xl border border-border shadow-xl text-xs space-y-1">
+                        <div className="font-semibold text-muted-foreground">{label}</div>
+                        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 font-mono pt-1">
                             <span className="text-muted-foreground">OPEN:</span>
-                            <span className="font-bold text-foreground">{formatPrice(dataItem.open, fiat)}</span>
-                        </div>
-                        <div className="flex justify-between gap-6">
-                            <span className="text-green-400">HIGH:</span>
-                            <span className="font-bold text-green-400">{formatPrice(dataItem.high, fiat)}</span>
-                        </div>
-                        <div className="flex justify-between gap-6">
-                            <span className="text-red-400">LOW:</span>
-                            <span className="font-bold text-red-400">{formatPrice(dataItem.low, fiat)}</span>
-                        </div>
-                        <div className="flex justify-between gap-6">
+                            <span className="font-bold text-right">{formatPrice(data.open, fiat)}</span>
+                            <span className="text-emerald-500 font-bold">HIGH:</span>
+                            <span className="font-bold text-right text-emerald-500">{formatPrice(data.high, fiat)}</span>
+                            <span className="text-red-500 font-bold">LOW:</span>
+                            <span className="font-bold text-right text-red-500">{formatPrice(data.low, fiat)}</span>
                             <span className="text-muted-foreground">CLOSE:</span>
-                            <span className="font-bold text-foreground">{formatPrice(dataItem.close, fiat)}</span>
+                            <span className="font-bold text-right">{formatPrice(data.close, fiat)}</span>
                         </div>
                     </div>
                 );
             }
-
             const raw = payload[0].value;
             return (
                 <div className="bg-black/90 backdrop-blur-md text-white px-3 py-2 rounded-xl border border-border shadow-xl text-sm">
@@ -248,233 +274,384 @@ export const MarketDetails = ({ selectedCoin, fiat, favorites, setFavorites, onS
         return null;
     };
 
-    return (
-        <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 pb-32 md:pb-6 animate-in fade-in slide-in-from-right-4 overflow-y-auto">
-            
-            {/* Mobile Quick Favorite Coin Selector Chips */}
-            {favorites && favorites.length > 0 && (
-                <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide shrink-0">
-                    {favorites.map((coin) => (
-                        <button
-                            key={coin}
-                            onClick={() => onSelectCoin?.(coin)}
-                            className={`px-3 py-1 rounded-full text-xs font-mono font-bold shrink-0 transition-all ${
-                                selectedCoin === coin
-                                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25 scale-105'
-                                    : 'bg-muted text-muted-foreground hover:text-foreground'
-                            }`}
-                        >
-                            <span>{coin}</span>
-                        </button>
-                    ))}
-                    {onOpenWatchlist && (
-                        <button
-                            onClick={onOpenWatchlist}
-                            className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold text-primary bg-primary/10 hover:bg-primary/20 shrink-0 transition-colors"
-                        >
-                            + All Coins
-                        </button>
-                    )}
-                </div>
-            )}
-
-            {/* Massive Header */}
-            <div className="mb-2 md:mb-4 shrink-0 flex items-start justify-between gap-2">
-                <div>
-                    <div className="flex items-center gap-2 mb-0">
-                        <h1 className="text-2xl md:text-4xl font-black font-display text-primary uppercase leading-none">{selectedCoin}</h1>
-                        <span className="text-xs md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
-                    </div>
-                    
-                    <div className="flex flex-col mt-1">
-                        <span className="text-2xl sm:text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
-                            {currentPrice}
-                        </span>
-                        <span className={`text-xs sm:text-sm md:text-xl font-bold font-mono ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
-                        </span>
-                    </div>
-                </div>
-
-                {favorites && setFavorites && (
-                    <button 
-                        onClick={() => {
-                            if (favorites.includes(selectedCoin)) {
-                                setFavorites(favorites.filter(c => c !== selectedCoin));
-                            } else {
-                                setFavorites([...favorites, selectedCoin]);
-                            }
-                        }}
-                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-sm transition self-start shrink-0 ${
-                            favorites.includes(selectedCoin) 
-                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
-                                : 'bg-primary text-primary-foreground hover:bg-primary/90'
+    // Quick Favorite Coin Chips Bar
+    const renderCoinChips = () => (
+        favorites && favorites.length > 0 && (
+            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide shrink-0">
+                {favorites.map((coin) => (
+                    <button
+                        key={coin}
+                        onClick={() => onSelectCoin?.(coin)}
+                        className={`px-3 py-1 rounded-full text-xs font-mono font-bold shrink-0 transition-all ${
+                            selectedCoin === coin
+                                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/25 scale-105'
+                                : 'bg-muted text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        {favorites.includes(selectedCoin) ? 'Remove Watchlist' : 'Add to Watchlist'}
+                        <span>{coin}</span>
+                    </button>
+                ))}
+                {onOpenWatchlist && (
+                    <button
+                        onClick={onOpenWatchlist}
+                        className="px-2.5 py-1 rounded-full text-[11px] font-mono font-semibold text-primary bg-primary/10 hover:bg-primary/20 shrink-0 transition-colors"
+                    >
+                        + All Coins
                     </button>
                 )}
             </div>
+        )
+    );
 
-            {/* Key Quote Data Accordion */}
-            <div className="mb-2 shrink-0">
-                <button 
-                    onClick={() => setIsStatsExpanded(!isStatsExpanded)}
-                    className="w-full flex items-center justify-between py-2 border-y border-border/50 text-muted-foreground hover:text-foreground transition-colors"
-                >
-                    <span className="text-[10px] md:text-xs font-bold uppercase tracking-wider">Key Quote Data</span>
-                    {isStatsExpanded ? <ChevronUp className="w-3 h-3 md:w-4 md:h-4" /> : <ChevronDown className="w-3 h-3 md:w-4 md:h-4" />}
-                </button>
+    // Header with Title, Price and Watchlist Toggle
+    const renderHeader = () => (
+        <div className="mb-2 md:mb-3 shrink-0 flex items-start justify-between gap-2">
+            <div>
+                <div className="flex items-center gap-2 mb-0">
+                    <h1 className="text-2xl md:text-4xl font-black font-display text-primary uppercase leading-none">{selectedCoin}</h1>
+                    <span className="text-xs md:text-xl text-muted-foreground font-mono">{selectedCoin} Token</span>
+                </div>
                 
-                {isStatsExpanded && ticker && (
-                    <div className="grid grid-cols-3 gap-1 md:gap-2 pt-2 pb-2">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Low (24h)</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.lowPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">High (24h)</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">{formatPrice(parseFloat(ticker.highPrice), fiat)}</span>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold mb-0.5">Market Cap</span>
-                            <span className="text-xs md:text-sm font-mono font-medium">
-                                {CIRCULATING_SUPPLIES[selectedCoin] 
-                                    ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(CIRCULATING_SUPPLIES[selectedCoin] * parseFloat(ticker.lastPrice))
-                                    : 'N/A'
-                                }
+                <div className="flex flex-col mt-1">
+                    <span className="text-2xl sm:text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
+                        {currentPrice}
+                    </span>
+                    <span className={`text-xs sm:text-sm md:text-xl font-bold font-mono ${isPositive24h ? 'text-emerald-500' : 'text-red-500'}`}>
+                        {isPositive24h ? '+' : ''}{pctChange24h.toFixed(2)}% Today
+                    </span>
+                </div>
+            </div>
+
+            {favorites && setFavorites && (
+                <button 
+                    onClick={() => {
+                        if (favorites.includes(selectedCoin)) {
+                            setFavorites(favorites.filter(c => c !== selectedCoin));
+                        } else {
+                            setFavorites([...favorites, selectedCoin]);
+                        }
+                    }}
+                    className={`px-3 py-1.5 md:px-4 md:py-2 rounded-full font-bold text-[10px] md:text-sm transition self-start shrink-0 ${
+                        favorites.includes(selectedCoin) 
+                            ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                            : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    }`}
+                >
+                    {favorites.includes(selectedCoin) ? 'Remove Watchlist' : 'Add to Watchlist'}
+                </button>
+            )}
+        </div>
+    );
+
+    // Timeframe and Candlestick toggles
+    const renderChartControls = () => (
+        <div className="flex items-center justify-between mb-2 md:mb-3 shrink-0 gap-3">
+            <div className="flex gap-1 md:gap-2 overflow-x-auto pb-1 scrollbar-hide">
+                {TIMEFRAMES.map((tf) => (
+                    <button
+                        key={tf.label}
+                        onClick={() => setCurrentTimeframe(tf)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold transition-colors shrink-0
+                            ${currentTimeframe.label === tf.label 
+                                ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20' 
+                                : 'bg-transparent text-muted-foreground hover:bg-muted'
+                            }`}
+                    >
+                        {tf.label}
+                    </button>
+                ))}
+            </div>
+
+            <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border shrink-0">
+                <button
+                    onClick={() => setChartType('line')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                        chartType === 'line' 
+                            ? 'bg-background text-foreground shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    title="Line Chart"
+                >
+                    <LucideLineChart className="w-4 h-4" />
+                </button>
+                <button
+                    onClick={() => setChartType('candlestick')}
+                    className={`p-1.5 rounded-lg transition-all ${
+                        chartType === 'candlestick' 
+                            ? 'bg-background text-foreground shadow-sm' 
+                            : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                    title="Candlestick Chart"
+                >
+                    <CandlestickIcon />
+                </button>
+            </div>
+        </div>
+    );
+
+    // Rich Key Quote Section (Creative & Responsive)
+    const renderKeyQuoteSection = () => (
+        <div className="flex flex-col gap-3 py-1 animate-in fade-in slide-in-from-bottom-2">
+            {/* 24h Price Range Visual Progress Card */}
+            <div className="p-3.5 rounded-2xl bg-card border border-border/60 shadow-sm flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <Activity className="w-3.5 h-3.5 text-primary" />
+                        24h Price Range
+                    </span>
+                    <span className="text-[11px] font-mono font-semibold text-muted-foreground">
+                        Spread: <span className="text-foreground font-bold">{volatilityPercent}%</span>
+                    </span>
+                </div>
+
+                {/* Range Bar */}
+                <div className="relative pt-1 pb-4">
+                    <div className="h-2 w-full rounded-full bg-gradient-to-r from-red-500 via-amber-400 to-emerald-500 opacity-90 shadow-inner" />
+                    {/* Animated current price indicator pin */}
+                    <div 
+                        className="absolute top-0 flex flex-col items-center -translate-x-1/2 transition-all duration-500"
+                        style={{ left: `${rangePercent}%` }}
+                    >
+                        <div className="w-3.5 h-3.5 rounded-full bg-primary border-2 border-background shadow-md shadow-primary/40 ring-2 ring-primary/30" />
+                        <span className="text-[10px] font-mono font-bold text-foreground mt-0.5 whitespace-nowrap bg-background/90 px-1 py-0.5 rounded border border-border/50 shadow-xs">
+                            {currentPrice}
+                        </span>
+                    </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-mono">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">24h Low</span>
+                        <span className="font-bold text-red-500">{formatPrice(low, fiat)}</span>
+                    </div>
+                    <div className="flex flex-col items-end">
+                        <span className="text-[10px] text-muted-foreground uppercase font-bold">24h High</span>
+                        <span className="font-bold text-emerald-500">{formatPrice(high, fiat)}</span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Key Market Metrics Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+                {/* 24h High */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">24h High</span>
+                        <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                    </div>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {high > 0 ? formatPrice(high, fiat) : '---'}
+                    </span>
+                    <span className="text-[10px] text-emerald-500 font-semibold font-mono">Peak in 24h</span>
+                </div>
+
+                {/* 24h Low */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">24h Low</span>
+                        <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                    </div>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {low > 0 ? formatPrice(low, fiat) : '---'}
+                    </span>
+                    <span className="text-[10px] text-red-500 font-semibold font-mono">Trough in 24h</span>
+                </div>
+
+                {/* 24h Volume Token */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">24h Vol ({selectedCoin})</span>
+                        <BarChart2 className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {baseVolumeNum > 0 ? new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(baseVolumeNum) : '---'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">Base coin volume</span>
+                </div>
+
+                {/* 24h Volume Fiat */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">24h Vol ({fiat})</span>
+                        <Flame className="w-3.5 h-3.5 text-amber-500" />
+                    </div>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {quoteVolumeNum > 0 ? formatCompact(quoteVolumeNum, fiat) : '---'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">Total fiat turnover</span>
+                </div>
+
+                {/* Market Cap */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">Market Cap</span>
+                        <Zap className="w-3.5 h-3.5 text-primary" />
+                    </div>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {marketCap ? formatCompact(marketCap, fiat) : 'N/A'}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-mono">
+                        {circulatingSupply ? `${new Intl.NumberFormat('en-US', { notation: "compact" }).format(circulatingSupply)} circulating` : 'Supply unverified'}
+                    </span>
+                </div>
+
+                {/* 24h Trades / Live Activity */}
+                <div className="p-3 rounded-2xl bg-card border border-border/50 flex flex-col gap-1 shadow-xs hover:border-border transition-colors">
+                    <div className="flex items-center justify-between text-muted-foreground">
+                        <span className="text-[11px] uppercase font-bold tracking-wider">24h Trades</span>
+                        <div className="flex items-center gap-1">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                             </span>
                         </div>
                     </div>
-                )}
-            </div>
-
-            {/* Timeframe Toggles & Chart Style Toggle */}
-            <div className="flex items-center justify-between mb-2 md:mb-4 shrink-0 gap-4">
-                <div className="flex gap-1 md:gap-2 overflow-x-auto pb-1 scrollbar-hide">
-                    {TIMEFRAMES.map((tf) => (
-                        <button
-                            key={tf.label}
-                            onClick={() => setCurrentTimeframe(tf)}
-                            className={`px-2.5 py-1 rounded-full text-[10px] md:text-xs font-bold transition-colors shrink-0
-                                ${currentTimeframe.label === tf.label 
-                                    ? 'bg-primary text-primary-foreground shadow-sm shadow-primary/20' 
-                                    : 'bg-transparent text-muted-foreground hover:bg-muted'
-                                }`}
-                        >
-                            {tf.label}
-                        </button>
-                    ))}
-                </div>
-
-                <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl border border-border shrink-0">
-                    <button
-                        onClick={() => setChartType('line')}
-                        className={`p-1.5 rounded-lg transition-all ${
-                            chartType === 'line' 
-                                ? 'bg-background text-foreground shadow-sm' 
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        title="Line Chart"
-                    >
-                        <LucideLineChart className="w-4 h-4" />
-                    </button>
-                    <button
-                        onClick={() => setChartType('candlestick')}
-                        className={`p-1.5 rounded-lg transition-all ${
-                            chartType === 'candlestick' 
-                                ? 'bg-background text-foreground shadow-sm' 
-                                : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                        title="Candlestick Chart"
-                    >
-                        <CandlestickIcon />
-                    </button>
+                    <span className="text-base sm:text-lg font-mono font-bold text-foreground truncate">
+                        {tradesCount ? new Intl.NumberFormat('en-US', { notation: "compact" }).format(tradesCount) : 'Live Stream'}
+                    </span>
+                    <span className="text-[10px] text-emerald-500 font-semibold font-mono">Real-time matching</span>
                 </div>
             </div>
 
-            {/* Main Interactive Chart */}
-            <div className="w-full h-[280px] sm:h-[340px] md:h-[440px] mb-4 relative shrink-0">
-                {isLoadingChart && (
-                    <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity rounded-2xl">
-                        <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse font-mono">Loading Chart...</div>
-                    </div>
+            {/* Quick Actions (Trade on DEX / Switch to Chart) */}
+            <div className="flex items-center gap-2 pt-1">
+                <Link
+                    href={`/trade`}
+                    className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-primary text-primary-foreground font-bold text-xs sm:text-sm shadow-md shadow-primary/20 hover:bg-primary/90 transition-all active:scale-[0.98]"
+                >
+                    <Zap className="w-4 h-4 fill-current" />
+                    <span>Trade {selectedCoin} on DEX</span>
+                </Link>
+                {onOpenChart && (
+                    <button
+                        onClick={onOpenChart}
+                        className="flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-muted text-foreground hover:bg-muted/80 font-bold text-xs sm:text-sm border border-border/60 transition-all active:scale-[0.98]"
+                    >
+                        <LucideLineChart className="w-4 h-4 text-primary" />
+                        <span>View Chart</span>
+                    </button>
                 )}
-                <ResponsiveContainer width="99%" height="100%">
-                    {chartType === 'line' ? (
-                        <LineChart data={chartData} margin={{ top: 10, right: 0, left: -10, bottom: 0 }}>
-                            <XAxis 
-                                dataKey="date" 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
-                                minTickGap={35}
-                                tickMargin={8}
-                            />
-                            <YAxis 
-                                domain={['dataMin', 'dataMax']} 
-                                orientation="right"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
-                                tickFormatter={(val) => {
-                                    if (val >= 1000) {
-                                        return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
-                                    }
-                                    return Number.isInteger(val) ? val.toString() : val.toFixed(2);
-                                }}
-                                tickMargin={8}
-                                width={44}
-                            />
-                            <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
-                            <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
-                            <Line 
-                                type="monotone" 
-                                dataKey="rawPrice" 
-                                stroke={strokeColor} 
-                                strokeWidth={3} 
-                                dot={false}
-                                activeDot={{ r: 6, fill: strokeColor, stroke: '#fff', strokeWidth: 2 }} 
-                                isAnimationActive={false} // Immediate render for snappier feel
-                            />
-                        </LineChart>
-                    ) : (
-                        <ComposedChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
-                            <XAxis 
-                                dataKey="date" 
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
-                                minTickGap={35}
-                                tickMargin={8}
-                            />
-                            <YAxis 
-                                domain={['dataMin', 'dataMax']} 
-                                orientation="right"
-                                axisLine={false}
-                                tickLine={false}
-                                tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
-                                tickFormatter={(val) => {
-                                    if (val >= 1000) {
-                                        return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
-                                    }
-                                    return Number.isInteger(val) ? val.toString() : val.toFixed(2);
-                                }}
-                                tickMargin={8}
-                                width={44}
-                            />
-                            <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
-                            <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
-                            <Bar 
-                                dataKey="range" 
-                                shape={<CustomCandlestick />} 
-                                isAnimationActive={false}
-                            />
-                        </ComposedChart>
-                    )}
-                </ResponsiveContainer>
             </div>
+        </div>
+    );
 
+    // Chart component
+    const renderChart = () => (
+        <div className="w-full flex-1 min-h-[220px] md:min-h-[380px] lg:min-h-[440px] relative shrink-0">
+            {isLoadingChart && (
+                <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity rounded-2xl">
+                    <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse font-mono">Loading Chart...</div>
+                </div>
+            )}
+            <ResponsiveContainer width="99%" height="100%">
+                {chartType === 'line' ? (
+                    <LineChart data={chartData} margin={{ top: 10, right: 0, left: -10, bottom: 0 }}>
+                        <XAxis 
+                            dataKey="date" 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            minTickGap={35}
+                            tickMargin={8}
+                        />
+                        <YAxis 
+                            domain={['dataMin', 'dataMax']} 
+                            orientation="right"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            tickFormatter={(val) => {
+                                if (val >= 1000) {
+                                    return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+                                }
+                                return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+                            }}
+                            tickMargin={8}
+                            width={44}
+                        />
+                        <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
+                        <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
+                        <Line 
+                            type="monotone" 
+                            dataKey="rawPrice" 
+                            stroke={strokeColor} 
+                            strokeWidth={3} 
+                            dot={false}
+                            activeDot={{ r: 6, fill: strokeColor, stroke: '#fff', strokeWidth: 2 }} 
+                            isAnimationActive={false}
+                        />
+                    </LineChart>
+                ) : (
+                    <ComposedChart data={chartData} margin={{ top: 10, right: 0, left: 0, bottom: 0 }}>
+                        <XAxis 
+                            dataKey="date" 
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            minTickGap={35}
+                            tickMargin={8}
+                        />
+                        <YAxis 
+                            domain={['dataMin', 'dataMax']} 
+                            orientation="right"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fontSize: 11, fill: '#888', fontWeight: 600 }}
+                            tickFormatter={(val) => {
+                                if (val >= 1000) {
+                                    return new Intl.NumberFormat('en-US', { notation: "compact", compactDisplay: "short" }).format(val);
+                                }
+                                return Number.isInteger(val) ? val.toString() : val.toFixed(2);
+                            }}
+                            tickMargin={8}
+                            width={44}
+                        />
+                        <RechartsTooltip cursor={{ strokeDasharray: '3 3', stroke: '#555' }} content={<CustomTooltip />} />
+                        <ReferenceLine y={baselinePrice} stroke="#444" strokeDasharray="3 3" opacity={0.5} />
+                        <Bar 
+                            dataKey="range" 
+                            shape={<CustomCandlestick />} 
+                            isAnimationActive={false}
+                        />
+                    </ComposedChart>
+                )}
+            </ResponsiveContainer>
+        </div>
+    );
+
+    // Render mode: Only Chart (Mobile) -> Full viewport height, ZERO page scrolling, ZERO blank white space!
+    if (viewMode === 'chart') {
+        return (
+            <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 overflow-hidden select-none">
+                {renderCoinChips()}
+                {renderHeader()}
+                {renderChartControls()}
+                {renderChart()}
+            </div>
+        );
+    }
+
+    // Render mode: Only Key Quote (Mobile) -> Dedicated rich analytics dashboard
+    if (viewMode === 'quote') {
+        return (
+            <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 pb-32 md:pb-6 overflow-y-auto">
+                {renderCoinChips()}
+                {renderHeader()}
+                {renderKeyQuoteSection()}
+            </div>
+        );
+    }
+
+    // Default / Desktop mode: Both Chart and Key Quote Section
+    return (
+        <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 pb-32 md:pb-6 overflow-y-auto">
+            {renderCoinChips()}
+            {renderHeader()}
+            {renderChartControls()}
+            {renderChart()}
+            <div className="mt-4 border-t border-border/40 pt-4">
+                {renderKeyQuoteSection()}
+            </div>
         </div>
     );
 };
