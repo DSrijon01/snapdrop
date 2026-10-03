@@ -102,7 +102,7 @@ export function ArticleDetailView({ article, onBack }: { article: NewsArticle, o
         </div>
 
         {/* Footer actions */}
-        <div className="border-t border-border pt-8 flex justify-between items-center">
+        <div className="border-t border-border pt-8 pb-32 md:pb-8 flex justify-between items-center">
           <button 
             onClick={onBack}
             className="flex items-center text-sm font-mono tracking-wider hover:text-brand-primary transition-colors"

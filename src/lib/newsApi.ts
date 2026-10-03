@@ -142,31 +142,19 @@ export const mockCryptoNews: NewsArticle[] = [
   }
 ];
 
+import { enrichArticlesWithSentiment } from './sentimentAnalyzer';
+
 export async function fetchNews() {
-  // Masked API key fallback using base64 encoding to avoid plaintext credential scanners
-  const fallbackKey = typeof atob !== 'undefined'
-    ? atob("cHViXzY3ZjYyYmE3OWE5NDQ1ZjQ4OTZlODM5NzBjN2IxZWIx")
-    : Buffer.from("cHViXzY3ZjYyYmE3OWE5NDQ1ZjQ4OTZlODM5NzBjN2IxZWIx", "base64").toString("utf-8");
-
-  const API_KEY = process.env.NEXT_PUBLIC_NEWSDATA_API_KEY || fallbackKey;
-
-  if (!API_KEY) {
-    console.warn("No NewsData API Key found. Using rich mock data fallback.");
-    return {
-      headlines: mockHeadlines,
-      global: mockGlobalNews,
-      crypto: mockCryptoNews
-    };
-  }
+  const fallbackKey = "pub_67f62ba79a9445f4896e83970c7b1eb1";
+  const API_KEY = process.env.NEWSDATA_API_KEY || process.env.NEXT_PUBLIC_NEWSDATA_API_KEY || fallbackKey;
 
   try {
-    const cacheBuster = Date.now();
-    const urlGeneral = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&category=business,technology&cb=${cacheBuster}`;
-    const urlCrypto = `https://newsdata.io/api/1/news?apikey=${API_KEY}&language=en&q=crypto&cb=${cacheBuster}`;
+    const urlGeneral = `https://newsdata.io/api/1/latest?apikey=${API_KEY}&language=en&category=business,technology`;
+    const urlCrypto = `https://newsdata.io/api/1/latest?apikey=${API_KEY}&language=en&q=crypto`;
     
     const [resGeneral, resCrypto] = await Promise.all([
-      fetch(urlGeneral),
-      fetch(urlCrypto)
+      fetch(urlGeneral, { next: { revalidate: 3600 } }),
+      fetch(urlCrypto, { next: { revalidate: 3600 } })
     ]);
     
     if (!resGeneral.ok || !resCrypto.ok) {
@@ -176,48 +164,36 @@ export async function fetchNews() {
     const dataGeneral = await resGeneral.json();
     const dataCrypto = await resCrypto.json();
     
-    let resultsGeneral = dataGeneral.results || [];
-    let resultsCrypto = dataCrypto.results || [];
+    const resultsGeneral = dataGeneral.results || [];
+    const resultsCrypto = dataCrypto.results || [];
     
-    // Manually enforce 24-hour retention since API blocks timeframe parameter
-    const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
-    const filterRecent = (item: any) => {
-       const pubDate = new Date(item.pubDate).getTime();
-       return pubDate > twentyFourHoursAgo;
-    };
+    // Sort latest first
+    const sortByDate = (a: any, b: any) => new Date(b.pubDate || 0).getTime() - new Date(a.pubDate || 0).getTime();
+    resultsGeneral.sort(sortByDate);
+    resultsCrypto.sort(sortByDate);
     
-    resultsGeneral = resultsGeneral.filter(filterRecent);
-    resultsCrypto = resultsCrypto.filter(filterRecent);
-    
-    const mapItems = (items: any[]) => items.map((item: any) => {
-      const isContentRestricted = item.content === "ONLY AVAILABLE IN PAID PLANS";
-      const validContent = isContentRestricted ? item.description : (item.content || item.description);
-      
-      const isSentimentRestricted = item.sentiment && item.sentiment.includes("ONLY AVAILABLE IN");
+    const mapItems = (items: any[]) => items.map((item: any) => ({
+      article_id: item.article_id || Math.random().toString(),
+      title: item.title,
+      link: item.link || "#",
+      source_name: item.source_name || item.source_id || "Global Feed",
+      source_icon: item.source_icon,
+      pubDate: item.pubDate || new Date().toISOString(),
+      image_url: item.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800',
+      description: item.description || item.title,
+      content: item.content || item.description || "Content unavailable",
+      tags: item.keywords || ['Market News']
+    }));
 
-      return {
-        article_id: item.article_id || Math.random().toString(),
-        title: item.title,
-        link: item.link || "#",
-        source_name: item.source_id || "Global Feed",
-        pubDate: item.pubDate || new Date().toISOString(),
-        image_url: item.image_url || 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&q=80&w=800',
-        description: item.description || item.title,
-        content: validContent || "Content unavailable",
-        sentiment: isSentimentRestricted ? (Math.random() > 0.5 ? 'Positive' : 'Negative') : (item.sentiment || 'Neutral'),
-        sentiment_score: item.sentiment_stats?.positive ? (item.sentiment_stats.positive - item.sentiment_stats.negative) : (Math.random() * 2 - 1),
-        tags: item.keywords || ['Market News']
-      };
-    });
+    const [enrichedGeneral, enrichedCrypto] = await Promise.all([
+      enrichArticlesWithSentiment(mapItems(resultsGeneral)),
+      enrichArticlesWithSentiment(mapItems(resultsCrypto))
+    ]);
 
-    const mappedGeneral = mapItems(resultsGeneral);
-    const mappedCrypto = mapItems(resultsCrypto);
+    const finalHeadlines = enrichedGeneral.slice(0, 5);
+    const finalGlobal = enrichedGeneral.slice(5, 15);
+    const finalCrypto = enrichedCrypto.slice(0, 10);
 
-    const finalHeadlines = mappedGeneral.slice(0, 5);
-    const finalGlobal = mappedGeneral.slice(5, 15);
-    const finalCrypto = mappedCrypto.slice(0, 10);
-
-    // Fall back to robust mocks for any specific segment if the live API didn't return enough 24h recent volume
     return {
       headlines: finalHeadlines.length > 0 ? finalHeadlines : mockHeadlines,
       global: finalGlobal.length > 0 ? finalGlobal : mockGlobalNews,
