@@ -26,17 +26,29 @@ export const ClientWalletMultiButton = (props: any) => {
   }, []);
 
   const handleClick = () => {
-    // Check if any wallet is installed or injected into window
+    const isMobile = typeof window !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean((window as any).solana || (window as any).phantom);
+
+    // If inside an in-app browser with injected provider (e.g. Phantom or Solflare in-app browser)
+    if (hasInjected) {
+      setVisible(true);
+      return;
+    }
+
+    // On mobile web browsers (Safari, Chrome, etc.), show the mobile-optimized modal with 1-tap Phantom app deep-link & MWA
+    if (isMobile) {
+      setShowInstallModal(true);
+      return;
+    }
+
+    // On desktop: check if any browser extension wallet is installed
     const installedWallets = wallets.filter(
       (w) => w.readyState === WalletReadyState.Installed || (w.adapter.name === "Phantom" && hasInjected)
     );
 
     if (installedWallets.length === 0 && !hasInjected) {
-      // Open guided modal instead of blindly opening a new tab
       setShowInstallModal(true);
     } else {
-      // Wallet detected -> Open standard adapter modal
       setVisible(true);
     }
   };

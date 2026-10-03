@@ -2,7 +2,8 @@
 
 import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, ExternalLink, ShieldCheck, CheckCircle2, ArrowRight } from "lucide-react";
+import { X, RefreshCw, ExternalLink, ShieldCheck, CheckCircle2, ArrowRight, Smartphone, Sparkles } from "lucide-react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import toast from "react-hot-toast";
 
 interface InstallWalletModalProps {
@@ -16,11 +17,18 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   onClose,
   onOpenStandardModal,
 }) => {
+  const { wallets, select } = useWallet();
   const [installStarted, setInstallStarted] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
+      const ua = navigator.userAgent;
+      setIsMobile(/Android|iPhone|iPad|iPod/i.test(ua));
+      setIsIOS(/iPhone|iPad|iPod/i.test(ua));
+
       const isPending = sessionStorage.getItem("street_sync_install_pending");
       if (isPending) {
         setInstallStarted(true);
@@ -28,14 +36,31 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
     }
   }, [isOpen]);
 
+  const handleOpenPhantomApp = () => {
+    if (typeof window === "undefined") return;
+    const url = encodeURIComponent(window.location.href);
+    const ref = encodeURIComponent(window.location.origin);
+    // Universal link to open Phantom mobile app directly to this dApp
+    window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+  };
+
+  const handleConnectMwa = () => {
+    const mwaWallet = wallets.find(
+      (w) => w.adapter.name === "Mobile Wallet Adapter"
+    );
+    if (mwaWallet) {
+      select(mwaWallet.adapter.name);
+      onClose();
+    } else {
+      onOpenStandardModal();
+    }
+  };
+
   const handleInstallClick = () => {
     if (typeof window === "undefined") return;
 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile) {
-      const url = encodeURIComponent(window.location.href);
-      const ref = encodeURIComponent(window.location.origin);
-      window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+      handleOpenPhantomApp();
       return;
     }
 
@@ -85,63 +110,108 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors"
+            className="absolute top-4 right-4 p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted transition-colors z-20"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
 
           {!installStarted ? (
-            /* STEP 1: Initial Install Guide */
-            <div className="space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-2xl">
-                  👻
+            /* STEP 1: Main Connect Guide */
+            <div className="space-y-5">
+              {/* Header with Street Sync Bot Avatar */}
+              <div className="flex items-center gap-3.5 pr-8">
+                <div className="w-12 h-12 rounded-2xl bg-secondary/80 border border-border shadow-sm flex items-center justify-center shrink-0 p-1.5 relative">
+                  <img
+                    src="https://api.dicebear.com/7.x/bottts/svg?seed=EW9U&backgroundColor=transparent"
+                    alt="Street Sync Bot"
+                    className="w-9 h-9 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                  />
+                  <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-primary animate-pulse" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-black font-display tracking-tight text-foreground uppercase">
+                <div className="min-w-0">
+                  <h3 className="text-lg sm:text-xl font-black font-display tracking-tight text-foreground uppercase truncate">
                     Connect Solana Wallet
                   </h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground truncate">
                     Required to buy, sell, and trade on Street Sync
                   </p>
                 </div>
               </div>
 
-              <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-3">
-                <div className="flex items-start gap-2.5">
-                  <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                  <div className="text-xs">
-                    <p className="font-bold text-foreground">Phantom Wallet (Recommended)</p>
-                    <p className="text-muted-foreground leading-relaxed mt-0.5">
-                      The most popular and secure self-custodial wallet on Solana. Free extension for Chrome, Brave, and Edge.
-                    </p>
+              {/* Status Info Box */}
+              {isMobile ? (
+                <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      <p className="font-bold text-foreground">Mobile Solana Wallet</p>
+                      <p className="text-muted-foreground leading-relaxed mt-0.5">
+                        Have Phantom or a Solana wallet installed? Open directly in Phantom app for 1-tap connection or connect using Mobile Wallet Adapter.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={handleInstallClick}
-                  className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/25"
-                >
-                  <span>Download Phantom</span>
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-
-                <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Already have a wallet?</span>
-                  <button
-                    onClick={handleReloadAndConnect}
-                    className="font-bold text-primary hover:underline flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Reload to Detect</span>
-                  </button>
+              ) : (
+                <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-3">
+                  <div className="flex items-start gap-2.5">
+                    <ShieldCheck className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      <p className="font-bold text-foreground">Phantom Wallet (Recommended)</p>
+                      <p className="text-muted-foreground leading-relaxed mt-0.5">
+                        The most popular and secure self-custodial wallet on Solana. Free extension for Chrome, Brave, and Edge.
+                      </p>
+                    </div>
+                  </div>
                 </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="space-y-3">
+                {isMobile ? (
+                  <>
+                    <button
+                      onClick={handleOpenPhantomApp}
+                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
+                    >
+                      <span>Open in Phantom App</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+
+                    <button
+                      onClick={handleConnectMwa}
+                      className="w-full py-3 px-4 bg-secondary text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border shadow-sm"
+                    >
+                      <Smartphone className="w-4 h-4 text-primary" />
+                      <span>Connect with Mobile Wallet Adapter</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={handleInstallClick}
+                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-primary/25"
+                    >
+                      <span>Download Phantom</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </button>
+
+                    <div className="pt-2 border-t border-border flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">Already have a wallet?</span>
+                      <button
+                        onClick={handleReloadAndConnect}
+                        className="font-bold text-primary hover:underline flex items-center gap-1"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Reload to Detect</span>
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div className="text-center">
+              {/* Secondary Options */}
+              <div className="space-y-2 text-center pt-1">
                 <button
                   onClick={() => {
                     onClose();
@@ -151,6 +221,20 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                 >
                   View all supported wallets & options ➔
                 </button>
+
+                {isMobile && (
+                  <div className="pt-2 border-t border-border flex items-center justify-between text-[11px] text-muted-foreground">
+                    <span>Don&apos;t have Phantom yet?</span>
+                    <a
+                      href={isIOS ? "https://apps.apple.com/app/phantom-solana-wallet/id1598432977" : "https://phantom.app/download"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-bold text-primary hover:underline"
+                    >
+                      Get on {isIOS ? "App Store" : "Google Play"}
+                    </a>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
