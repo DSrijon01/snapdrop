@@ -17,7 +17,7 @@ import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-to
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 import { resolveNftImageUrl, getFallbackImage, handleImageFallback } from "@/utils/nftImageResolver";
 import { NFT3DViewer } from "@/components/features/nft-marketplace/NFT3DViewer";
-import { Box } from "lucide-react";
+import { Box, Sparkles, ShieldCheck, Check, Layers, Info, X, Zap, ExternalLink, Copy, ArrowRight, ArrowLeft } from "lucide-react";
 
 export interface NFTDetail {
     image: string;
@@ -68,6 +68,26 @@ export const StackedNFTGallery = () => {
     const [viewer3DNft, setViewer3DNft] = useState<any | null>(null);
     const [isMinting, setIsMinting] = useState(false);
     const [status, setStatus] = useState("");
+    const [mobileModalTab, setMobileModalTab] = useState<'gallery' | 'details'>('gallery');
+    const [copiedMint, setCopiedMint] = useState(false);
+
+    const handleOpenCard = (card: CarouselItem) => {
+        setExpandedCard(card);
+        if (card.nfts && card.nfts.length > 0) {
+            setSelectedNFT(card.nfts[0]);
+        } else {
+            setSelectedNFT(null);
+        }
+        setMobileModalTab('gallery');
+    };
+
+    const handleCopyMint = (mint: string) => {
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            navigator.clipboard.writeText(mint);
+            setCopiedMint(true);
+            setTimeout(() => setCopiedMint(false), 2000);
+        }
+    };
 
     const umi = useMemo(() => {
         const u = createUmi(connection.rpcEndpoint)
@@ -490,7 +510,7 @@ export const StackedNFTGallery = () => {
                                 }}
                                 transition={isJumping ? { duration: 0 } : { type: "spring", stiffness: 300, damping: 30 }}
                                 onClick={() => {
-                                    if (isCenter) setExpandedCard(card);
+                                    if (isCenter) handleOpenCard(card);
                                     else setCurrentIndex(index);
                                 }}
                             >
@@ -570,179 +590,324 @@ export const StackedNFTGallery = () => {
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
-                            className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-8 bg-black/90 backdrop-blur-2xl"
+                            className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/85 backdrop-blur-2xl"
                             onClick={() => setExpandedCard(null)}
                         >
-                        <motion.div
-                            initial={{ scale: 0.95, y: 30 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.95, y: 30 }}
-                            className="bg-card w-full max-w-6xl h-[85vh] md:h-[75vh] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 flex flex-col md:flex-row relative"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <button 
-                                className="absolute top-6 right-6 bg-black/50 hover:bg-black/80 text-white p-3 rounded-full z-20 transition-colors border border-white/10"
-                                onClick={() => setExpandedCard(null)}
+                            <motion.div
+                                initial={{ scale: 0.95, y: 30, opacity: 0 }}
+                                animate={{ scale: 1, y: 0, opacity: 1 }}
+                                exit={{ scale: 0.95, y: 30, opacity: 0 }}
+                                transition={{ type: "spring", stiffness: 350, damping: 30 }}
+                                className="w-full max-w-6xl h-[92vh] md:h-[82vh] rounded-[1.75rem] md:rounded-[2.5rem] overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.9),0_0_50px_rgba(168,85,247,0.18)] border border-white/15 bg-zinc-950 text-white flex flex-col relative select-none"
+                                onClick={(e) => e.stopPropagation()}
                             >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
-                            </button>
+                                {/* Atmospheric Cyber Background Elements */}
+                                <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary via-purple-500 to-transparent z-30" />
+                                <div className="absolute -top-32 -left-32 w-80 h-80 bg-purple-600/25 rounded-full blur-[100px] pointer-events-none" />
+                                <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-emerald-500/20 rounded-full blur-[100px] pointer-events-none" />
+                                <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+                                <div className="absolute inset-0 bg-[radial-gradient(rgba(255,255,255,0.06)_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-                            {/* Left Side: Images */}
-                            <div className="md:w-1/2 h-[40%] md:h-full relative bg-black/50">
+                                {/* Top Cyber Header Bar */}
+                                <div className="px-4 sm:px-6 md:px-8 py-3.5 md:py-4 border-b border-white/10 bg-black/40 backdrop-blur-xl flex items-center justify-between z-20 shrink-0">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-bold uppercase tracking-wider">
+                                            <span className="relative flex h-2 w-2">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                            </span>
+                                            <span>Live Vault</span>
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h2 className="text-base sm:text-lg md:text-2xl font-black font-display uppercase tracking-tight text-white truncate leading-tight">
+                                                {expandedCard.collection || expandedCard.title}
+                                            </h2>
+                                            <p className="text-[10px] sm:text-xs text-white/60 font-mono flex items-center gap-2 truncate">
+                                                <span>{expandedCard.type === 'candymachine' ? 'Candy Machine Drop' : `${expandedCard.nfts?.length || 0} Assets in Vault`}</span>
+                                                {expandedCard.subtitle && (
+                                                    <>
+                                                        <span className="text-white/20">•</span>
+                                                        <span className="text-primary font-bold">{expandedCard.subtitle}</span>
+                                                    </>
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+                                        {/* Mobile Tab Switcher for Direct Collection */}
+                                        {expandedCard.type !== 'candymachine' && (
+                                            <div className="flex md:hidden items-center bg-white/5 p-0.5 rounded-xl border border-white/10 text-[11px] font-mono font-bold">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMobileModalTab('gallery')}
+                                                    className={`px-2.5 py-1 rounded-lg transition-all ${mobileModalTab === 'gallery' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-white/60 hover:text-white'}`}
+                                                >
+                                                    Vault ({expandedCard.nfts?.length || 0})
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setMobileModalTab('details')}
+                                                    className={`px-2.5 py-1 rounded-lg transition-all ${mobileModalTab === 'details' ? 'bg-primary text-primary-foreground shadow-sm' : 'text-white/60 hover:text-white'}`}
+                                                >
+                                                    Terminal
+                                                </button>
+                                            </div>
+                                        )}
+
+                                        {/* Close Button */}
+                                        <button 
+                                            type="button"
+                                            className="p-2 sm:p-2.5 bg-white/5 hover:bg-white/15 text-white/70 hover:text-white rounded-full transition-all border border-white/10 hover:border-white/25 active:scale-95 shadow-lg"
+                                            onClick={() => setExpandedCard(null)}
+                                            title="Close Gallery"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Modal Body */}
                                 {expandedCard.type === 'candymachine' ? (
-                                    <>
-                                        <img 
-                                            src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
-                                            alt={expandedCard.title} 
-                                            className="w-full h-full object-cover" 
-                                            onError={(e) => {
-                                                handleImageFallback(e, expandedCard.title);
-                                            }}
-                                        />
-                                        <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-transparent" />
-                                        <div className="absolute bottom-8 left-8 text-white">
-                                            <h2 className="text-4xl md:text-5xl font-black font-display uppercase tracking-tight leading-none mb-2">
-                                                {expandedCard.title}
-                                            </h2>
-                                            <p className="text-primary font-bold tracking-widest uppercase text-sm">
-                                                {expandedCard.subtitle}
-                                            </p>
+                                    /* CANDY MACHINE VIEW */
+                                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
+                                        {/* Candy Machine Left: Mystery Cover */}
+                                        <div className="md:w-1/2 h-[35%] md:h-full relative overflow-hidden bg-black/40 flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-white/10">
+                                            <div className="relative w-full max-w-[340px] aspect-square rounded-2xl overflow-hidden border border-white/20 shadow-[0_0_50px_rgba(0,0,0,0.8)] group">
+                                                <div className="absolute -inset-2 bg-gradient-to-tr from-primary/30 to-purple-500/30 rounded-2xl blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+                                                <img 
+                                                    src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
+                                                    alt={expandedCard.title} 
+                                                    className="w-full h-full object-cover relative z-10 group-hover:scale-105 transition-transform duration-700" 
+                                                    onError={(e) => handleImageFallback(e, expandedCard.title)}
+                                                />
+                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                                                <div className="absolute bottom-4 left-4 right-4 z-20">
+                                                    <span className="inline-block px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-mono font-bold uppercase tracking-wider mb-1">
+                                                        Blind Mint Portal
+                                                    </span>
+                                                    <h3 className="text-xl font-black font-display uppercase tracking-tight text-white">
+                                                        {expandedCard.title}
+                                                    </h3>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </>
-                                ) : (
-                                    <div className="w-full h-full flex flex-col">
-                                        <div className="p-6 bg-black/40 backdrop-blur-md border-b border-white/10 z-10 absolute top-0 left-0 right-0">
-                                            <h2 className="text-2xl font-black font-display uppercase tracking-tight text-white mb-1">
-                                                {expandedCard.collection}
-                                            </h2>
-                                            <p className="text-xs text-primary font-bold tracking-widest uppercase">
-                                                Select an NFT to Purchase
-                                            </p>
-                                        </div>
-                                        <div className="flex-1 overflow-y-auto p-6 pt-28 custom-scrollbar">
-                                            <div className="grid grid-cols-2 gap-4">
-                                                {expandedCard.nfts?.map((nft) => (
-                                                    <motion.div 
-                                                        key={nft.mintAddress}
-                                                        whileHover={{ scale: 1.02 }}
-                                                        whileTap={{ scale: 0.98 }}
-                                                        className={`relative cursor-pointer rounded-xl overflow-hidden border-2 transition-all shadow-lg ${selectedNFT?.mintAddress === nft.mintAddress ? 'border-primary shadow-primary/20' : 'border-transparent hover:border-white/20'}`}
-                                                        onClick={() => setSelectedNFT(nft)}
-                                                    >
-                                                        <img 
-                                                            src={resolveNftImageUrl(nft.image, `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`)} 
-                                                            alt={nft.mintAddress} 
-                                                            className="w-full aspect-square object-cover" 
-                                                            onError={(e) => {
-                                                                handleImageFallback(e, `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`);
-                                                            }}
-                                                        />
-                                                        <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-3 backdrop-blur-md border-t border-white/10">
-                                                            <div className="flex justify-between items-center">
-                                                                <span className="text-[10px] text-white/70 uppercase font-bold">Price</span>
-                                                                <span className="text-sm font-mono text-primary font-black">{nft.price} SOL</span>
-                                                            </div>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setSelectedNFT(nft);
-                                                                setViewer3DNft({
-                                                                    name: nft.name || `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`,
-                                                                    image: nft.image,
-                                                                    mint: nft.mintAddress,
-                                                                    price: nft.price,
-                                                                    description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
-                                                                });
-                                                            }}
-                                                            className="absolute top-2 left-2 z-10 px-2 py-1 bg-black/70 hover:bg-primary text-white hover:text-primary-foreground rounded-lg backdrop-blur-md border border-white/15 hover:border-primary/50 transition-all opacity-90 hover:opacity-100 shadow-md flex items-center gap-1 text-[10px] font-mono font-bold"
-                                                            title="Inspect in 3D"
-                                                        >
-                                                            <Box size={11} />
-                                                            <span>3D</span>
-                                                        </button>
-                                                        {selectedNFT?.mintAddress === nft.mintAddress && (
-                                                            <div className="absolute top-2 right-2 bg-primary text-primary-foreground p-1 rounded-full">
-                                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+
+                                        {/* Candy Machine Right: Stats & Mint CTA */}
+                                        <div className="md:w-1/2 h-[65%] md:h-full p-6 md:p-10 flex flex-col justify-between overflow-y-auto custom-scrollbar bg-zinc-950/70">
+                                            <div className="space-y-6">
+                                                <div>
+                                                    <h3 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-white mb-2">
+                                                        Metaplex Blind Mint
+                                                    </h3>
+                                                    <p className="text-white/60 text-sm leading-relaxed">
+                                                        Blind mint a random verifiable digital collectible from the {expandedCard.title} collection on the Solana blockchain with instant wallet delivery.
+                                                    </p>
+                                                </div>
+
+                                                {/* Stats Cards */}
+                                                <div className="grid grid-cols-2 gap-3.5">
+                                                    <div className="bg-white/5 p-4 md:p-5 rounded-2xl border border-white/10 relative overflow-hidden">
+                                                        <p className="text-[10px] font-mono text-white/50 uppercase tracking-wider font-bold mb-1">Mint Progress</p>
+                                                        <p className="text-2xl md:text-3xl font-mono font-black text-white">
+                                                            {expandedCard.totalMinted ?? 0} <span className="text-xs font-sans font-normal text-white/40">/ {expandedCard.maxSupply ?? "?"}</span>
+                                                        </p>
+                                                        {expandedCard.totalMinted !== undefined && expandedCard.maxSupply && (
+                                                            <div className="w-full bg-white/10 h-1.5 rounded-full mt-3 overflow-hidden">
+                                                                <div 
+                                                                    className="bg-gradient-to-r from-primary to-emerald-400 h-full rounded-full transition-all duration-500" 
+                                                                    style={{ width: `${Math.min(100, (expandedCard.totalMinted / expandedCard.maxSupply) * 100)}%` }}
+                                                                />
                                                             </div>
                                                         )}
-                                                    </motion.div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                                    </div>
 
-                            {/* Right Side: Details & Actions */}
-                            <div className="md:w-1/2 p-8 md:p-12 flex flex-col bg-card/50 h-[60%] md:h-full overflow-y-auto">
-                                
-                                {expandedCard.type === 'candymachine' ? (
-                                    <div className="flex flex-col h-full justify-center">
-                                        <div className="space-y-8 mb-8">
-                                            <p className="text-muted-foreground text-lg leading-relaxed">
-                                                Blind mint a random NFT from the {expandedCard.title} collection. Try your luck and secure a potentially rare digital asset on the Solana blockchain.
-                                            </p>
-                                            <div className="grid grid-cols-2 gap-4">
-                                                <div className="bg-background/50 p-6 rounded-2xl border border-border">
-                                                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Minted</p>
-                                                    <p className="text-3xl font-mono font-black text-foreground">{expandedCard.totalMinted} <span className="text-sm text-muted-foreground font-sans font-normal">/ {expandedCard.maxSupply}</span></p>
+                                                    <div className="bg-white/5 p-4 md:p-5 rounded-2xl border border-white/10">
+                                                        <p className="text-[10px] font-mono text-white/50 uppercase tracking-wider font-bold mb-1">Price Per Mint</p>
+                                                        <p className="text-2xl md:text-3xl font-mono font-black text-primary">
+                                                            {expandedCard.price} <span className="text-xs font-sans font-normal text-white/50">SOL</span>
+                                                        </p>
+                                                        <p className="text-[10px] font-mono text-emerald-400 mt-2 flex items-center gap-1">
+                                                            <ShieldCheck size={12} /> Instant Delivery
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="bg-background/50 p-6 rounded-2xl border border-border">
-                                                    <p className="text-xs text-muted-foreground uppercase font-bold tracking-wider mb-2">Price</p>
-                                                    <p className="text-3xl font-mono font-black text-primary">{expandedCard.price} <span className="text-sm text-muted-foreground font-sans font-normal">SOL</span></p>
+
+                                                {/* Security & Guarantees */}
+                                                <div className="space-y-2 text-xs font-mono text-white/70 bg-white/[0.03] p-4 rounded-xl border border-white/5">
+                                                    <div className="flex items-center gap-2">
+                                                        <Check size={14} className="text-emerald-400 shrink-0" />
+                                                        <span>Provably fair Metaplex Candy Machine v2</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <Check size={14} className="text-emerald-400 shrink-0" />
+                                                        <span>Direct-to-wallet on-chain minting</span>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="mt-auto">
-                                            {expandedCard.totalMinted !== undefined && expandedCard.maxSupply !== undefined && expandedCard.totalMinted >= expandedCard.maxSupply ? (
-                                                <button 
-                                                    disabled 
-                                                    className="w-full py-5 bg-red-500/20 text-red-500 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-red-500/50 transition-all shadow-[0_0_30px_rgba(239,68,68,0.2)]"
-                                                >
-                                                    Sold Out
-                                                </button>
-                                            ) : (
-                                                <button 
-                                                    className="w-full py-5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-[0_0_30px_rgba(var(--primary),0.2)] hover:shadow-[0_0_40px_rgba(var(--primary),0.4)] hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
-                                                    onClick={() => handleMintCM(expandedCard.candyMachineId!)}
-                                                    disabled={isMinting}
-                                                >
-                                                    {isMinting ? "Processing..." : "Mint Random NFT"}
-                                                </button>
-                                            )}
-                                            {status && (
-                                                <div className="mt-6 text-center text-sm font-mono font-bold bg-background/50 p-4 rounded-xl border border-border text-foreground animate-in fade-in slide-in-from-bottom-2">
-                                                    {status}
-                                                </div>
-                                            )}
+                                            {/* Mint CTA */}
+                                            <div className="pt-6 border-t border-white/10 mt-6">
+                                                {expandedCard.totalMinted !== undefined && expandedCard.maxSupply !== undefined && expandedCard.totalMinted >= expandedCard.maxSupply ? (
+                                                    <button 
+                                                        disabled 
+                                                        className="w-full py-4 bg-red-500/20 text-red-500 rounded-2xl font-black text-base uppercase tracking-widest cursor-not-allowed border border-red-500/40"
+                                                    >
+                                                        Sold Out
+                                                    </button>
+                                                ) : (
+                                                    <button 
+                                                        className="w-full py-4 bg-gradient-to-r from-primary via-emerald-400 to-primary text-zinc-950 font-black text-base uppercase tracking-wider rounded-2xl shadow-[0_0_30px_rgba(var(--primary),0.3)] hover:shadow-[0_0_40px_rgba(var(--primary),0.5)] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
+                                                        onClick={() => handleMintCM(expandedCard.candyMachineId!)}
+                                                        disabled={isMinting}
+                                                    >
+                                                        <Zap size={18} className="fill-current" />
+                                                        <span>{isMinting ? "Processing Transaction..." : `Mint Random NFT (${expandedCard.price} SOL)`}</span>
+                                                    </button>
+                                                )}
+                                                {status && (
+                                                    <div className="mt-3 text-center text-xs font-mono font-bold bg-white/5 p-3 rounded-xl border border-white/10 text-white animate-in fade-in">
+                                                        {status}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="flex flex-col h-full justify-center">
-                                        <div className="space-y-6 mb-8">
-                                            <h3 className="text-3xl font-black font-display uppercase tracking-tight text-foreground">Collection Details</h3>
-                                            <p className="text-muted-foreground text-lg leading-relaxed">
-                                                {selectedNFT 
-                                                    ? "You have selected a specific asset from the collection. You can purchase it instantly to add it directly to your wallet."
-                                                    : expandedCard.nfts && expandedCard.nfts.length === 0
-                                                        ? `The ${expandedCard.collection} collection is completely sold out.`
-                                                        : `Explore the entire ${expandedCard.collection} collection. Click on any NFT from the gallery on the left to view its specific price and purchase.`
-                                                }
-                                            </p>
+                                    /* DIRECT COLLECTION VIEW */
+                                    <div className="flex-1 flex overflow-hidden relative z-10">
+                                        {/* DESKTOP VIEW: Split Side-by-Side (md:flex) */}
+                                        <div className="hidden md:flex w-full h-full">
+                                            {/* Desktop Left: Scrollable Vault Grid (56%) */}
+                                            <div className="w-[56%] h-full flex flex-col border-r border-white/10 bg-black/20 relative">
+                                                <div className="px-6 py-2.5 bg-black/30 border-b border-white/5 flex items-center justify-between text-xs font-mono text-white/60">
+                                                    <span className="flex items-center gap-1.5">
+                                                        <Sparkles size={13} className="text-primary" />
+                                                        Click an NFT to load in holographic terminal
+                                                    </span>
+                                                    <span className="text-white/40">{expandedCard.nfts?.length || 0} Items</span>
+                                                </div>
 
-                                            {selectedNFT ? (
-                                                <motion.div 
-                                                    initial={{ opacity: 0, scale: 0.95 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    className="bg-background/80 p-6 rounded-2xl border border-primary/30 space-y-4 shadow-[0_0_30px_rgba(var(--primary),0.1)]"
-                                                >
-                                                    <div className="flex justify-between items-center pb-4 border-b border-white/5">
-                                                        <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Asset Hash</span>
-                                                        <div className="flex items-center gap-2">
-                                                            <span className="text-sm font-mono font-bold text-foreground bg-white/5 px-3 py-1 rounded-full">{selectedNFT.mintAddress.slice(0, 10)}...</span>
+                                                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5 p-6 overflow-y-auto custom-scrollbar flex-1 pb-16">
+                                                    {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
+                                                        <div className="col-span-full py-16 text-center text-white/50 font-mono text-sm">
+                                                            This collection is completely sold out.
+                                                        </div>
+                                                    ) : (
+                                                        expandedCard.nfts?.map((nft) => {
+                                                            const isSelected = selectedNFT?.mintAddress === nft.mintAddress;
+                                                            const displayName = nft.name || `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`;
+                                                            return (
+                                                                <motion.div
+                                                                    key={nft.mintAddress}
+                                                                    whileHover={{ y: -3, scale: 1.01 }}
+                                                                    whileTap={{ scale: 0.98 }}
+                                                                    onClick={() => setSelectedNFT(nft)}
+                                                                    className={`group relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 border bg-zinc-900/60 backdrop-blur-md shadow-lg ${
+                                                                        isSelected 
+                                                                            ? 'border-primary ring-2 ring-primary/60 shadow-[0_0_25px_rgba(var(--primary),0.3)] bg-zinc-900/90' 
+                                                                            : 'border-white/10 hover:border-white/30 hover:bg-zinc-900/80'
+                                                                    }`}
+                                                                >
+                                                                    {/* 3D Inspect Pill */}
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            setSelectedNFT(nft);
+                                                                            setViewer3DNft({
+                                                                                name: displayName,
+                                                                                image: nft.image,
+                                                                                mint: nft.mintAddress,
+                                                                                price: nft.price,
+                                                                                description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
+                                                                            });
+                                                                        }}
+                                                                        className="absolute top-2.5 left-2.5 z-10 px-2 py-1 bg-black/80 hover:bg-primary text-white hover:text-black rounded-lg backdrop-blur-md border border-white/20 text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group-hover:scale-105"
+                                                                        title="Inspect in 3D"
+                                                                    >
+                                                                        <Box size={11} />
+                                                                        <span>3D</span>
+                                                                    </button>
+
+                                                                    {/* Selected Checkmark */}
+                                                                    {isSelected && (
+                                                                        <div className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg font-black animate-in zoom-in-50">
+                                                                            <Check size={14} strokeWidth={3} />
+                                                                        </div>
+                                                                    )}
+
+                                                                    {/* NFT Image */}
+                                                                    <div className="aspect-square w-full overflow-hidden bg-zinc-950/80 relative">
+                                                                        <img
+                                                                            src={resolveNftImageUrl(nft.image, displayName)}
+                                                                            alt={displayName}
+                                                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                                                            onError={(e) => handleImageFallback(e, displayName)}
+                                                                        />
+                                                                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+                                                                    </div>
+
+                                                                    {/* Card Info */}
+                                                                    <div className="p-3 bg-zinc-900/90 border-t border-white/5 flex items-center justify-between">
+                                                                        <div className="min-w-0 pr-2">
+                                                                            <p className="text-[11px] font-mono text-white/50 truncate">#{nft.mintAddress.slice(0, 6)}</p>
+                                                                            <p className="text-xs font-bold text-white truncate">{displayName}</p>
+                                                                        </div>
+                                                                        <div className="text-right shrink-0">
+                                                                            <span className="text-[9px] font-mono text-white/40 uppercase block">Price</span>
+                                                                            <span className="text-xs font-mono font-black text-primary">{nft.price} SOL</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </motion.div>
+                                                            );
+                                                        })
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Desktop Right: Holographic Terminal (44%) */}
+                                            <div className="w-[44%] h-full flex flex-col p-6 lg:p-8 bg-zinc-950/70 overflow-y-auto custom-scrollbar relative justify-between">
+                                                {selectedNFT ? (
+                                                    <div className="space-y-4">
+                                                        <div className="flex items-center justify-between">
+                                                            <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-mono font-bold">
+                                                                <ShieldCheck size={14} />
+                                                                <span>VERIFIED ON-CHAIN ASSET</span>
+                                                            </div>
+                                                            <span className="text-xs font-mono text-white/40">PDA Escrow</span>
+                                                        </div>
+
+                                                        <div>
+                                                            <h3 className="text-2xl font-black font-display uppercase tracking-tight text-white">
+                                                                {selectedNFT.name || `${expandedCard.collection || expandedCard.title} #${selectedNFT.mintAddress.slice(0, 4)}`}
+                                                            </h3>
+                                                            {/* Mint Hash with Copy */}
+                                                            <div className="flex items-center gap-2 mt-1.5">
+                                                                <span className="text-xs font-mono text-white/60 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10">
+                                                                    {selectedNFT.mintAddress.slice(0, 10)}...{selectedNFT.mintAddress.slice(-6)}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleCopyMint(selectedNFT.mintAddress)}
+                                                                    className="px-2 py-1 rounded-lg bg-white/5 hover:bg-white/15 text-white/70 hover:text-white border border-white/10 transition-all text-xs flex items-center gap-1 font-mono"
+                                                                    title="Copy Mint Address"
+                                                                >
+                                                                    {copiedMint ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                                                    <span>{copiedMint ? "Copied" : "Copy"}</span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Hero Artwork Frame */}
+                                                        <div className="my-4 relative max-w-[280px] lg:max-w-[320px] mx-auto w-full aspect-square rounded-2xl overflow-hidden border border-white/15 shadow-[0_0_40px_rgba(0,0,0,0.8)] group">
+                                                            <div className="absolute -inset-2 bg-gradient-to-r from-primary/30 to-purple-600/30 rounded-2xl blur-xl opacity-40 group-hover:opacity-75 transition-opacity pointer-events-none" />
+                                                            <img
+                                                                src={resolveNftImageUrl(selectedNFT.image, selectedNFT.name || 'NFT Asset')}
+                                                                alt={selectedNFT.mintAddress}
+                                                                className="w-full h-full object-cover relative z-10"
+                                                                onError={(e) => handleImageFallback(e, selectedNFT.name || 'NFT Asset')}
+                                                            />
                                                             <button
                                                                 type="button"
                                                                 onClick={() => setViewer3DNft({
@@ -752,66 +917,337 @@ export const StackedNFTGallery = () => {
                                                                     price: selectedNFT.price,
                                                                     description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
                                                                 })}
-                                                                className="px-2.5 py-1 bg-primary/10 hover:bg-primary text-primary hover:text-primary-foreground border border-primary/20 rounded-full text-xs font-mono font-bold flex items-center gap-1.5 transition-all shadow-sm"
-                                                                title="Inspect in 3D"
+                                                                className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1.5 rounded-xl bg-black/80 hover:bg-primary text-white hover:text-black font-mono font-bold text-xs backdrop-blur-md border border-white/20 hover:border-primary/50 shadow-xl flex items-center gap-1.5 transition-all"
                                                             >
-                                                                <Box size={12} />
-                                                                <span>3D View</span>
+                                                                <Box size={14} />
+                                                                <span>Inspect in 3D</span>
                                                             </button>
                                                         </div>
+
+                                                        {/* Feature Specs */}
+                                                        <div className="grid grid-cols-3 gap-2 text-center text-[10px] font-mono font-semibold my-4">
+                                                            <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/80">
+                                                                <span className="text-emerald-400 block mb-0.5">● Escrow</span>
+                                                                <span>PDA Locked</span>
+                                                            </div>
+                                                            <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/80">
+                                                                <span className="text-primary block mb-0.5">● Settlement</span>
+                                                                <span>Instant Claim</span>
+                                                            </div>
+                                                            <div className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/80">
+                                                                <span className="text-purple-400 block mb-0.5">● Interactive</span>
+                                                                <span>3D Ready</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    <div className="flex justify-between items-center">
-                                                        <span className="text-sm text-muted-foreground uppercase font-bold tracking-wider">Price</span>
-                                                        <span className="text-3xl font-mono font-black text-primary">{selectedNFT.price} SOL</span>
+                                                ) : (
+                                                    <div className="my-auto text-center p-8 border border-dashed border-white/10 rounded-2xl bg-white/[0.02]">
+                                                        <p className="text-sm font-mono text-white/60">
+                                                            Select an asset from the vault to inspect details.
+                                                        </p>
                                                     </div>
-                                                </motion.div>
-                                            ) : (
-                                                 <div className="bg-background/30 p-8 rounded-2xl border border-dashed border-white/10 text-center flex flex-col items-center justify-center space-y-3">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50"><rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg>
-                                                    <span className="text-sm text-muted-foreground font-bold uppercase tracking-widest">{expandedCard.nfts && expandedCard.nfts.length === 0 ? "Sold Out" : "Waiting for selection"}</span>
-                                                 </div>
-                                            )}
+                                                )}
+
+                                                {/* Bottom Buy CTA */}
+                                                <div className="pt-4 border-t border-white/10 mt-auto">
+                                                    {selectedNFT && (
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <span className="text-xs font-mono uppercase tracking-wider text-white/50 font-bold">Total Price</span>
+                                                            <span className="text-2xl lg:text-3xl font-mono font-black text-primary flex items-center gap-1">
+                                                                {selectedNFT.price} <span className="text-sm font-sans font-normal text-white/50">SOL</span>
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
+                                                        <button 
+                                                            disabled 
+                                                            className="w-full py-4 bg-red-500/20 text-red-500 rounded-2xl font-black text-base uppercase tracking-widest cursor-not-allowed border border-red-500/40"
+                                                        >
+                                                            Sold Out
+                                                        </button>
+                                                    ) : !selectedNFT ? (
+                                                        <button 
+                                                            disabled 
+                                                            className="w-full py-4 bg-white/5 text-white/30 rounded-2xl font-black text-base uppercase tracking-widest cursor-not-allowed border border-white/10 font-mono"
+                                                        >
+                                                            Select an NFT Above
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            type="button"
+                                                            className="w-full py-4 rounded-2xl font-black text-base uppercase tracking-wider bg-gradient-to-r from-primary via-emerald-400 to-primary text-zinc-950 hover:shadow-[0_0_35px_rgba(var(--primary),0.4)] transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 disabled:scale-100 flex items-center justify-center gap-2"
+                                                            onClick={() => handleBuyDirect(selectedNFT.mintAddress)}
+                                                            disabled={isMinting}
+                                                        >
+                                                            <Zap size={18} className="fill-current" />
+                                                            <span>{isMinting ? "Processing Transaction..." : `Buy Now (${selectedNFT.price} SOL)`}</span>
+                                                        </button>
+                                                    )}
+
+                                                    {status && (
+                                                        <div className="mt-3 text-center text-xs font-mono font-bold bg-white/5 p-2.5 rounded-xl border border-white/10 text-white animate-in fade-in">
+                                                            {status}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <div className="mt-auto">
-                                            {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
-                                                <button 
-                                                    disabled 
-                                                    className="w-full py-5 bg-red-500/20 text-red-500 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-red-500/50 shadow-[0_0_30px_rgba(239,68,68,0.2)]"
-                                                >
-                                                    Sold Out
-                                                </button>
-                                            ) : !selectedNFT ? (
-                                                <button 
-                                                    disabled 
-                                                    className="w-full py-5 bg-foreground/10 text-foreground/40 rounded-2xl font-black text-lg uppercase tracking-widest cursor-not-allowed border border-white/5"
-                                                >
-                                                    Select an NFT to Buy
-                                                </button>
+                                        {/* MOBILE VIEW: Full-Height Tabs (md:hidden) */}
+                                        <div className="flex md:hidden w-full h-full flex-col relative overflow-hidden">
+                                            {mobileModalTab === 'gallery' ? (
+                                                /* Mobile Tab 1: Scrollable 2-Column Gallery */
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pb-28">
+                                                    <div className="grid grid-cols-2 gap-2.5">
+                                                        {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
+                                                            <div className="col-span-full py-16 text-center text-white/50 font-mono text-xs">
+                                                                Collection is sold out.
+                                                            </div>
+                                                        ) : (
+                                                            expandedCard.nfts?.map((nft) => {
+                                                                const isSelected = selectedNFT?.mintAddress === nft.mintAddress;
+                                                                const displayName = nft.name || `${expandedCard.collection || expandedCard.title} #${nft.mintAddress.slice(0, 4)}`;
+                                                                return (
+                                                                    <div
+                                                                        key={nft.mintAddress}
+                                                                        onClick={() => setSelectedNFT(nft)}
+                                                                        className={`relative rounded-xl overflow-hidden border bg-zinc-900/80 active:scale-95 transition-all shadow-md ${
+                                                                            isSelected 
+                                                                                ? 'border-primary ring-2 ring-primary/50 shadow-primary/30' 
+                                                                                : 'border-white/10'
+                                                                        }`}
+                                                                    >
+                                                                        {/* 3D button */}
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setSelectedNFT(nft);
+                                                                                setViewer3DNft({
+                                                                                    name: displayName,
+                                                                                    image: nft.image,
+                                                                                    mint: nft.mintAddress,
+                                                                                    price: nft.price,
+                                                                                    description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
+                                                                                });
+                                                                            }}
+                                                                            className="absolute top-2 left-2 z-10 px-2 py-0.5 bg-black/80 text-white rounded-md text-[9px] font-mono font-bold flex items-center gap-1 border border-white/20"
+                                                                        >
+                                                                            <Box size={10} />
+                                                                            <span>3D</span>
+                                                                        </button>
+
+                                                                        {isSelected && (
+                                                                            <div className="absolute top-2 right-2 z-10 w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-black">
+                                                                                <Check size={12} strokeWidth={3} />
+                                                                            </div>
+                                                                        )}
+
+                                                                        <div className="aspect-square w-full bg-zinc-950 relative">
+                                                                            <img
+                                                                                src={resolveNftImageUrl(nft.image, displayName)}
+                                                                                alt={displayName}
+                                                                                className="w-full h-full object-cover"
+                                                                                onError={(e) => handleImageFallback(e, displayName)}
+                                                                            />
+                                                                        </div>
+
+                                                                        <div className="p-2 bg-zinc-900/90 border-t border-white/5 flex items-center justify-between">
+                                                                            <span className="text-[10px] font-mono text-white/70 truncate mr-1">#{nft.mintAddress.slice(0, 4)}</span>
+                                                                            <span className="text-xs font-mono font-black text-primary">{nft.price} SOL</span>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            })
+                                                        )}
+                                                    </div>
+
+                                                    {/* Floating HUD at Bottom of Mobile Gallery */}
+                                                    {selectedNFT && (
+                                                        <motion.div
+                                                            initial={{ y: 60, opacity: 0 }}
+                                                            animate={{ y: 0, opacity: 1 }}
+                                                            className="fixed bottom-4 left-4 right-4 p-3 bg-zinc-900/95 backdrop-blur-2xl border border-white/20 rounded-2xl shadow-[0_10px_40px_rgba(0,0,0,0.9)] flex items-center justify-between z-30 gap-2"
+                                                        >
+                                                            <div className="flex items-center gap-2.5 min-w-0">
+                                                                <img
+                                                                    src={resolveNftImageUrl(selectedNFT.image, selectedNFT.name || 'NFT')}
+                                                                    alt="Thumb"
+                                                                    className="w-10 h-10 rounded-xl object-cover border border-white/20 shrink-0"
+                                                                    onError={(e) => handleImageFallback(e, selectedNFT.name || 'NFT')}
+                                                                />
+                                                                <div className="min-w-0">
+                                                                    <p className="text-xs font-bold text-white truncate leading-tight">
+                                                                        {selectedNFT.name || `#${selectedNFT.mintAddress.slice(0, 6)}`}
+                                                                    </p>
+                                                                    <p className="text-xs font-mono font-black text-primary">
+                                                                        {selectedNFT.price} SOL
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setViewer3DNft({
+                                                                        name: selectedNFT.name || `${expandedCard.collection || expandedCard.title} #${selectedNFT.mintAddress.slice(0, 4)}`,
+                                                                        image: selectedNFT.image,
+                                                                        mint: selectedNFT.mintAddress,
+                                                                        price: selectedNFT.price,
+                                                                        description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
+                                                                    })}
+                                                                    className="p-2 rounded-xl bg-white/10 text-white border border-white/15 text-xs font-mono font-bold flex items-center gap-1"
+                                                                    title="Inspect in 3D"
+                                                                >
+                                                                    <Box size={14} />
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setMobileModalTab('details')}
+                                                                    className="px-3.5 py-2 rounded-xl bg-primary text-primary-foreground font-bold text-xs font-mono flex items-center gap-1 shadow-md active:scale-95"
+                                                                >
+                                                                    <span>Details & Buy</span>
+                                                                    <ArrowRight size={13} />
+                                                                </button>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </div>
                                             ) : (
-                                                <button 
-                                                    className="w-full py-5 bg-foreground hover:bg-foreground/90 text-background rounded-2xl font-black text-lg uppercase tracking-widest transition-all shadow-xl hover:-translate-y-1 disabled:opacity-50 disabled:hover:translate-y-0"
-                                                    onClick={() => handleBuyDirect(selectedNFT.mintAddress)}
-                                                    disabled={isMinting}
-                                                >
-                                                    {isMinting ? "Processing..." : "Buy Now"}
-                                                </button>
-                                            )}
-                                            {status && (
-                                                <div className="mt-6 text-center text-sm font-mono font-bold bg-background/50 p-4 rounded-xl border border-border text-foreground animate-in fade-in slide-in-from-bottom-2">
-                                                    {status}
+                                                /* Mobile Tab 2: Full Mobile Terminal */
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col justify-between">
+                                                    <div className="space-y-4">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMobileModalTab('gallery')}
+                                                            className="flex items-center gap-1 text-xs font-mono font-bold text-primary hover:underline mb-1"
+                                                        >
+                                                            <ArrowLeft size={14} />
+                                                            <span>Back to Vault Showcase</span>
+                                                        </button>
+
+                                                        {selectedNFT ? (
+                                                            <>
+                                                                <div className="flex items-center justify-between">
+                                                                    <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                                                                        <ShieldCheck size={12} /> Verified On-Chain
+                                                                    </span>
+                                                                    <span className="text-[10px] font-mono text-white/50">PDA Escrow</span>
+                                                                </div>
+
+                                                                <h3 className="text-xl font-black font-display uppercase tracking-tight text-white leading-tight">
+                                                                    {selectedNFT.name || `${expandedCard.collection || expandedCard.title} #${selectedNFT.mintAddress.slice(0, 4)}`}
+                                                                </h3>
+
+                                                                {/* Artwork Frame */}
+                                                                <div className="relative w-full max-w-[240px] mx-auto aspect-square rounded-2xl overflow-hidden border border-white/20 shadow-[0_0_40px_rgba(0,0,0,0.8)]">
+                                                                    <img
+                                                                        src={resolveNftImageUrl(selectedNFT.image, selectedNFT.name || 'NFT Asset')}
+                                                                        alt={selectedNFT.mintAddress}
+                                                                        className="w-full h-full object-cover"
+                                                                        onError={(e) => handleImageFallback(e, selectedNFT.name || 'NFT Asset')}
+                                                                    />
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => setViewer3DNft({
+                                                                            name: selectedNFT.name || `${expandedCard.collection || expandedCard.title} #${selectedNFT.mintAddress.slice(0, 4)}`,
+                                                                            image: selectedNFT.image,
+                                                                            mint: selectedNFT.mintAddress,
+                                                                            price: selectedNFT.price,
+                                                                            description: `On-chain treasury asset from ${expandedCard.title || "Street Sync"}.`,
+                                                                        })}
+                                                                        className="absolute bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-xl bg-black/80 text-white font-mono font-bold text-xs backdrop-blur-md border border-white/20 flex items-center gap-1"
+                                                                    >
+                                                                        <Box size={13} />
+                                                                        <span>3D Interactive</span>
+                                                                    </button>
+                                                                </div>
+
+                                                                {/* Mint Address Chip */}
+                                                                <div className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10">
+                                                                    <span className="text-[10px] font-mono text-white/50 uppercase font-bold">Mint Hash</span>
+                                                                    <div className="flex items-center gap-1.5">
+                                                                        <span className="text-xs font-mono text-white/80">
+                                                                            {selectedNFT.mintAddress.slice(0, 8)}...{selectedNFT.mintAddress.slice(-4)}
+                                                                        </span>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleCopyMint(selectedNFT.mintAddress)}
+                                                                            className="p-1 rounded bg-white/10 text-white/80"
+                                                                            title="Copy Mint"
+                                                                        >
+                                                                            {copiedMint ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Specs */}
+                                                                <div className="grid grid-cols-2 gap-2 text-center text-[10px] font-mono">
+                                                                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                                                                        <span className="text-white/40 block">Settlement</span>
+                                                                        <span className="text-emerald-400 font-bold">Instant Transfer</span>
+                                                                    </div>
+                                                                    <div className="p-2.5 rounded-xl bg-white/5 border border-white/10">
+                                                                        <span className="text-white/40 block">Storage</span>
+                                                                        <span className="text-primary font-bold">Solana PDA</span>
+                                                                    </div>
+                                                                </div>
+                                                            </>
+                                                        ) : (
+                                                            <div className="py-12 text-center text-white/50 font-mono text-xs">
+                                                                No asset selected. Return to the vault gallery to pick one.
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Mobile Terminal Buy CTA */}
+                                                    <div className="pt-4 border-t border-white/10 mt-6">
+                                                        {selectedNFT && (
+                                                            <div className="flex items-center justify-between mb-3">
+                                                                <span className="text-xs font-mono uppercase tracking-wider text-white/50 font-bold">Total</span>
+                                                                <span className="text-2xl font-mono font-black text-primary">
+                                                                    {selectedNFT.price} SOL
+                                                                </span>
+                                                            </div>
+                                                        )}
+
+                                                        {selectedNFT ? (
+                                                            <button 
+                                                                type="button"
+                                                                className="w-full py-4 rounded-2xl font-black text-base uppercase tracking-wider bg-gradient-to-r from-primary via-emerald-400 to-primary text-zinc-950 font-display flex items-center justify-center gap-2 shadow-lg active:scale-95 disabled:opacity-50"
+                                                                onClick={() => handleBuyDirect(selectedNFT.mintAddress)}
+                                                                disabled={isMinting}
+                                                            >
+                                                                <Zap size={18} className="fill-current" />
+                                                                <span>{isMinting ? "Processing..." : `Buy Now (${selectedNFT.price} SOL)`}</span>
+                                                            </button>
+                                                        ) : (
+                                                            <button 
+                                                                type="button"
+                                                                onClick={() => setMobileModalTab('gallery')}
+                                                                className="w-full py-4 rounded-2xl font-bold text-sm bg-white/10 text-white font-mono"
+                                                            >
+                                                                Choose an NFT
+                                                            </button>
+                                                        )}
+
+                                                        {status && (
+                                                            <div className="mt-3 text-center text-xs font-mono font-bold bg-white/5 p-2.5 rounded-xl border border-white/10 text-white animate-in fade-in">
+                                                                {status}
+                                                            </div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </div>
                                     </div>
                                 )}
-                            </div>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>,
-            document.body
-        )}
+                    )}
+                </AnimatePresence>,
+                document.body
+            )}
             {/* 3D NFT Viewer Modal */}
             <NFT3DViewer 
                 isOpen={!!viewer3DNft}
