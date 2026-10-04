@@ -28,8 +28,15 @@ export function L2DatabaseSyncBadge({
   } = useFirebaseAuth();
 
   const handleSyncWithSolana = async () => {
-    if (!publicKey || !signMessage) {
+    if (!publicKey) {
       toast.error("Please connect your Solana wallet first.");
+      return;
+    }
+
+    if (!signMessage) {
+      toast.error(
+        "Current wallet does not support message signing. Please use Phantom, Solflare, or Solana Mobile."
+      );
       return;
     }
 
