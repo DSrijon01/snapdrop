@@ -1,9 +1,8 @@
-"use client";
-
 import { FC, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RefreshCw, ExternalLink, ShieldCheck, CheckCircle2, ArrowRight, Smartphone, Sparkles } from "lucide-react";
+import { X, RefreshCw, ExternalLink, ShieldCheck, CheckCircle2, ArrowRight, Smartphone, Sparkles, Zap } from "lucide-react";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { initiatePhantomMobileConnect } from "@/lib/wallet/phantomDeeplink";
 import toast from "react-hot-toast";
 
 interface InstallWalletModalProps {
@@ -38,10 +37,9 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleOpenPhantomApp = () => {
     if (typeof window === "undefined") return;
-    const url = encodeURIComponent(window.location.href);
-    const ref = encodeURIComponent(window.location.origin);
-    // Universal link to open Phantom mobile app directly to this dApp
-    window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+    // Uses Phantom Universal Deep Link connect to return back to this mobile browser
+    initiatePhantomMobileConnect();
+    onClose();
   };
 
   const handleConnectMwa = () => {
@@ -174,8 +172,8 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                       onClick={handleOpenPhantomApp}
                       className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
                     >
-                      <span>Open in Phantom App</span>
-                      <ExternalLink className="w-4 h-4" />
+                      <Zap className="w-4 h-4 fill-primary-foreground" />
+                      <span>Connect Phantom App (Return to Browser)</span>
                     </button>
 
                     <button
@@ -184,6 +182,19 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                     >
                       <Smartphone className="w-4 h-4 text-primary" />
                       <span>Connect with Mobile Wallet Adapter</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (typeof window === "undefined") return;
+                        const url = encodeURIComponent(window.location.href);
+                        const ref = encodeURIComponent(window.location.origin);
+                        window.location.href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
+                      }}
+                      className="w-full py-2 px-3 text-[11px] text-muted-foreground hover:text-foreground font-mono transition-colors text-center"
+                    >
+                      Prefer In-App Browser? Open inside Phantom App ➔
                     </button>
                   </>
                 ) : (

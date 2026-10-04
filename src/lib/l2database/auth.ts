@@ -158,6 +158,100 @@ export async function signInWithSolana(
   }
 }
 
+export interface BrowserGuestResult {
+  user: User;
+  isGuest: true;
+}
+
+/**
+ * Signs the user in as an in-browser guest via Firebase Anonymous Authentication.
+ * Perfect for mobile web users (iOS Safari / Android Chrome) who want to browse,
+ * chat, and post without being forced to redirect into an in-app wallet browser.
+ */
+export async function signInAsBrowserGuest(): Promise<BrowserGuestResult> {
+  // Generate or retrieve persistent guest seed
+  let guestId = "";
+  let guestDisplayName = "";
+  if (typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.uid && parsed.uid.startsWith("guest_")) {
+          guestId = parsed.uid;
+          guestDisplayName = parsed.displayName || "";
+        }
+      }
+    } catch {}
+  }
+
+  if (!guestId) {
+    const randomHex = Math.random().toString(36).substring(2, 6).toUpperCase();
+    guestId = `guest_${randomHex}`;
+    guestDisplayName = `Degen_${randomHex}`;
+  } else if (!guestDisplayName) {
+    guestDisplayName = `Degen_${guestId.replace("guest_", "").toUpperCase()}`;
+  }
+
+  try {
+    const userCredential = await signInAnonymously(auth);
+    if (userCredential.user) {
+      try {
+        await updateProfile(userCredential.user, {
+          displayName: guestDisplayName,
+        });
+      } catch (err) {
+        console.warn("[signInAsBrowserGuest] updateProfile note:", err);
+      }
+    }
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        LOCAL_STORAGE_AUTH_KEY,
+        JSON.stringify({
+          uid: guestId,
+          displayName: guestDisplayName,
+          isGuest: true,
+          authenticatedAt: Date.now(),
+        })
+      );
+      window.dispatchEvent(new Event("streetsync_auth_changed"));
+    }
+
+    return {
+      user: userCredential.user,
+      isGuest: true,
+    };
+  } catch (error: any) {
+    console.warn("[signInAsBrowserGuest] Firebase Anonymous Auth note:", error?.message);
+
+    // Fallback simulated guest user for offline or sandboxed environment
+    const simulatedUser = {
+      uid: guestId,
+      displayName: guestDisplayName,
+      isAnonymous: true,
+    } as unknown as User;
+
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        LOCAL_STORAGE_AUTH_KEY,
+        JSON.stringify({
+          uid: guestId,
+          displayName: guestDisplayName,
+          isGuest: true,
+          authenticatedAt: Date.now(),
+        })
+      );
+      window.dispatchEvent(new Event("streetsync_auth_changed"));
+    }
+
+    return {
+      user: simulatedUser,
+      isGuest: true,
+    };
+  }
+}
+
 /**
  * Signs out current Firebase session
  */
@@ -179,6 +273,8 @@ export async function signOutFirebase(): Promise<void> {
 export function useFirebaseAuth() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [localDevUid, setLocalDevUid] = useState<string | null>(null);
+  const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
+  const [isGuestSession, setIsGuestSession] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -189,13 +285,24 @@ export function useFirebaseAuth() {
       if (stored) {
         const parsed = JSON.parse(stored);
         setLocalDevUid(parsed.uid);
+        setLocalDisplayName(parsed.displayName || null);
+        setIsGuestSession(Boolean(parsed.isGuest));
       }
     } catch {}
 
     const handleSessionChange = () => {
       try {
         const stored = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-        setLocalDevUid(stored ? JSON.parse(stored).uid : null);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setLocalDevUid(parsed.uid);
+          setLocalDisplayName(parsed.displayName || null);
+          setIsGuestSession(Boolean(parsed.isGuest));
+        } else {
+          setLocalDevUid(null);
+          setLocalDisplayName(null);
+          setIsGuestSession(false);
+        }
       } catch {}
     };
 
@@ -248,16 +355,20 @@ export function useFirebaseAuth() {
     (localDevUid
       ? ({
           uid: localDevUid,
-          displayName: `User_${localDevUid.slice(0, 4)}`,
+          displayName:
+            localDisplayName || `User_${localDevUid.slice(0, 4)}`,
+          isAnonymous: isGuestSession,
         } as User)
       : null);
 
   return {
     user: effectiveUser,
+    isGuest: isGuestSession,
     loading,
     error,
     isAuthenticated: !!effectiveUser,
     loginWithWallet,
+    loginAsGuest: signInAsBrowserGuest,
     logout: signOutFirebase,
   };
 }

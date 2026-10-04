@@ -31,6 +31,11 @@ import toast from "react-hot-toast";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
+import { processPhantomMobileRedirect } from "@/lib/wallet/phantomDeeplink";
+import {
+  PhantomMobileWalletAdapter,
+  PhantomMobileWalletName,
+} from "@/lib/wallet/PhantomMobileWalletAdapter";
 
 /**
  * Listens for newly installed wallet extensions on desktop and handles auto-reconnect on reload
@@ -122,6 +127,35 @@ const WalletExtensionWatcher: FC = () => {
   return null;
 };
 
+/**
+ * Listens for mobile browser returns from Phantom App deep-links.
+ * Decrypts the connection payload, extracts the public key, and activates the session.
+ */
+const PhantomMobileRedirectWatcher: FC = () => {
+  const { select } = useWallet();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const res = processPhantomMobileRedirect();
+    if (res.handled) {
+      if (res.type === "connect" && res.publicKey) {
+        select(PhantomMobileWalletName);
+        toast.success(
+          `Connected Phantom: ${res.publicKey.slice(0, 4)}..${res.publicKey.slice(-4)}! Returned to browser.`,
+          {
+            icon: "👻",
+            duration: 5000,
+          }
+        );
+      } else if (res.type === "error") {
+        toast.error(res.error || "Phantom connection cancelled.");
+      }
+    }
+  }, [select]);
+
+  return null;
+};
+
 export const WalletContextProvider: FC<{ children: ReactNode }> = ({
   children,
 }) => {
@@ -170,6 +204,19 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
           ? window.location.origin
           : "https://streetsync-ss.com";
 
+      const isMobile =
+        typeof window !== "undefined" &&
+        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const hasInjectedPhantom =
+        typeof window !== "undefined" &&
+        Boolean((window as any).phantom?.solana);
+
+      // On mobile browsers without desktop extension, use PhantomMobileWalletAdapter for 2-way deep linking
+      const phantomAdapter =
+        isMobile && !hasInjectedPhantom
+          ? new PhantomMobileWalletAdapter()
+          : new PhantomWalletAdapter();
+
       return [
         // Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
         new SolanaMobileWalletAdapter({
@@ -183,7 +230,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
           chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
           onWalletNotFound: createMwaAdapterNotFoundHandler(),
         }),
-        new PhantomWalletAdapter(),
+        phantomAdapter,
         new SolflareWalletAdapter(),
       ];
     },
@@ -196,6 +243,7 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
       <WalletProvider wallets={wallets} autoConnect>
         <WalletModalProvider>
           <WalletExtensionWatcher />
+          <PhantomMobileRedirectWatcher />
           {children}
         </WalletModalProvider>
       </WalletProvider>

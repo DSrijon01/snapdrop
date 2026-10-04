@@ -12,6 +12,7 @@ interface SIWSModalProps {
   walletAddress?: string;
   onSignIn: () => void;
   onConnectWallet: () => void;
+  onContinueAsGuest?: () => void;
 }
 
 export function SIWSModal({
@@ -23,6 +24,7 @@ export function SIWSModal({
   walletAddress,
   onSignIn,
   onConnectWallet,
+  onContinueAsGuest,
 }: SIWSModalProps) {
   // Close on Escape key
   useEffect(() => {
@@ -153,6 +155,29 @@ export function SIWSModal({
               <Wallet size={16} />
               <span>Connect Wallet to Sign In</span>
             </button>
+          )}
+
+          {onContinueAsGuest && (
+            <>
+              <div className="relative py-1">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border/60" />
+                </div>
+                <div className="relative flex justify-center text-[10px] uppercase font-mono">
+                  <span className="bg-card px-2 text-muted-foreground">or stay in browser</span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={onContinueAsGuest}
+                disabled={isSigning}
+                className="w-full py-2.5 px-4 rounded-xl border border-dashed border-border hover:border-primary/50 bg-secondary/20 hover:bg-secondary/40 text-foreground font-mono font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98"
+              >
+                <Sparkles size={13} className="text-[#14F195]" />
+                <span>Continue in Browser (Guest L2 Identity)</span>
+              </button>
+            </>
           )}
 
           <p className="text-[11px] text-center text-muted-foreground font-mono">

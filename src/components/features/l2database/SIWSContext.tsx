@@ -9,12 +9,14 @@ import toast from "react-hot-toast";
 
 interface SIWSContextValue {
   isAuthenticated: boolean;
+  isGuest: boolean;
   user: any;
   loading: boolean;
   openSIWSModal: (options?: { reason?: string; onSuccess?: () => void }) => void;
   closeSIWSModal: () => void;
   requireAuth: (action: () => void, reason?: string) => void;
   signIn: () => Promise<SignInWithSolanaResult | null>;
+  signInAsGuest: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -23,7 +25,7 @@ const SIWSContext = createContext<SIWSContextValue | null>(null);
 export function SIWSProvider({ children }: { children: React.ReactNode }) {
   const { publicKey, signMessage, connected } = useWallet();
   const { setVisible: setWalletModalVisible } = useWalletModal();
-  const { user, isAuthenticated, loading, loginWithWallet, logout } = useFirebaseAuth();
+  const { user, isGuest, isAuthenticated, loading, loginWithWallet, loginAsGuest, logout } = useFirebaseAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalReason, setModalReason] = useState<string>("Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.");
@@ -95,6 +97,38 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
     }
   }, [publicKey, signMessage, loginWithWallet, pendingAction, setWalletModalVisible]);
 
+  const signInAsGuest = useCallback(async () => {
+    setIsSigning(true);
+    try {
+      await loginAsGuest();
+      toast.success("Connected in browser as Guest (L2 Identity)!", {
+        icon: "⚡",
+        style: {
+          borderRadius: "12px",
+          background: "#18181b",
+          color: "#fff",
+          border: "1px solid #27272a",
+        },
+      });
+
+      if (pendingAction) {
+        try {
+          pendingAction();
+        } catch (actErr) {
+          console.warn("[SIWS] Failed to execute pending action:", actErr);
+        }
+        setPendingAction(null);
+      }
+
+      setIsModalOpen(false);
+    } catch (err: any) {
+      console.error("[SIWS] Guest sign-in error:", err);
+      toast.error(err?.message || "Failed to continue as browser guest.");
+    } finally {
+      setIsSigning(false);
+    }
+  }, [loginAsGuest, pendingAction]);
+
   const requireAuth = useCallback((action: () => void, reason?: string) => {
     if (isAuthenticated) {
       action();
@@ -110,12 +144,14 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
     <SIWSContext.Provider
       value={{
         isAuthenticated,
+        isGuest,
         user,
         loading,
         openSIWSModal,
         closeSIWSModal,
         requireAuth,
         signIn,
+        signInAsGuest,
         logout,
       }}
     >
@@ -132,6 +168,7 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
           setIsModalOpen(false);
           setWalletModalVisible(true);
         }}
+        onContinueAsGuest={signInAsGuest}
       />
     </SIWSContext.Provider>
   );
