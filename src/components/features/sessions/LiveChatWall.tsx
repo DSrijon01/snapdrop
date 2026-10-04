@@ -22,6 +22,7 @@ import { RoomQRModal } from "@/components/features/chat-rooms/RoomQRModal";
 import { ExtendRoomModal } from "@/components/features/chat-rooms/ExtendRoomModal";
 import { ChatRoom } from "@/lib/rooms/types";
 import { pushChatMessage, subscribeToRoomMessages, FirebaseChatMessage } from "@/lib/l2database/chat";
+import { useSIWS } from "@/components/features/l2database/SIWSContext";
 
 interface LiveChatWallProps {
   messages: ChatMessage[];
@@ -39,6 +40,7 @@ export function LiveChatWall({
   contextId,
 }: LiveChatWallProps) {
   const { publicKey } = useWallet();
+  const { isAuthenticated, requireAuth } = useSIWS();
   const [inputText, setInputText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -251,7 +253,12 @@ export function LiveChatWall({
           {/* Primary '+ Create Room' Button */}
           <button
             type="button"
-            onClick={() => setIsCreateOpen(true)}
+            onClick={() =>
+              requireAuth(
+                () => setIsCreateOpen(true),
+                "Sign In with Solana (SIWS) is required to create a virtual chat room."
+              )
+            }
             className="flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover text-[11px] sm:text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
             title="Create a 10-minute free virtual room with shareable QR code"
           >
@@ -317,7 +324,12 @@ export function LiveChatWall({
         {/* Quick '+ Create' Shortcut Pill */}
         <button
           type="button"
-          onClick={() => setIsCreateOpen(true)}
+          onClick={() =>
+            requireAuth(
+              () => setIsCreateOpen(true),
+              "Sign In with Solana (SIWS) is required to create a virtual chat room."
+            )
+          }
           className="px-2 py-1 rounded-lg border border-dashed border-border hover:border-primary/60 text-muted-foreground hover:text-primary text-xs font-mono font-medium transition-all shrink-0 flex items-center gap-1"
           title="Create virtual room"
         >
@@ -460,7 +472,12 @@ export function LiveChatWall({
             key={reaction}
             type="button"
             disabled={!activeRoom.isGlobal && activeRoomTime.isExpired}
-            onClick={() => handleQuickReaction(reaction)}
+            onClick={() =>
+              requireAuth(
+                () => handleQuickReaction(reaction),
+                "Sign In with Solana (SIWS) is required to send quick reactions."
+              )
+            }
             className="px-2.5 py-1 rounded-lg bg-card hover:bg-primary hover:text-primary-foreground border border-border text-[11px] font-mono font-medium text-foreground transition-all shrink-0 active:scale-95 shadow-xs disabled:opacity-40 disabled:pointer-events-none"
           >
             {reaction}
@@ -468,35 +485,53 @@ export function LiveChatWall({
         ))}
       </div>
 
-      {/* Input Message Form */}
-      <form
-        onSubmit={handleSubmit}
-        className="p-2.5 sm:p-3 border-t border-border bg-card shrink-0 flex gap-2 items-center"
-      >
-        <input
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          disabled={!activeRoom.isGlobal && activeRoomTime.isExpired}
-          placeholder={
-            !activeRoom.isGlobal && activeRoomTime.isExpired
-              ? "Room expired — extend for 0.0001 SOL to send messages"
-              : activeRoom.isGlobal
-              ? "Say something to the board..."
-              : `Message #${activeRoom.name}...`
-          }
-          maxLength={150}
-          className="flex-1 min-w-0 bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-foreground placeholder-muted-foreground outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-        />
-        <button
-          type="submit"
-          disabled={!inputText.trim() || (!activeRoom.isGlobal && activeRoomTime.isExpired)}
-          className="p-2 sm:p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50 transition-all shadow-md shrink-0 flex items-center justify-center active:scale-95"
-          aria-label="Send message"
+      {/* Input Message Form or Dedicated SIWS Sign-In Gate */}
+      {!isAuthenticated ? (
+        <div className="p-2.5 sm:p-3 border-t border-border bg-gradient-to-r from-[#9945FF]/10 via-primary/10 to-[#14F195]/10 shrink-0">
+          <button
+            type="button"
+            onClick={() =>
+              requireAuth(
+                () => {},
+                "Sign In with Solana (SIWS) is required to chat with the street."
+              )
+            }
+            className="w-full py-2 sm:py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#9945FF] via-primary to-[#14F195] hover:opacity-95 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
+          >
+            <Zap size={14} className="fill-white" />
+            <span>Sign In with Solana to Chat</span>
+          </button>
+        </div>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className="p-2.5 sm:p-3 border-t border-border bg-card shrink-0 flex gap-2 items-center"
         >
-          <Send size={15} />
-        </button>
-      </form>
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            disabled={!activeRoom.isGlobal && activeRoomTime.isExpired}
+            placeholder={
+              !activeRoom.isGlobal && activeRoomTime.isExpired
+                ? "Room expired — extend for 0.0001 SOL to send messages"
+                : activeRoom.isGlobal
+                ? "Say something to the board..."
+                : `Message #${activeRoom.name}...`
+            }
+            maxLength={150}
+            className="flex-1 min-w-0 bg-secondary/50 border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-xl px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-medium text-foreground placeholder-muted-foreground outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          />
+          <button
+            type="submit"
+            disabled={!inputText.trim() || (!activeRoom.isGlobal && activeRoomTime.isExpired)}
+            className="p-2 sm:p-2.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50 transition-all shadow-md shrink-0 flex items-center justify-center active:scale-95"
+            aria-label="Send message"
+          >
+            <Send size={15} />
+          </button>
+        </form>
+      )}
 
       {/* Create Room Modal */}
       <CreateRoomModal

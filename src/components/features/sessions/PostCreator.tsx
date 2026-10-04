@@ -1,8 +1,7 @@
-"use client";
-
 import React, { useState } from "react";
-import { PlusCircle, Rocket, TrendingUp, TrendingDown, Clipboard, AlertCircle } from "lucide-react";
+import { PlusCircle, Rocket, TrendingUp, TrendingDown, Clipboard, AlertCircle, Zap, ShieldCheck } from "lucide-react";
 import { Post, Position } from "./mockData";
+import { useSIWS } from "../l2database/SIWSContext";
 
 interface PostCreatorProps {
   onAddPost: (post: Omit<Post, "id" | "author" | "avatarSeed" | "createdAt" | "upvotes" | "comments">) => void;
@@ -11,6 +10,7 @@ interface PostCreatorProps {
 const FLAIRS = ["YOLO", "DD", "LOSS PORN", "GAIN PORN", "MEME", "DISCUSSION"] as const;
 
 export function PostCreator({ onAddPost }: PostCreatorProps) {
+  const { isAuthenticated, requireAuth } = useSIWS();
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -30,40 +30,42 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
     e.preventDefault();
     if (!title.trim() || !content.trim()) return;
 
-    let position: Position | undefined;
-    if (attachPosition && ticker && posEntry && posSize) {
-      position = {
-        ticker: ticker.replace("$", "").toUpperCase(),
-        type: posType,
-        entryPrice: parseFloat(posEntry) || 0,
-        currentPrice: parseFloat(posCurrent) || parseFloat(posEntry) || 0,
-        size: parseFloat(posSize) || 0,
-        leverage: posLeverage ? parseInt(posLeverage) : undefined,
-      };
-    }
+    requireAuth(() => {
+      let position: Position | undefined;
+      if (attachPosition && ticker && posEntry && posSize) {
+        position = {
+          ticker: ticker.replace("$", "").toUpperCase(),
+          type: posType,
+          entryPrice: parseFloat(posEntry) || 0,
+          currentPrice: parseFloat(posCurrent) || parseFloat(posEntry) || 0,
+          size: parseFloat(posSize) || 0,
+          leverage: posLeverage ? parseInt(posLeverage) : undefined,
+        };
+      }
 
-    onAddPost({
-      title: title.trim(),
-      content: content.trim(),
-      flair,
-      sentiment,
-      ticker: ticker ? ticker.replace("$", "").toUpperCase() : undefined,
-      position,
-    });
+      onAddPost({
+        title: title.trim(),
+        content: content.trim(),
+        flair,
+        sentiment,
+        ticker: ticker ? ticker.replace("$", "").toUpperCase() : undefined,
+        position,
+      });
 
-    // Reset Form
-    setTitle("");
-    setContent("");
-    setFlair("DISCUSSION");
-    setSentiment("NEUTRAL");
-    setTicker("");
-    setAttachPosition(false);
-    setPosType("BUY");
-    setPosEntry("");
-    setPosCurrent("");
-    setPosSize("");
-    setPosLeverage("");
-    setIsOpen(false);
+      // Reset Form
+      setTitle("");
+      setContent("");
+      setFlair("DISCUSSION");
+      setSentiment("NEUTRAL");
+      setTicker("");
+      setAttachPosition(false);
+      setPosType("BUY");
+      setPosEntry("");
+      setPosCurrent("");
+      setPosSize("");
+      setPosLeverage("");
+      setIsOpen(false);
+    }, "Sign In with Solana (SIWS) is required to publish this post.");
   };
 
   // Auto-set flairs on certain conditions
@@ -82,7 +84,12 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
     <div className="glass-card rounded-2xl border border-border shadow-lg p-5 transition-all duration-300">
       {!isOpen ? (
         <button
-          onClick={() => setIsOpen(true)}
+          onClick={() => {
+            requireAuth(
+              () => setIsOpen(true),
+              "Sign In with Solana (SIWS) is required to create a new session post."
+            );
+          }}
           className="w-full flex items-center justify-between p-3.5 rounded-xl border border-border/80 bg-secondary/10 hover:bg-secondary/40 text-muted-foreground hover:text-foreground hover:border-primary/50 transition-all duration-300 group"
         >
           <div className="flex items-center gap-3">
@@ -91,8 +98,18 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
               Create a new Session Post (Positions, DD, YOLO...)
             </span>
           </div>
-          <span className="text-[10px] font-mono border border-border px-2 py-0.5 rounded bg-card">
-            POST
+          <span className="text-[10px] font-mono border border-border px-2.5 py-1 rounded-lg bg-card flex items-center gap-1.5 shadow-xs">
+            {isAuthenticated ? (
+              <>
+                <ShieldCheck size={12} className="text-[#14F195]" />
+                <span className="text-foreground font-bold">POST</span>
+              </>
+            ) : (
+              <>
+                <Zap size={12} className="text-[#14F195]" />
+                <span className="text-foreground font-bold">SIWS REQUIRED</span>
+              </>
+            )}
           </span>
         </button>
       ) : (
@@ -325,10 +342,23 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-black font-display uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg shadow-primary/20 hover:scale-102"
+              className={`px-6 py-2.5 rounded-xl text-sm font-black font-display uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg active:scale-98 ${
+                isAuthenticated
+                  ? "bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/20 hover:scale-102"
+                  : "bg-gradient-to-r from-[#9945FF] to-[#14F195] hover:opacity-95 text-white shadow-purple-500/20"
+              }`}
             >
-              <Rocket size={16} />
-              Launch Post!
+              {isAuthenticated ? (
+                <>
+                  <Rocket size={16} />
+                  <span>Launch Post!</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={16} className="fill-white" />
+                  <span>Sign In with Solana to Post</span>
+                </>
+              )}
             </button>
           </div>
         </form>

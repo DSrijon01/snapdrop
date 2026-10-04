@@ -4,6 +4,8 @@ import React, { useState, useEffect } from "react";
 import { ChevronUp, ChevronDown, MessageSquare, Share2, Rocket, FileText, CheckCircle } from "lucide-react";
 import { Post, BoardComment } from "./mockData";
 import { useWallet } from "@solana/wallet-adapter-react";
+import { useSIWS } from "../l2database/SIWSContext";
+import { Zap } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface PostCardProps {
@@ -14,9 +16,10 @@ interface PostCardProps {
 
 export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
   const { publicKey } = useWallet();
+  const { isAuthenticated, requireAuth } = useSIWS();
   const [showComments, setShowComments] = useState(false);
   const [commentText, setCommentText] = useState("");
-  
+
   // Real-time position price fluctuation
   const [livePrice, setLivePrice] = useState<number | null>(
     post.position ? post.position.currentPrice : null
@@ -40,11 +43,20 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
     return () => clearInterval(interval);
   }, [post.position]);
 
+  const handleVote = (voteType: "up" | "down") => {
+    requireAuth(
+      () => onVote(post.id, voteType),
+      "Sign In with Solana (SIWS) is required to vote on posts."
+    );
+  };
+
   const handleCommentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!commentText.trim()) return;
-    onAddComment(post.id, commentText.trim());
-    setCommentText("");
+    requireAuth(() => {
+      onAddComment(post.id, commentText.trim());
+      setCommentText("");
+    }, "Sign In with Solana (SIWS) is required to reply to posts.");
   };
 
   const handleShare = () => {
@@ -173,7 +185,7 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
       {/* Vote Panel (Desktop Sidebar) */}
       <div className="hidden sm:flex flex-col items-center gap-1.5 shrink-0 bg-secondary/20 p-2 rounded-xl h-fit border border-border/40">
         <button
-          onClick={() => onVote(post.id, "up")}
+          onClick={() => handleVote("up")}
           className={`p-1.5 rounded-lg transition-all ${
             post.userVote === "up" 
               ? "text-primary bg-primary/10" 
@@ -193,7 +205,7 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
           {post.upvotes}
         </span>
         <button
-          onClick={() => onVote(post.id, "down")}
+          onClick={() => handleVote("down")}
           className={`p-1.5 rounded-lg transition-all ${
             post.userVote === "down" 
               ? "text-red-500 bg-red-500/10" 
@@ -270,14 +282,14 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
           {/* Mobile Upvote/Downvote actions */}
           <div className="flex sm:hidden items-center gap-1 bg-secondary/30 rounded-xl p-1 border border-border/40 shrink-0">
             <button
-              onClick={() => onVote(post.id, "up")}
+              onClick={() => handleVote("up")}
               className={`p-1.5 rounded-lg active:scale-90 transition-transform ${post.userVote === "up" ? "text-primary" : ""}`}
             >
               <ChevronUp size={16} />
             </button>
             <span className="px-1 text-foreground font-mono text-xs">{post.upvotes}</span>
             <button
-              onClick={() => onVote(post.id, "down")}
+              onClick={() => handleVote("down")}
               className={`p-1.5 rounded-lg active:scale-90 transition-transform ${post.userVote === "down" ? "text-red-500" : ""}`}
             >
               <ChevronDown size={16} />
@@ -322,9 +334,20 @@ export function PostCard({ post, onVote, onAddComment }: PostCardProps) {
               <button
                 type="submit"
                 disabled={!commentText.trim()}
-                className="px-4 py-2 bg-primary text-primary-foreground font-black font-display text-xs uppercase tracking-wider rounded-xl hover:bg-primary-hover disabled:opacity-50 transition-all shrink-0 flex items-center gap-1.5 shadow-sm"
+                className={`px-4 py-2 font-black font-display text-xs uppercase tracking-wider rounded-xl transition-all shrink-0 flex items-center gap-1.5 shadow-sm active:scale-95 ${
+                  isAuthenticated
+                    ? "bg-primary text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+                    : "bg-gradient-to-r from-[#9945FF] to-[#14F195] text-white hover:opacity-95"
+                }`}
               >
-                Reply
+                {isAuthenticated ? (
+                  "Reply"
+                ) : (
+                  <>
+                    <Zap size={13} className="fill-white" />
+                    <span>SIWS Reply</span>
+                  </>
+                )}
               </button>
             </form>
 

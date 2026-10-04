@@ -24,10 +24,20 @@ import {
   addCommentToFirestorePost,
 } from "@/lib/l2database/posts";
 import { L2DatabaseSyncBadge } from "@/components/features/l2database/L2DatabaseSyncBadge";
+import { SIWSProvider, useSIWS } from "@/components/features/l2database/SIWSContext";
 import toast from "react-hot-toast";
 
 export function SessionsBoard() {
+  return (
+    <SIWSProvider>
+      <SessionsBoardContent />
+    </SIWSProvider>
+  );
+}
+
+function SessionsBoardContent() {
   const { publicKey } = useWallet();
+  const { openSIWSModal } = useSIWS();
 
   const [mounted, setMounted] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -425,7 +435,14 @@ export function SessionsBoard() {
 
         {/* L2 Database Connection & Sync Controls */}
         <div className="relative z-10 shrink-0 flex flex-wrap items-center gap-2">
-          <L2DatabaseSyncBadge />
+          <L2DatabaseSyncBadge
+            onOpenModal={() =>
+              openSIWSModal({
+                reason:
+                  "Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.",
+              })
+            }
+          />
 
           <button 
             onClick={handleResetBoard}
