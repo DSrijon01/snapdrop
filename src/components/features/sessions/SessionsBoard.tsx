@@ -73,29 +73,33 @@ export function SessionsBoard() {
   useEffect(() => {
     if (!mounted) return;
 
-    const unsub = subscribeToFirestorePosts((firestorePosts) => {
-      if (firestorePosts && firestorePosts.length > 0) {
-        setPosts((current) => {
-          const map = new Map<string, Post>();
-          firestorePosts.forEach((p) => map.set(p.id, p));
-          current.forEach((p) => {
-            if (!map.has(p.id) && p.id.startsWith("post-user-")) {
-              map.set(p.id, p);
-            }
-          });
-          const merged = Array.from(map.values())
-            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-            .slice(0, 100);
+    const unsub = subscribeToFirestorePosts(
+      (firestorePosts) => {
+        if (firestorePosts && firestorePosts.length > 0) {
+          setPosts((current) => {
+            const map = new Map<string, Post>();
+            firestorePosts.forEach((p) => map.set(p.id, p));
+            current.forEach((p) => {
+              if (!map.has(p.id) && p.id.startsWith("post-user-")) {
+                map.set(p.id, p);
+              }
+            });
+            const merged = Array.from(map.values())
+              .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+              .slice(0, 100);
 
-          try {
-            localStorage.setItem("sessions_posts", JSON.stringify(merged));
-          } catch (err) {
-            console.warn("Storage warning:", err);
-          }
-          return merged;
-        });
-      }
-    });
+            try {
+              localStorage.setItem("sessions_posts", JSON.stringify(merged));
+            } catch (err) {
+              console.warn("Storage warning:", err);
+            }
+            return merged;
+          });
+        }
+      },
+      60,
+      INITIAL_POSTS
+    );
 
     return () => unsub();
   }, [mounted]);
