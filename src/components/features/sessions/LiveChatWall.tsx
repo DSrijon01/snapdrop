@@ -73,11 +73,25 @@ export function LiveChatWall({
   const [remoteMessages, setRemoteMessages] = useState<FirebaseChatMessage[]>([]);
 
   useEffect(() => {
-    const unsub = subscribeToRoomMessages(activeRoom.id, (msgs) => {
-      if (msgs && msgs.length > 0) {
-        setRemoteMessages(msgs);
-      }
-    });
+    const fallbackList: FirebaseChatMessage[] = activeRoom.messages.map((m) => ({
+      id: m.id,
+      author: m.author,
+      avatarSeed: m.avatarSeed,
+      content: m.content,
+      createdAt: m.createdAt,
+      roomId: activeRoom.id,
+    }));
+
+    const unsub = subscribeToRoomMessages(
+      activeRoom.id,
+      (msgs) => {
+        if (msgs && msgs.length > 0) {
+          setRemoteMessages(msgs);
+        }
+      },
+      60,
+      fallbackList
+    );
     return () => unsub();
   }, [activeRoom.id]);
 

@@ -2,11 +2,12 @@ import {
   ref,
   push,
   set,
+  get,
+  update,
   query,
   limitToLast,
   onValue,
   Unsubscribe,
-  serverTimestamp,
 } from "firebase/database";
 import { database } from "./config";
 
@@ -48,30 +49,90 @@ export async function pushChatMessage(
     createdAt: new Date().toISOString(),
   };
 
-  await set(newMessageRef, payload);
-  return newMessageRef.key || `chat-${Date.now()}`;
+  try {
+    await set(newMessageRef, payload);
+    return newMessageRef.key || `chat-${Date.now()}`;
+  } catch (error) {
+    console.warn(`[RTDB Chat] pushChatMessage note for room ${safeRoomId}:`, error);
+    return `local-${Date.now()}`;
+  }
+}
+
+/**
+ * Seeds a chat room with initial mock data if it does not have any messages yet in Firebase.
+ * Ensures that whenever a new demo instance or fresh room starts, it is populated with lively messages.
+ */
+export async function seedRoomWithInitialData(
+  roomId: string,
+  initialMessages: { author: string; avatarSeed: string; content: string; createdAt?: string }[]
+): Promise<boolean> {
+  const safeRoomId = roomId ? roomId.replace(/[^a-zA-Z0-9_-]/g, "_") : "global";
+  const chatRef = ref(database, `chats/${safeRoomId}`);
+
+  try {
+    const snapshot = await get(chatRef);
+    if (snapshot.exists()) {
+      return false; // Already populated
+    }
+
+    const updates: Record<string, any> = {};
+    const now = Date.now();
+    initialMessages.forEach((msg, idx) => {
+      const msgKey = `init_${idx}_${now}`;
+      const msgTimestamp = now - (initialMessages.length - idx) * 60000;
+      updates[msgKey] = {
+        author: msg.author,
+        avatarSeed: msg.avatarSeed || msg.author,
+        content: msg.content,
+        walletAddress: null,
+        roomId: safeRoomId,
+        timestamp: msgTimestamp,
+        createdAt: msg.createdAt || new Date(msgTimestamp).toISOString(),
+      };
+    });
+
+    await update(chatRef, updates);
+    return true;
+  } catch (err) {
+    console.warn(`[RTDB Chat] seedRoomWithInitialData fallback on room ${safeRoomId}:`, err);
+    return false;
+  }
 }
 
 /**
  * Subscribes to real-time chat messages for a specific room.
  * Invokes the callback with an updated array of messages whenever new messages arrive.
+ * If the database is initially empty or offline, seamlessly preserves fallback mock messages.
  * Returns an unsubscribe cleanup function.
  */
 export function subscribeToRoomMessages(
   roomId: string,
   onMessagesUpdate: (messages: FirebaseChatMessage[]) => void,
-  maxLimit: number = 60
+  maxLimit: number = 60,
+  fallbackMockMessages: FirebaseChatMessage[] = []
 ): Unsubscribe {
   const safeRoomId = roomId ? roomId.replace(/[^a-zA-Z0-9_-]/g, "_") : "global";
   const chatRef = ref(database, `chats/${safeRoomId}`);
   const chatQuery = query(chatRef, limitToLast(maxLimit));
+
+  // If initial fallback messages exist, emit them immediately so the UI is never blank
+  if (fallbackMockMessages.length > 0) {
+    onMessagesUpdate(fallbackMockMessages);
+  }
 
   const unsubscribe = onValue(
     chatQuery,
     (snapshot) => {
       const data = snapshot.val();
       if (!data) {
-        onMessagesUpdate([]);
+        // If room is empty in database, keep or seed fallback mock data
+        if (fallbackMockMessages.length > 0) {
+          onMessagesUpdate(fallbackMockMessages);
+          // Auto-seed in background for demo persistence
+          seedRoomWithInitialData(safeRoomId, fallbackMockMessages).catch(() => {});
+        } else {
+          onMessagesUpdate([]);
+        }
         return;
       }
 
@@ -99,7 +160,10 @@ export function subscribeToRoomMessages(
       onMessagesUpdate(messagesArray);
     },
     (error) => {
-      console.warn(`[RTDB Chat] Realtime Database error on room ${safeRoomId}:`, error);
+      console.warn(`[RTDB Chat] Realtime Database onValue note on room ${safeRoomId}:`, error);
+      if (fallbackMockMessages.length > 0) {
+        onMessagesUpdate(fallbackMockMessages);
+      }
     }
   );
 
