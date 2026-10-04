@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    id("com.google.gms.google-services")
 }
 
 fun String.escapeForBuildConfig(): String = replace("\\", "\\\\").replace("\"", "\\\"")
@@ -117,5 +118,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.swiperefreshlayout)
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation("com.google.firebase:firebase-analytics")
     debugImplementation(libs.androidx.compose.ui.tooling)
 }

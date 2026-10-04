@@ -21,6 +21,7 @@ import { CreateRoomModal } from "@/components/features/chat-rooms/CreateRoomModa
 import { RoomQRModal } from "@/components/features/chat-rooms/RoomQRModal";
 import { ExtendRoomModal } from "@/components/features/chat-rooms/ExtendRoomModal";
 import { ChatRoom } from "@/lib/rooms/types";
+import { pushChatMessage, subscribeToRoomMessages, FirebaseChatMessage } from "@/lib/l2database/chat";
 
 interface LiveChatWallProps {
   messages: ChatMessage[];
@@ -68,6 +69,37 @@ export function LiveChatWall({
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isExtendOpen, setIsExtendOpen] = useState(false);
 
+  // Realtime Database sync for active room
+  const [remoteMessages, setRemoteMessages] = useState<FirebaseChatMessage[]>([]);
+
+  useEffect(() => {
+    const unsub = subscribeToRoomMessages(activeRoom.id, (msgs) => {
+      if (msgs && msgs.length > 0) {
+        setRemoteMessages(msgs);
+      }
+    });
+    return () => unsub();
+  }, [activeRoom.id]);
+
+  // Combine and deduplicate active room messages with remote Firebase RTDB messages
+  const displayMessages = React.useMemo(() => {
+    if (!remoteMessages.length) return activeRoom.messages;
+    const map = new Map<string, ChatMessage>();
+    activeRoom.messages.forEach((m) => map.set(m.id, m));
+    remoteMessages.forEach((rm) => {
+      map.set(rm.id, {
+        id: rm.id,
+        author: rm.author,
+        avatarSeed: rm.avatarSeed,
+        content: rm.content,
+        createdAt: rm.createdAt,
+      });
+    });
+    return Array.from(map.values()).sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+  }, [activeRoom.messages, remoteMessages]);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     if (scrollRef.current) {
@@ -76,17 +108,44 @@ export function LiveChatWall({
         behavior: "smooth",
       });
     }
-  }, [activeRoom.messages]);
+  }, [displayMessages]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
-    sendMessage(inputText.trim());
+    const text = inputText.trim();
+    if (!text) return;
+    sendMessage(text);
+
+    // Push to Firebase Realtime Database
+    const authorName = publicKey
+      ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
+      : "You";
+    pushChatMessage(activeRoom.id, {
+      author: authorName,
+      avatarSeed: authorName,
+      content: text,
+      walletAddress: publicKey?.toBase58(),
+    }).catch((err) => {
+      console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
+    });
+
     setInputText("");
   };
 
   const handleQuickReaction = (reaction: string) => {
     sendMessage(reaction);
+
+    const authorName = publicKey
+      ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
+      : "You";
+    pushChatMessage(activeRoom.id, {
+      author: authorName,
+      avatarSeed: authorName,
+      content: reaction,
+      walletAddress: publicKey?.toBase58(),
+    }).catch((err) => {
+      console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
+    });
   };
 
   const getAuthorDisplay = (author: string) => {
@@ -258,7 +317,7 @@ export function LiveChatWall({
         ref={scrollRef}
         className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 scrollbar-hide bg-secondary/5 min-h-[220px]"
       >
-        {activeRoom.messages.length === 0 ? (
+        {displayMessages.length === 0 ? (
           <div className="h-full min-h-[160px] flex flex-col items-center justify-center text-center p-4 text-muted-foreground space-y-2">
             <Users size={28} className="text-muted-foreground/40" />
             <p className="text-xs font-mono">No messages yet in this room.</p>
@@ -267,7 +326,7 @@ export function LiveChatWall({
             </p>
           </div>
         ) : (
-          activeRoom.messages.map((msg) => {
+          displayMessages.map((msg) => {
             const isCurrentUser =
               publicKey && msg.author === `User_${publicKey.toString().substring(0, 4).toUpperCase()}`;
 

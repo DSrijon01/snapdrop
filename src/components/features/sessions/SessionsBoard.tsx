@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { Search, Flame, Award, Clock, DollarSign, BookOpen, AlertCircle, RefreshCw, MessageSquare, Activity } from "lucide-react";
+import { Search, Flame, Award, Clock, DollarSign, BookOpen, AlertCircle, RefreshCw, MessageSquare, Activity, Zap } from "lucide-react";
 import { 
   Post, 
   BoardComment,
@@ -17,9 +17,18 @@ import { PostCreator } from "./PostCreator";
 import { PostCard } from "./PostCard";
 import { LiveChatWall } from "./LiveChatWall";
 import { TrendingTickers } from "./TrendingTickers";
+import {
+  subscribeToFirestorePosts,
+  addPostToFirestore,
+  voteFirestorePost,
+  addCommentToFirestorePost,
+} from "@/lib/l2database/posts";
+import { L2DatabaseSyncBadge } from "@/components/features/l2database/L2DatabaseSyncBadge";
+import toast from "react-hot-toast";
 
 export function SessionsBoard() {
   const { publicKey } = useWallet();
+
   const [mounted, setMounted] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -28,7 +37,7 @@ export function SessionsBoard() {
   const [activeSort, setActiveSort] = useState<"hot" | "new" | "top" | "yolo" | "porn">("hot");
   const [mobileTab, setMobileTab] = useState<"feed" | "chat" | "trending">("feed");
 
-  // Prevent hydration mismatch
+  // Prevent hydration mismatch & load initial
   useEffect(() => {
     setMounted(true);
     
@@ -59,6 +68,37 @@ export function SessionsBoard() {
       setChatMessages(INITIAL_CHAT);
     }
   }, []);
+
+  // Real-time Cloud Firestore listener for posts
+  useEffect(() => {
+    if (!mounted) return;
+
+    const unsub = subscribeToFirestorePosts((firestorePosts) => {
+      if (firestorePosts && firestorePosts.length > 0) {
+        setPosts((current) => {
+          const map = new Map<string, Post>();
+          firestorePosts.forEach((p) => map.set(p.id, p));
+          current.forEach((p) => {
+            if (!map.has(p.id) && p.id.startsWith("post-user-")) {
+              map.set(p.id, p);
+            }
+          });
+          const merged = Array.from(map.values())
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+            .slice(0, 100);
+
+          try {
+            localStorage.setItem("sessions_posts", JSON.stringify(merged));
+          } catch (err) {
+            console.warn("Storage warning:", err);
+          }
+          return merged;
+        });
+      }
+    });
+
+    return () => unsub();
+  }, [mounted]);
 
   // Helper to save state with safety boundaries
   const savePosts = (updatedPosts: Post[]) => {
@@ -175,9 +215,26 @@ export function SessionsBoard() {
     };
 
     savePosts([newPost, ...posts]);
+
+    // Asynchronously push to Cloud Firestore
+    addPostToFirestore({
+      title: newPostData.title,
+      content: newPostData.content,
+      author: authorName,
+      avatarSeed: seed,
+      flair: newPostData.flair,
+      sentiment: newPostData.sentiment,
+      ticker: newPostData.ticker,
+      position: newPostData.position,
+      walletAddress: publicKey?.toBase58(),
+    }).catch((err) => {
+      console.warn("[SessionsBoard] Firestore addPost fallback:", err);
+    });
   };
 
   const handleVote = (postId: string, voteType: "up" | "down") => {
+    let diffToRecord = 0;
+
     const updated = posts.map((post) => {
       if (post.id !== postId) return post;
 
@@ -206,6 +263,8 @@ export function SessionsBoard() {
         }
       }
 
+      diffToRecord = upvoteDiff;
+
       return {
         ...post,
         upvotes: post.upvotes + upvoteDiff,
@@ -214,6 +273,12 @@ export function SessionsBoard() {
     });
 
     savePosts(updated);
+
+    if (diffToRecord !== 0) {
+      voteFirestorePost(postId, diffToRecord).catch((err) => {
+        console.warn("[SessionsBoard] Firestore vote fallback:", err);
+      });
+    }
   };
 
   const handleAddComment = (postId: string, content: string) => {
@@ -240,6 +305,14 @@ export function SessionsBoard() {
     });
 
     savePosts(updated);
+
+    addCommentToFirestorePost(postId, {
+      author: authorName,
+      avatarSeed: seed,
+      content,
+    }).catch((err) => {
+      console.warn("[SessionsBoard] Firestore addComment fallback:", err);
+    });
   };
 
   const handleSendChatMessage = (content: string) => {
@@ -264,6 +337,7 @@ export function SessionsBoard() {
     localStorage.removeItem("sessions_chat");
     setPosts(INITIAL_POSTS);
     setChatMessages(INITIAL_CHAT);
+    toast.success("Board reset to default");
   };
 
   // Sorting and Filtering
@@ -345,13 +419,15 @@ export function SessionsBoard() {
           </p>
         </div>
 
-        {/* Clear/Reset board button */}
-        <div className="relative z-10 shrink-0 flex items-center gap-2">
+        {/* L2 Database Connection & Sync Controls */}
+        <div className="relative z-10 shrink-0 flex flex-wrap items-center gap-2">
+          <L2DatabaseSyncBadge />
+
           <button 
             onClick={handleResetBoard}
             className="px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-mono font-bold uppercase border border-border hover:bg-secondary/40 rounded-xl transition-all"
           >
-            Reset Feed to Default
+            Reset
           </button>
         </div>
       </div>

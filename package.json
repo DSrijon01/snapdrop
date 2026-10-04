@@ -34,6 +34,8 @@
     "crypto-browserify": "^3.12.1",
     "date-fns": "^4.1.0",
     "events": "^3.3.0",
+    "firebase": "^12.19.0",
+    "firebase-admin": "^14.5.0",
     "framer-motion": "^12.23.25",
     "lucide-react": "^0.577.0",
     "next": "16.0.7",
