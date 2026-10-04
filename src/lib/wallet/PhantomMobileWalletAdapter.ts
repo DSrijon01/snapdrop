@@ -45,6 +45,12 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       if (stored && stored.publicKey) {
         try {
           this._publicKey = new PublicKey(stored.publicKey);
+          // Emit connect after microtask so WalletProvider listeners are registered
+          setTimeout(() => {
+            if (this._publicKey) {
+              this.emit("connect", this._publicKey);
+            }
+          }, 0);
         } catch {
           this._publicKey = null;
         }
@@ -84,14 +90,14 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
 
   async connect(): Promise<void> {
     try {
-      if (this.connected || this.connecting) return;
-
       const stored = getStoredPhantomSession();
       if (stored && stored.publicKey) {
         this._publicKey = new PublicKey(stored.publicKey);
         this.emit("connect", this._publicKey);
         return;
       }
+
+      if (this.connecting) return;
 
       this._connecting = true;
       initiatePhantomMobileConnect();

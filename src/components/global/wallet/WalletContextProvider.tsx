@@ -7,7 +7,12 @@ import {
   useWallet,
 } from "@solana/wallet-adapter-react";
 import { WalletAdapterNetwork } from "@solana/wallet-adapter-base";
-import { PhantomWalletAdapter, SolflareWalletAdapter } from "@solana/wallet-adapter-wallets";
+import {
+  PhantomWalletAdapter,
+  SolflareWalletAdapter,
+  CoinbaseWalletAdapter,
+  TrustWalletAdapter,
+} from "@solana/wallet-adapter-wallets";
 import {
   WalletModalProvider,
   useWalletModal,
@@ -58,10 +63,33 @@ const WalletExtensionWatcher: FC = () => {
 
       const timer = setTimeout(() => {
         setVisible(true);
-        toast.success("Wallet extension detected! Select Phantom to connect.", {
-          duration: 5000,
-          icon: "👻",
-        });
+        toast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? "animate-in fade-in zoom-in-95 duration-200" : "animate-out fade-out duration-150"
+              } max-w-sm w-full bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-3 flex items-center gap-3`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/80 border border-border flex items-center justify-center p-1 relative shrink-0">
+                <img
+                  src="https://api.dicebear.com/7.x/bottts/svg?seed=StreetSync&backgroundColor=transparent"
+                  alt="Street Sync Bot"
+                  className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse border-2 border-card" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black font-display uppercase tracking-wide text-foreground">
+                  Wallet Detected
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  Ready to connect.
+                </p>
+              </div>
+            </div>
+          ),
+          { duration: 4000 }
+        );
       }, 500);
 
       return () => clearTimeout(timer);
@@ -77,19 +105,49 @@ const WalletExtensionWatcher: FC = () => {
       const isPending = sessionStorage.getItem("street_sync_install_pending");
       if (!isPending) return;
 
-      const hasSolana = Boolean((window as any).solana || (window as any).phantom);
+      const hasSolana = Boolean((window as any).solana || (window as any).phantom || (window as any).solflare);
       if (hasSolana) {
         sessionStorage.removeItem("street_sync_install_pending");
         setVisible(true);
-        toast.success("Phantom detected! Ready to connect.", { icon: "👻" });
+        toast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? "animate-in fade-in zoom-in-95 duration-200" : "animate-out fade-out duration-150"
+              } max-w-sm w-full bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-3 flex items-center gap-3`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/80 border border-border flex items-center justify-center p-1 relative shrink-0">
+                <img
+                  src="https://api.dicebear.com/7.x/bottts/svg?seed=StreetSync&backgroundColor=transparent"
+                  alt="Street Sync Bot"
+                  className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse border-2 border-card" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black font-display uppercase tracking-wide text-foreground">
+                  Wallet Extension Ready
+                </p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  Select your wallet to connect.
+                </p>
+              </div>
+            </div>
+          ),
+          { duration: 4000 }
+        );
       } else {
         // Show non-blocking interactive toast
         toast(
           (t) => (
             <div className="flex items-center gap-3 py-1">
-              <span className="text-xl">👻</span>
+              <img
+                src="https://api.dicebear.com/7.x/bottts/svg?seed=EW9U&backgroundColor=transparent"
+                alt="Street Sync Bot"
+                className="w-8 h-8 object-contain shrink-0"
+              />
               <div className="text-xs">
-                <p className="font-bold text-foreground">Finished installing Phantom?</p>
+                <p className="font-bold text-foreground">Finished installing your wallet?</p>
                 <p className="text-muted-foreground">Click to activate the extension in this tab.</p>
               </div>
               <button
@@ -128,11 +186,11 @@ const WalletExtensionWatcher: FC = () => {
 };
 
 /**
- * Listens for mobile browser returns from Phantom App deep-links.
+ * Listens for mobile browser returns from Phantom / Solflare App deep-links.
  * Decrypts the connection payload, extracts the public key, and activates the session.
  */
 const PhantomMobileRedirectWatcher: FC = () => {
-  const { select } = useWallet();
+  const { select, connect } = useWallet();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -140,18 +198,51 @@ const PhantomMobileRedirectWatcher: FC = () => {
     if (res.handled) {
       if (res.type === "connect" && res.publicKey) {
         select(PhantomMobileWalletName);
-        toast.success(
-          `Connected Phantom: ${res.publicKey.slice(0, 4)}..${res.publicKey.slice(-4)}! Returned to browser.`,
-          {
-            icon: "👻",
-            duration: 5000,
-          }
+        // Ensure connection activates immediately
+        setTimeout(() => {
+          connect().catch(() => {});
+        }, 50);
+
+        // Show avatar-based toast banner
+        const shortKey = `${res.publicKey.slice(0, 4)}..${res.publicKey.slice(-4)}`;
+        toast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? "animate-in fade-in zoom-in-95 duration-200" : "animate-out fade-out duration-150"
+              } max-w-sm w-full bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-3 flex items-center gap-3 pointer-events-auto`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/80 border border-border flex items-center justify-center p-1 relative shrink-0">
+                <img
+                  src={`https://api.dicebear.com/7.x/bottts/svg?seed=${res.publicKey}&backgroundColor=transparent`}
+                  alt="Street Sync Bot"
+                  className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse border-2 border-card" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black font-display uppercase tracking-wide text-foreground">
+                  Wallet Connected
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono truncate">
+                  {shortKey}
+                </p>
+              </div>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          ),
+          { duration: 4000 }
         );
       } else if (res.type === "error") {
-        toast.error(res.error || "Phantom connection cancelled.");
+        toast.error(res.error || "Connection cancelled.");
       }
     }
-  }, [select]);
+  }, [select, connect]);
 
   return null;
 };
@@ -232,6 +323,8 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
         }),
         phantomAdapter,
         new SolflareWalletAdapter(),
+        new CoinbaseWalletAdapter(),
+        new TrustWalletAdapter(),
       ];
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -250,4 +343,3 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     </ConnectionProvider>
   );
 };
-

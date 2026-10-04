@@ -10,6 +10,7 @@ export interface PhantomMobileSession {
   session: string;
   sharedSecret: string; // Base58 encoded
   connectedAt: number;
+  walletType?: "phantom" | "solflare";
 }
 
 export interface DappKeyPair {
@@ -19,7 +20,7 @@ export interface DappKeyPair {
 
 /**
  * Retrieves existing or generates a new X25519 keypair for end-to-end encrypted
- * Diffie-Hellman communication with Phantom Mobile wallet.
+ * Diffie-Hellman communication with Phantom and Solflare mobile wallets.
  */
 export function getOrCreateDappKeyPair(): DappKeyPair {
   if (typeof window === "undefined") {
@@ -38,7 +39,7 @@ export function getOrCreateDappKeyPair(): DappKeyPair {
       }
     }
   } catch (err) {
-    console.warn("[PhantomDeeplink] Error loading stored dapp keypair, generating fresh:", err);
+    console.warn("[MobileDeeplink] Error loading stored dapp keypair, generating fresh:", err);
   }
 
   const keyPair = nacl.box.keyPair();
@@ -51,13 +52,13 @@ export function getOrCreateDappKeyPair(): DappKeyPair {
       })
     );
   } catch (saveErr) {
-    console.warn("[PhantomDeeplink] Could not persist dapp keypair:", saveErr);
+    console.warn("[MobileDeeplink] Could not persist dapp keypair:", saveErr);
   }
   return keyPair;
 }
 
 /**
- * Gets currently active Phantom Mobile session if established.
+ * Gets currently active Mobile Wallet session if established.
  */
 export function getStoredPhantomSession(): PhantomMobileSession | null {
   if (typeof window === "undefined") return null;
@@ -71,7 +72,7 @@ export function getStoredPhantomSession(): PhantomMobileSession | null {
 }
 
 /**
- * Disconnects and removes stored Phantom Mobile session.
+ * Disconnects and removes stored Mobile Wallet session.
  */
 export function disconnectPhantomMobileSession(): void {
   if (typeof window === "undefined") return;
@@ -80,17 +81,29 @@ export function disconnectPhantomMobileSession(): void {
 }
 
 /**
- * Redirects the mobile user to Phantom app to approve connection.
- * Once approved in Phantom, Phantom will redirect back to this browser tab.
+ * Universal Mobile Wallet Connect initiation for Phantom or Solflare.
+ * Saves walletName in localStorage BEFORE redirecting so the wallet adapter
+ * connects immediately upon returning.
  */
-export function initiatePhantomMobileConnect(customRedirectUrl?: string): void {
+export function initiateMobileWalletConnect(
+  walletType: "phantom" | "solflare" = "phantom",
+  customRedirectUrl?: string
+): void {
   if (typeof window === "undefined") return;
+
+  const walletName = walletType === "solflare" ? "Solflare" : "Phantom";
+  try {
+    localStorage.setItem("walletName", JSON.stringify(walletName));
+  } catch (e) {
+    console.warn("[MobileDeeplink] Could not set walletName pre-redirect:", e);
+  }
 
   const dappKeyPair = getOrCreateDappKeyPair();
   const currentUrl = customRedirectUrl || window.location.href;
   const redirectLink = currentUrl.split("#")[0].split("?")[0];
 
   sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+  sessionStorage.setItem("mobile_wallet_type", walletType);
 
   const appUrl = window.location.origin.startsWith("http")
     ? window.location.origin
@@ -103,12 +116,24 @@ export function initiatePhantomMobileConnect(customRedirectUrl?: string): void {
     cluster: "devnet",
   });
 
-  // Universal link triggers Phantom native app directly
-  window.location.href = `https://phantom.app/ul/v1/connect?${params.toString()}`;
+  const baseUrl =
+    walletType === "solflare"
+      ? "https://solflare.com/ul/v1/connect"
+      : "https://phantom.app/ul/v1/connect";
+
+  window.location.href = `${baseUrl}?${params.toString()}`;
+}
+
+export function initiatePhantomMobileConnect(customRedirectUrl?: string): void {
+  initiateMobileWalletConnect("phantom", customRedirectUrl);
+}
+
+export function initiateSolflareMobileConnect(customRedirectUrl?: string): void {
+  initiateMobileWalletConnect("solflare", customRedirectUrl);
 }
 
 /**
- * Initiates cryptographic message signing via Phantom Mobile deep link.
+ * Initiates cryptographic message signing via Mobile deep link.
  */
 export function initiatePhantomMobileSignMessage(
   messageBytes: Uint8Array,
@@ -118,7 +143,7 @@ export function initiatePhantomMobileSignMessage(
 
   const session = getStoredPhantomSession();
   if (!session) {
-    throw new Error("Phantom Mobile wallet is not connected.");
+    throw new Error("Mobile wallet is not connected.");
   }
 
   const dappKeyPair = getOrCreateDappKeyPair();
@@ -147,12 +172,19 @@ export function initiatePhantomMobileSignMessage(
     payload: bs58.encode(encryptedPayload),
   });
 
-  window.location.href = `https://phantom.app/ul/v1/signMessage?${params.toString()}`;
+  const walletType = session.walletType || "phantom";
+  const baseUrl =
+    walletType === "solflare"
+      ? "https://solflare.com/ul/v1/signMessage"
+      : "https://phantom.app/ul/v1/signMessage";
+
+  window.location.href = `${baseUrl}?${params.toString()}`;
 }
 
 /**
- * Checks URL parameters on page load to see if Phantom redirected back after an action.
- * Decrypts payload and updates state if present, then strips parameters from URL.
+ * Checks URL parameters on page load to see if Phantom/Solflare redirected back after an action.
+ * Decrypts payload, sets session and walletName immediately so autoConnect works seamlessly,
+ * and strips query parameters from URL.
  */
 export function processPhantomMobileRedirect(): {
   handled: boolean;
@@ -185,14 +217,14 @@ export function processPhantomMobileRedirect(): {
         window.location.pathname + (newSearch ? `?${newSearch}` : "") + window.location.hash;
       window.history.replaceState({}, document.title, newUrl);
     } catch (e) {
-      console.warn("[PhantomDeeplink] Could not clean URL params:", e);
+      console.warn("[MobileDeeplink] Could not clean URL params:", e);
     }
   };
 
   // Case 1: User rejected or error
   if (errorCode || errorMessage) {
     cleanUrl();
-    console.warn(`[PhantomDeeplink] Mobile action rejected or failed (${errorCode}): ${errorMessage}`);
+    console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errorMessage}`);
     return {
       handled: true,
       type: "error",
@@ -207,7 +239,7 @@ export function processPhantomMobileRedirect(): {
       let sharedSecret: Uint8Array;
 
       if (phantomPubKeyStr) {
-        // Connect response contains Phantom's encryption public key
+        // Connect response contains wallet's encryption public key
         const phantomPubKey = bs58.decode(phantomPubKeyStr);
         sharedSecret = nacl.box.before(phantomPubKey, dappKeyPair.secretKey);
       } else {
@@ -215,7 +247,7 @@ export function processPhantomMobileRedirect(): {
         const existingSession = getStoredPhantomSession();
         if (!existingSession) {
           cleanUrl();
-          return { handled: false, error: "Missing existing Phantom session for decryption." };
+          return { handled: false, error: "Missing existing session for decryption." };
         }
         sharedSecret = bs58.decode(existingSession.sharedSecret);
       }
@@ -226,7 +258,7 @@ export function processPhantomMobileRedirect(): {
       const decrypted = nacl.box.open.after(encryptedData, nonce, sharedSecret);
       if (!decrypted) {
         cleanUrl();
-        return { handled: true, type: "error", error: "Failed to decrypt Phantom response payload." };
+        return { handled: true, type: "error", error: "Failed to decrypt response payload." };
       }
 
       const payload = JSON.parse(Buffer.from(decrypted).toString("utf8"));
@@ -234,14 +266,21 @@ export function processPhantomMobileRedirect(): {
 
       // Connect Response
       if (payload.public_key && payload.session) {
+        const walletType =
+          (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") || "phantom";
+
         const sessionData: PhantomMobileSession = {
           publicKey: payload.public_key,
           session: payload.session,
           sharedSecret: bs58.encode(sharedSecret),
           connectedAt: Date.now(),
+          walletType,
         };
 
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+        const walletName = walletType === "solflare" ? "Solflare" : "Phantom";
+        localStorage.setItem("walletName", JSON.stringify(walletName));
+
         window.dispatchEvent(
           new CustomEvent("phantom_mobile_connected", { detail: sessionData })
         );
@@ -266,14 +305,23 @@ export function processPhantomMobileRedirect(): {
       }
     } catch (parseErr: any) {
       cleanUrl();
-      console.error("[PhantomDeeplink] Error processing redirect:", parseErr);
+      console.error("[MobileDeeplink] Error processing redirect:", parseErr);
       return {
         handled: true,
         type: "error",
-        error: parseErr?.message || "Failed to process Phantom mobile return.",
+        error: parseErr?.message || "Failed to process mobile wallet return.",
       };
     }
   }
 
   return { handled: false };
+}
+
+// Automatically process redirect parameters immediately upon script load if in browser
+if (typeof window !== "undefined") {
+  try {
+    processPhantomMobileRedirect();
+  } catch (e) {
+    // Non-fatal
+  }
 }

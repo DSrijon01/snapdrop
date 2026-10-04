@@ -3,6 +3,7 @@
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect, useRef } from "react";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
+import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 
 const BOT_ITEMS = [
   { word: "TRADE", seed: "EW9U" },
@@ -14,25 +15,44 @@ const BOT_ITEMS = [
 
 export function WalletGate({ children }: { children: React.ReactNode }) {
   const { connected } = useWallet();
+  const [hasMobileSession, setHasMobileSession] = useState(false);
   const hasConnected = useRef(false);
   const [showExitMessage, setShowExitMessage] = useState(false);
   const [itemIndex, setItemIndex] = useState(0);
 
   useEffect(() => {
-    if (connected) {
+    if (typeof window !== "undefined") {
+      const session = getStoredPhantomSession();
+      setHasMobileSession(Boolean(session && session.publicKey));
+
+      const handleConnect = () => setHasMobileSession(true);
+      const handleDisconnect = () => setHasMobileSession(false);
+      window.addEventListener("phantom_mobile_connected", handleConnect);
+      window.addEventListener("phantom_mobile_disconnected", handleDisconnect);
+      return () => {
+        window.removeEventListener("phantom_mobile_connected", handleConnect);
+        window.removeEventListener("phantom_mobile_disconnected", handleDisconnect);
+      };
+    }
+  }, []);
+
+  const isUserConnected = connected || hasMobileSession;
+
+  useEffect(() => {
+    if (isUserConnected) {
       hasConnected.current = true;
       setShowExitMessage(false);
     } else if (hasConnected.current) {
       // User just disconnected
       setShowExitMessage(true);
     }
-  }, [connected]);
+  }, [isUserConnected]);
 
   const cycleNext = () => {
     setItemIndex((prev) => (prev + 1) % BOT_ITEMS.length);
   };
 
-  if (connected) {
+  if (isUserConnected) {
     return <>{children}</>;
   }
 
