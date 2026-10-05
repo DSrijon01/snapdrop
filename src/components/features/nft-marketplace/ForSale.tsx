@@ -12,6 +12,7 @@ import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
+import bs58 from "bs58";
 
 const NFT3DGallery = dynamic(
     () => import("./NFT3DGallery").then((mod) => mod.NFT3DGallery),
@@ -138,6 +139,75 @@ export const ForSale: FC = () => {
 
     }, [connection, wallet, umi]);
 
+    // Mobile deeplink resumption for NFT buy if browser reloaded upon Phantom return
+    useEffect(() => {
+        const handlePendingMobileNftBuy = async () => {
+            if (typeof window === "undefined") return;
+            const rawPending = localStorage.getItem("street_sync_pending_nft_buy");
+            const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
+
+            if (!rawPending || !signedTxStr) return;
+
+            let pending: any;
+            try {
+                pending = JSON.parse(rawPending);
+            } catch {
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                return;
+            }
+
+            if (Date.now() - pending.timestamp > 10 * 60 * 1000) {
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                localStorage.removeItem("street_sync_last_signed_tx");
+                return;
+            }
+
+            try {
+                const rawBytes = bs58.decode(signedTxStr);
+                const signature = await withSolanaRetry(async () => {
+                    return await connection.sendRawTransaction(rawBytes, {
+                        skipPreflight: true,
+                        maxRetries: 5,
+                        preflightCommitment: "confirmed",
+                    });
+                });
+
+                await connection.confirmTransaction(signature, "confirmed");
+
+                const purchaseItem = { 
+                    ...pending.item, 
+                    buyer: pending.buyer, 
+                    purchaseDate: Date.now(),
+                    date: Date.now(),
+                    signature: signature 
+                };
+                const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
+                localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
+
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('nft_listings_updated'));
+
+                setSuccessTx({
+                    signature: signature,
+                    name: pending.item.name,
+                    image: pending.item.image,
+                    price: pending.item.price
+                });
+            } catch (err) {
+                console.error("Failed to broadcast returned mobile NFT buy:", err);
+            } finally {
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                localStorage.removeItem("street_sync_last_signed_tx");
+            }
+        };
+
+        handlePendingMobileNftBuy();
+        window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileNftBuy);
+        return () => {
+            window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileNftBuy);
+        };
+    }, [connection]);
+
     // Filter and Sort items
     const filteredItems = activeListings.filter(item => 
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -205,6 +275,13 @@ export const ForSale: FC = () => {
 
             const TREASURY_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
 
+            // Persist pending buy in case mobile browser reloads upon return
+            localStorage.setItem('street_sync_pending_nft_buy', JSON.stringify({
+                item,
+                buyer: wallet.publicKey.toBase58(),
+                timestamp: Date.now()
+            }));
+
             const signature = await withSolanaRetry(async () => {
                 return await program.methods
                     .buyNft()
@@ -254,6 +331,8 @@ export const ForSale: FC = () => {
             console.error("Buy failed:", error);
             alert("Purchase failed. See console.");
         } finally {
+            localStorage.removeItem('street_sync_pending_nft_buy');
+            localStorage.removeItem('street_sync_last_signed_tx');
             setIsBuying(null);
         }
     };

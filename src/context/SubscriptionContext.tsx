@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { SystemProgram, Transaction, PublicKey, ComputeBudgetProgram } from "@solana/web3.js";
 import toast from "react-hot-toast";
+import bs58 from "bs58";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import { withSolanaRetry } from "@/utils/solanaRetry";
 
@@ -203,6 +204,79 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     loadSubscriptions();
   }, [loadSubscriptions]);
 
+  // Resumption handler: Detects return from mobile wallet redirect when page reloaded or resumed
+  useEffect(() => {
+    const handlePendingMobileSubscription = async () => {
+      if (typeof window === "undefined") return;
+      const rawPending = localStorage.getItem("street_sync_pending_subscription");
+      const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
+
+      if (!rawPending || !signedTxStr) return;
+
+      let pendingAction: any;
+      try {
+        pendingAction = JSON.parse(rawPending);
+      } catch {
+        localStorage.removeItem("street_sync_pending_subscription");
+        return;
+      }
+
+      // Check freshness (within 10 minutes)
+      if (Date.now() - pendingAction.timestamp > 10 * 60 * 1000) {
+        localStorage.removeItem("street_sync_pending_subscription");
+        localStorage.removeItem("street_sync_last_signed_tx");
+        return;
+      }
+
+      const toastId = toast.loading(`Confirming ${pendingAction.planName || "Pro"} subscription on Solana...`);
+      try {
+        const rawBytes = bs58.decode(signedTxStr);
+        const signature = await withSolanaRetry(async () => {
+          return await connection.sendRawTransaction(rawBytes, {
+            skipPreflight: true,
+            maxRetries: 5,
+            preflightCommitment: "confirmed",
+          });
+        });
+
+        await connection.confirmTransaction(signature, "confirmed");
+
+        const subDetails: Subscription = {
+          moduleId: pendingAction.moduleId,
+          isSubscribed: true,
+          expiresAt: pendingAction.expiresAt,
+          isCancelled: false,
+          txSignature: signature,
+          planId: pendingAction.planId,
+        };
+
+        safeLocalStorageSet(
+          `street_sync_sub_${pendingAction.walletKey}_${pendingAction.moduleId}`,
+          JSON.stringify(subDetails)
+        );
+        setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: subDetails }));
+
+        toast.dismiss(toastId);
+        toast.success(
+          `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
+        );
+      } catch (err: any) {
+        console.error("Failed to broadcast returned mobile subscription tx:", err);
+        toast.dismiss(toastId);
+        toast.error("Subscription transaction failed: " + (err?.message || "RPC error"));
+      } finally {
+        localStorage.removeItem("street_sync_pending_subscription");
+        localStorage.removeItem("street_sync_last_signed_tx");
+      }
+    };
+
+    handlePendingMobileSubscription();
+    window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
+    return () => {
+      window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
+    };
+  }, [connection]);
+
   // Subscribe function with selected plan
   const subscribe = async (moduleId: string, planId: SubscriptionPlanId = "30days"): Promise<boolean> => {
     if (!publicKey) {
@@ -275,7 +349,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       transaction.recentBlockhash = blockhash;
       transaction.feePayer = publicKey;
 
-      toast.loading("Awaiting wallet approval...", { id: toastId });
+      // Persist pending subscription state for mobile deeplink return resilience
+      const pendingSub = {
+        walletKey,
+        moduleId,
+        planId,
+        expiresAt,
+        planName: selectedPlan.name,
+        timestamp: Date.now(),
+      };
+      safeLocalStorageSet("street_sync_pending_subscription", JSON.stringify(pendingSub));
+
+      toast.loading("Awaiting wallet approval in Phantom...", { id: toastId });
 
       let signature: string;
       if (signTransaction) {
@@ -320,12 +405,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
       setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
+      localStorage.removeItem("street_sync_pending_subscription");
+      localStorage.removeItem("street_sync_last_signed_tx");
 
       toast.dismiss(toastId);
       toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]} (${selectedPlan.name})!`);
       return true;
     } catch (error: any) {
       console.error("Subscription payment failed:", error);
+      localStorage.removeItem("street_sync_pending_subscription");
       toast.dismiss(toastId);
       toast.error(error.message || "Transaction failed or rejected by user.");
       return false;

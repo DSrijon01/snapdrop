@@ -3,13 +3,22 @@ import {
   WalletName,
   WalletReadyState,
   WalletConnectionError,
+  SendTransactionOptions,
 } from "@solana/wallet-adapter-base";
-import { PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  Transaction,
+  TransactionSignature,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import bs58 from "bs58";
 import {
   getStoredPhantomSession,
   initiatePhantomMobileConnect,
   initiatePhantomMobileSignMessage,
+  initiatePhantomMobileSignTransaction,
+  initiatePhantomMobileSignAllTransactions,
   disconnectPhantomMobileSession,
 } from "./phantomDeeplink";
 
@@ -121,8 +130,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     }
 
     return new Promise<Uint8Array>((resolve, reject) => {
+      let timeoutId: any = null;
+
       const handleSigned = (e: any) => {
-        window.removeEventListener("phantom_mobile_signed", handleSigned);
+        cleanup();
         if (e.detail) {
           try {
             resolve(bs58.decode(e.detail));
@@ -134,21 +145,245 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
         }
       };
 
+      const handleError = (e: any) => {
+        cleanup();
+        reject(new Error(e.detail?.error || "Message signing rejected by user."));
+      };
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        window.removeEventListener("phantom_mobile_signed", handleSigned);
+        window.removeEventListener("phantom_mobile_error", handleError);
+      };
+
       window.addEventListener("phantom_mobile_signed", handleSigned);
+      window.addEventListener("phantom_mobile_error", handleError);
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Message signing timed out."));
+      }, 5 * 60 * 1000);
+
       try {
         initiatePhantomMobileSignMessage(message);
       } catch (err) {
-        window.removeEventListener("phantom_mobile_signed", handleSigned);
+        cleanup();
         reject(err);
       }
     });
   }
 
-  async signTransaction<T extends any>(transaction: T): Promise<T> {
-    return transaction;
+  async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+    if (!this.connected || !this._publicKey) {
+      throw new Error("Wallet not connected");
+    }
+
+    const session = getStoredPhantomSession();
+    if (!session) {
+      throw new Error("Phantom Mobile session not found. Please reconnect your wallet.");
+    }
+
+    const isVersioned = "version" in (transaction as any);
+
+    // Ensure feePayer is set for standard transaction if missing
+    if (!isVersioned) {
+      const tx = transaction as Transaction;
+      if (!tx.feePayer) {
+        tx.feePayer = this._publicKey;
+      }
+    }
+
+    // Serialize transaction for deep link transport
+    let serializedBytes: Uint8Array;
+    try {
+      if (isVersioned) {
+        serializedBytes = (transaction as VersionedTransaction).serialize();
+      } else {
+        serializedBytes = (transaction as Transaction).serialize({
+          requireAllSignatures: false,
+          verifySignatures: false,
+        });
+      }
+    } catch (err: any) {
+      console.error("[PhantomMobileAdapter] Transaction serialization error:", err);
+      throw new Error(`Failed to serialize transaction for mobile signing: ${err?.message || err}`);
+    }
+
+    return new Promise<T>((resolve, reject) => {
+      let timeoutId: any = null;
+
+      const handleSigned = (e: any) => {
+        cleanup();
+        if (e.detail?.transaction) {
+          try {
+            const signedBytes = bs58.decode(e.detail.transaction);
+            if (isVersioned) {
+              const deserialized = VersionedTransaction.deserialize(signedBytes);
+              resolve(deserialized as unknown as T);
+            } else {
+              const deserialized = Transaction.from(signedBytes);
+              resolve(deserialized as unknown as T);
+            }
+          } catch (err) {
+            reject(err);
+          }
+        } else {
+          reject(new Error("No signed transaction received from Phantom Mobile."));
+        }
+      };
+
+      const handleError = (e: any) => {
+        cleanup();
+        reject(new Error(e.detail?.error || "Transaction rejected by user in Phantom."));
+      };
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        window.removeEventListener("phantom_mobile_tx_signed", handleSigned);
+        window.removeEventListener("phantom_mobile_error", handleError);
+      };
+
+      window.addEventListener("phantom_mobile_tx_signed", handleSigned);
+      window.addEventListener("phantom_mobile_error", handleError);
+
+      // 5-minute timeout window for mobile app-switch & approval
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Transaction signing timed out."));
+      }, 5 * 60 * 1000);
+
+      try {
+        initiatePhantomMobileSignTransaction(serializedBytes);
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    });
   }
 
-  async signAllTransactions<T extends any>(transactions: T[]): Promise<T[]> {
-    return transactions;
+  async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
+    if (!this.connected || !this._publicKey) {
+      throw new Error("Wallet not connected");
+    }
+
+    const session = getStoredPhantomSession();
+    if (!session) {
+      throw new Error("Phantom Mobile session not found. Please reconnect your wallet.");
+    }
+
+    const serializedList: Uint8Array[] = [];
+    const isVersionedList: boolean[] = [];
+
+    for (const transaction of transactions) {
+      const isVersioned = "version" in (transaction as any);
+      isVersionedList.push(isVersioned);
+      if (!isVersioned) {
+        const tx = transaction as Transaction;
+        if (!tx.feePayer) tx.feePayer = this._publicKey;
+        serializedList.push(
+          tx.serialize({
+            requireAllSignatures: false,
+            verifySignatures: false,
+          })
+        );
+      } else {
+        serializedList.push((transaction as VersionedTransaction).serialize());
+      }
+    }
+
+    return new Promise<T[]>((resolve, reject) => {
+      let timeoutId: any = null;
+
+      const handleSigned = (e: any) => {
+        cleanup();
+        if (e.detail?.transactions && Array.isArray(e.detail.transactions)) {
+          try {
+            const results: T[] = [];
+            for (let i = 0; i < e.detail.transactions.length; i++) {
+              const raw = bs58.decode(e.detail.transactions[i]);
+              if (isVersionedList[i]) {
+                results.push(VersionedTransaction.deserialize(raw) as unknown as T);
+              } else {
+                results.push(Transaction.from(raw) as unknown as T);
+              }
+            }
+            resolve(results);
+          } catch (err) {
+            reject(err);
+          }
+        } else {
+          reject(new Error("No transactions received from Phantom Mobile."));
+        }
+      };
+
+      const handleError = (e: any) => {
+        cleanup();
+        reject(new Error(e.detail?.error || "Transactions rejected by user in Phantom."));
+      };
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        window.removeEventListener("phantom_mobile_all_tx_signed", handleSigned);
+        window.removeEventListener("phantom_mobile_error", handleError);
+      };
+
+      window.addEventListener("phantom_mobile_all_tx_signed", handleSigned);
+      window.addEventListener("phantom_mobile_error", handleError);
+
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Batch transaction signing timed out."));
+      }, 5 * 60 * 1000);
+
+      try {
+        initiatePhantomMobileSignAllTransactions(serializedList);
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
+    });
+  }
+
+  async sendTransaction(
+    transaction: Transaction | VersionedTransaction,
+    connection: Connection,
+    options: SendTransactionOptions = {}
+  ): Promise<TransactionSignature> {
+    if (!this.connected || !this._publicKey) {
+      throw new Error("Wallet not connected");
+    }
+
+    const isVersioned = "version" in (transaction as any);
+    if (isVersioned) {
+      if (options.signers && options.signers.length > 0) {
+        (transaction as VersionedTransaction).sign(options.signers);
+      }
+    } else {
+      const tx = transaction as Transaction;
+      tx.feePayer = tx.feePayer || this._publicKey;
+      if (!tx.recentBlockhash) {
+        const { blockhash } = await connection.getLatestBlockhash(
+          options.preflightCommitment || "confirmed"
+        );
+        tx.recentBlockhash = blockhash;
+      }
+      if (options.signers && options.signers.length > 0) {
+        for (const s of options.signers) {
+          tx.partialSign(s);
+        }
+      }
+    }
+
+    const signedTx = await this.signTransaction(transaction);
+    const rawTx = signedTx.serialize();
+
+    const signature = await connection.sendRawTransaction(rawTx, {
+      skipPreflight: options.skipPreflight ?? true,
+      preflightCommitment: options.preflightCommitment ?? "confirmed",
+      maxRetries: options.maxRetries ?? 5,
+    });
+
+    return signature;
   }
 }
+

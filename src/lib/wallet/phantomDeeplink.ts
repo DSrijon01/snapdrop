@@ -1,5 +1,6 @@
 import nacl from "tweetnacl";
 import bs58 from "bs58";
+import { Buffer } from "buffer";
 
 const DAPP_KEYS_STORAGE_KEY = "street_sync_phantom_dapp_keys";
 const SESSION_STORAGE_KEY = "street_sync_phantom_mobile_session";
@@ -182,15 +183,164 @@ export function initiatePhantomMobileSignMessage(
 }
 
 /**
+ * Initiates a single transaction signing via Mobile deep link.
+ * Directs user to Phantom/Solflare app to inspect, approve, and sign.
+ */
+export function initiatePhantomMobileSignTransaction(
+  transactionBytes: Uint8Array,
+  customRedirectUrl?: string
+): void {
+  if (typeof window === "undefined") return;
+
+  const session = getStoredPhantomSession();
+  if (!session) {
+    throw new Error("Mobile wallet is not connected.");
+  }
+
+  const dappKeyPair = getOrCreateDappKeyPair();
+  const sharedSecret = bs58.decode(session.sharedSecret);
+  const nonce = nacl.randomBytes(24);
+
+  const payload = {
+    session: session.session,
+    transaction: bs58.encode(transactionBytes),
+  };
+
+  const encryptedPayload = nacl.box.after(
+    Buffer.from(JSON.stringify(payload)),
+    nonce,
+    sharedSecret
+  );
+
+  const currentUrl = customRedirectUrl || window.location.href;
+  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+
+  const params = new URLSearchParams({
+    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    nonce: bs58.encode(nonce),
+    redirect_link: redirectLink,
+    payload: bs58.encode(encryptedPayload),
+  });
+
+  const walletType = session.walletType || "phantom";
+  const baseUrl =
+    walletType === "solflare"
+      ? "https://solflare.com/ul/v1/signTransaction"
+      : "https://phantom.app/ul/v1/signTransaction";
+
+  window.location.href = `${baseUrl}?${params.toString()}`;
+}
+
+/**
+ * Initiates multiple transaction signing via Mobile deep link.
+ */
+export function initiatePhantomMobileSignAllTransactions(
+  transactionsBytes: Uint8Array[],
+  customRedirectUrl?: string
+): void {
+  if (typeof window === "undefined") return;
+
+  const session = getStoredPhantomSession();
+  if (!session) {
+    throw new Error("Mobile wallet is not connected.");
+  }
+
+  const dappKeyPair = getOrCreateDappKeyPair();
+  const sharedSecret = bs58.decode(session.sharedSecret);
+  const nonce = nacl.randomBytes(24);
+
+  const payload = {
+    session: session.session,
+    transactions: transactionsBytes.map((b) => bs58.encode(b)),
+  };
+
+  const encryptedPayload = nacl.box.after(
+    Buffer.from(JSON.stringify(payload)),
+    nonce,
+    sharedSecret
+  );
+
+  const currentUrl = customRedirectUrl || window.location.href;
+  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+
+  const params = new URLSearchParams({
+    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    nonce: bs58.encode(nonce),
+    redirect_link: redirectLink,
+    payload: bs58.encode(encryptedPayload),
+  });
+
+  const walletType = session.walletType || "phantom";
+  const baseUrl =
+    walletType === "solflare"
+      ? "https://solflare.com/ul/v1/signAllTransactions"
+      : "https://phantom.app/ul/v1/signAllTransactions";
+
+  window.location.href = `${baseUrl}?${params.toString()}`;
+}
+
+/**
+ * Initiates signAndSendTransaction via Mobile deep link.
+ */
+export function initiatePhantomMobileSignAndSendTransaction(
+  transactionBytes: Uint8Array,
+  customRedirectUrl?: string,
+  sendOptions?: { skipPreflight?: boolean }
+): void {
+  if (typeof window === "undefined") return;
+
+  const session = getStoredPhantomSession();
+  if (!session) {
+    throw new Error("Mobile wallet is not connected.");
+  }
+
+  const dappKeyPair = getOrCreateDappKeyPair();
+  const sharedSecret = bs58.decode(session.sharedSecret);
+  const nonce = nacl.randomBytes(24);
+
+  const payload = {
+    session: session.session,
+    transaction: bs58.encode(transactionBytes),
+    sendOptions: sendOptions || { skipPreflight: true },
+  };
+
+  const encryptedPayload = nacl.box.after(
+    Buffer.from(JSON.stringify(payload)),
+    nonce,
+    sharedSecret
+  );
+
+  const currentUrl = customRedirectUrl || window.location.href;
+  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+
+  const params = new URLSearchParams({
+    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    nonce: bs58.encode(nonce),
+    redirect_link: redirectLink,
+    payload: bs58.encode(encryptedPayload),
+  });
+
+  const walletType = session.walletType || "phantom";
+  const baseUrl =
+    walletType === "solflare"
+      ? "https://solflare.com/ul/v1/signAndSendTransaction"
+      : "https://phantom.app/ul/v1/signAndSendTransaction";
+
+  window.location.href = `${baseUrl}?${params.toString()}`;
+}
+
+/**
  * Checks URL parameters on page load to see if Phantom/Solflare redirected back after an action.
  * Decrypts payload, sets session and walletName immediately so autoConnect works seamlessly,
- * and strips query parameters from URL.
+ * dispatches appropriate events, and strips query parameters from URL.
  */
 export function processPhantomMobileRedirect(): {
   handled: boolean;
-  type?: "connect" | "signMessage" | "error";
+  type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
   publicKey?: string;
   signature?: string;
+  transaction?: string;
+  transactions?: string[];
   error?: string;
 } {
   if (typeof window === "undefined") return { handled: false };
@@ -224,11 +374,24 @@ export function processPhantomMobileRedirect(): {
   // Case 1: User rejected or error
   if (errorCode || errorMessage) {
     cleanUrl();
-    console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errorMessage}`);
+    const errMsg = errorMessage || `Error ${errorCode}`;
+    console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errMsg}`);
+
+    // Clear pending actions
+    localStorage.removeItem("street_sync_pending_subscription");
+    localStorage.removeItem("street_sync_pending_nft_buy");
+    localStorage.removeItem("street_sync_last_signed_tx");
+
+    window.dispatchEvent(
+      new CustomEvent("phantom_mobile_error", {
+        detail: { error: errMsg, code: errorCode },
+      })
+    );
+
     return {
       handled: true,
       type: "error",
-      error: errorMessage || `Error ${errorCode}`,
+      error: errMsg,
     };
   }
 
@@ -264,7 +427,7 @@ export function processPhantomMobileRedirect(): {
       const payload = JSON.parse(Buffer.from(decrypted).toString("utf8"));
       cleanUrl();
 
-      // Connect Response
+      // 1. Connect Response
       if (payload.public_key && payload.session) {
         const walletType =
           (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") || "phantom";
@@ -292,14 +455,61 @@ export function processPhantomMobileRedirect(): {
         };
       }
 
-      // Sign Message Response
+      // 2. Sign Transaction Response
+      if (payload.transaction) {
+        localStorage.setItem("street_sync_last_signed_tx", payload.transaction);
+        localStorage.setItem("street_sync_last_signed_tx_time", String(Date.now()));
+
+        window.dispatchEvent(
+          new CustomEvent("phantom_mobile_tx_signed", {
+            detail: { transaction: payload.transaction },
+          })
+        );
+
+        return {
+          handled: true,
+          type: "signTransaction",
+          transaction: payload.transaction,
+        };
+      }
+
+      // 3. Sign All Transactions Response
+      if (payload.transactions && Array.isArray(payload.transactions)) {
+        localStorage.setItem(
+          "street_sync_last_signed_transactions",
+          JSON.stringify(payload.transactions)
+        );
+
+        window.dispatchEvent(
+          new CustomEvent("phantom_mobile_all_tx_signed", {
+            detail: { transactions: payload.transactions },
+          })
+        );
+
+        return {
+          handled: true,
+          type: "signAllTransactions",
+          transactions: payload.transactions,
+        };
+      }
+
+      // 4. Sign Message or SignAndSend Signature Response
       if (payload.signature) {
+        localStorage.setItem("street_sync_last_tx_signature", payload.signature);
+        localStorage.setItem("street_sync_last_tx_signature_time", String(Date.now()));
+
         window.dispatchEvent(
           new CustomEvent("phantom_mobile_signed", { detail: payload.signature })
         );
+        window.dispatchEvent(
+          new CustomEvent("phantom_mobile_tx_sent", {
+            detail: { signature: payload.signature },
+          })
+        );
+
         return {
           handled: true,
-          type: "signMessage",
+          type: "signature",
           signature: payload.signature,
         };
       }
@@ -325,3 +535,4 @@ if (typeof window !== "undefined") {
     // Non-fatal
   }
 }
+
