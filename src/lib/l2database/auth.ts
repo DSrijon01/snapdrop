@@ -87,7 +87,13 @@ export async function signInWithSolana(
       if (typeof window !== "undefined") {
         localStorage.setItem(
           LOCAL_STORAGE_AUTH_KEY,
-          JSON.stringify({ uid: walletAddress, authenticatedAt: Date.now() })
+          JSON.stringify({
+            uid: walletAddress,
+            walletAddress: walletAddress,
+            displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
+            isGuest: false,
+            authenticatedAt: Date.now(),
+          })
         );
         window.dispatchEvent(new Event("streetsync_auth_changed"));
       }
@@ -121,7 +127,13 @@ export async function signInWithSolana(
     if (typeof window !== "undefined") {
       localStorage.setItem(
         LOCAL_STORAGE_AUTH_KEY,
-        JSON.stringify({ uid: walletAddress, authenticatedAt: Date.now() })
+        JSON.stringify({
+          uid: walletAddress,
+          walletAddress: walletAddress,
+          displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
+          isGuest: false,
+          authenticatedAt: Date.now(),
+        })
       );
       window.dispatchEvent(new Event("streetsync_auth_changed"));
     }
@@ -146,7 +158,13 @@ export async function signInWithSolana(
     if (typeof window !== "undefined") {
       localStorage.setItem(
         LOCAL_STORAGE_AUTH_KEY,
-        JSON.stringify({ uid: walletAddress, authenticatedAt: Date.now() })
+        JSON.stringify({
+          uid: walletAddress,
+          walletAddress: walletAddress,
+          displayName: `User_${walletAddress.slice(0, 4)}`,
+          isGuest: false,
+          authenticatedAt: Date.now(),
+        })
       );
       window.dispatchEvent(new Event("streetsync_auth_changed"));
     }
@@ -274,23 +292,14 @@ export function useFirebaseAuth() {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [localDevUid, setLocalDevUid] = useState<string | null>(null);
   const [localDisplayName, setLocalDisplayName] = useState<string | null>(null);
+  const [authenticatedWallet, setAuthenticatedWallet] = useState<string | null>(null);
   const [isGuestSession, setIsGuestSession] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize and synchronize both Firebase Auth and local session
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-      if (stored) {
-        const parsed = JSON.parse(stored);
-        setLocalDevUid(parsed.uid);
-        setLocalDisplayName(parsed.displayName || null);
-        setIsGuestSession(Boolean(parsed.isGuest));
-      }
-    } catch {}
-
-    const handleSessionChange = () => {
+    const parseSession = () => {
       try {
         const stored = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
         if (stored) {
@@ -298,12 +307,32 @@ export function useFirebaseAuth() {
           setLocalDevUid(parsed.uid);
           setLocalDisplayName(parsed.displayName || null);
           setIsGuestSession(Boolean(parsed.isGuest));
+          if (!parsed.isGuest) {
+            setAuthenticatedWallet(
+              parsed.walletAddress ||
+                (parsed.uid && !parsed.uid.startsWith("guest_") ? parsed.uid : null)
+            );
+          } else {
+            setAuthenticatedWallet(null);
+          }
         } else {
           setLocalDevUid(null);
           setLocalDisplayName(null);
           setIsGuestSession(false);
+          setAuthenticatedWallet(null);
         }
-      } catch {}
+      } catch {
+        setLocalDevUid(null);
+        setLocalDisplayName(null);
+        setIsGuestSession(false);
+        setAuthenticatedWallet(null);
+      }
+    };
+
+    parseSession();
+
+    const handleSessionChange = () => {
+      parseSession();
     };
 
     window.addEventListener("streetsync_auth_changed", handleSessionChange);
@@ -363,6 +392,7 @@ export function useFirebaseAuth() {
 
   return {
     user: effectiveUser,
+    authenticatedWallet,
     isGuest: isGuestSession,
     loading,
     error,

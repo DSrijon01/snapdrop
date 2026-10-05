@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback } from "react";
+import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { useFirebaseAuth, SignInWithSolanaResult } from "@/lib/l2database/auth";
@@ -11,6 +11,7 @@ interface SIWSContextValue {
   isAuthenticated: boolean;
   isGuest: boolean;
   user: any;
+  authenticatedWallet: string | null;
   loading: boolean;
   openSIWSModal: (options?: { reason?: string; onSuccess?: () => void }) => void;
   closeSIWSModal: () => void;
@@ -25,12 +26,75 @@ const SIWSContext = createContext<SIWSContextValue | null>(null);
 export function SIWSProvider({ children }: { children: React.ReactNode }) {
   const { publicKey, signMessage, connected } = useWallet();
   const { setVisible: setWalletModalVisible } = useWalletModal();
-  const { user, isGuest, isAuthenticated, loading, loginWithWallet, loginAsGuest, logout } = useFirebaseAuth();
+  const {
+    user,
+    isGuest,
+    isAuthenticated,
+    loading,
+    loginWithWallet,
+    loginAsGuest,
+    logout,
+    authenticatedWallet,
+  } = useFirebaseAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalReason, setModalReason] = useState<string>("Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSigning, setIsSigning] = useState(false);
+
+  // Auto-Signoff 1: When user disconnects their wallet
+  useEffect(() => {
+    if (loading) return;
+
+    // If user was signed in via SIWS wallet (not guest) and wallet is disconnected
+    if (isAuthenticated && !isGuest) {
+      if (!connected || !publicKey) {
+        console.log("[SIWS] Solana wallet disconnected. Automatically signing off SIWS session.");
+        logout().catch(console.error);
+        toast("SIWS signed out (wallet disconnected)", {
+          icon: "🔒",
+          style: {
+            borderRadius: "12px",
+            background: "#18181b",
+            color: "#fff",
+            border: "1px solid #27272a",
+          },
+        });
+      }
+    }
+  }, [connected, publicKey, isAuthenticated, isGuest, loading, logout]);
+
+  // Auto-Signoff 2: When active wallet changes to a different wallet than the SIWS signed wallet
+  useEffect(() => {
+    if (loading) return;
+
+    if (isAuthenticated && !isGuest && publicKey) {
+      const currentPubkey = publicKey.toBase58();
+      const currentAuthWallet =
+        authenticatedWallet ||
+        (user?.displayName && !user.displayName.includes("..") ? user.displayName : null) ||
+        (user?.uid && !user.uid.startsWith("guest_") && user.uid.length >= 32 ? user.uid : null);
+
+      if (currentAuthWallet && currentAuthWallet !== currentPubkey) {
+        console.log(
+          `[SIWS] Active wallet changed from ${currentAuthWallet} to ${currentPubkey}. Invalidating previous SIWS session.`
+        );
+        logout().catch(console.error);
+        toast(
+          `Wallet changed to ${currentPubkey.slice(0, 4)}..${currentPubkey.slice(-4)}. Please sign in with your active wallet.`,
+          {
+            icon: "🔄",
+            style: {
+              borderRadius: "12px",
+              background: "#18181b",
+              color: "#fff",
+              border: "1px solid #27272a",
+            },
+          }
+        );
+      }
+    }
+  }, [publicKey, authenticatedWallet, user, isAuthenticated, isGuest, loading, logout]);
 
   const openSIWSModal = useCallback((options?: { reason?: string; onSuccess?: () => void }) => {
     if (options?.reason) {
@@ -146,6 +210,7 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isGuest,
         user,
+        authenticatedWallet,
         loading,
         openSIWSModal,
         closeSIWSModal,
@@ -163,7 +228,9 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
         isSigning={isSigning}
         isConnected={connected && !!publicKey}
         walletAddress={publicKey?.toBase58()}
+        isAuthenticated={isAuthenticated}
         onSignIn={signIn}
+        onSignOut={logout}
         onConnectWallet={() => {
           setIsModalOpen(false);
           setWalletModalVisible(true);
@@ -181,3 +248,4 @@ export function useSIWS() {
   }
   return context;
 }
+

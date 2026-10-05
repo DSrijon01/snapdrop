@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect } from "react";
-import { Zap, ShieldCheck, Clock, X, Wallet, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { Zap, ShieldCheck, Clock, X, Wallet, RefreshCw, Sparkles, CheckCircle2, LogOut } from "lucide-react";
 
 interface SIWSModalProps {
   isOpen: boolean;
@@ -10,9 +10,11 @@ interface SIWSModalProps {
   isSigning: boolean;
   isConnected: boolean;
   walletAddress?: string;
+  isAuthenticated?: boolean;
   onSignIn: () => void;
   onConnectWallet: () => void;
   onContinueAsGuest?: () => void;
+  onSignOut?: () => void;
 }
 
 export function SIWSModal({
@@ -22,9 +24,11 @@ export function SIWSModal({
   isSigning,
   isConnected,
   walletAddress,
+  isAuthenticated,
   onSignIn,
   onConnectWallet,
   onContinueAsGuest,
+  onSignOut,
 }: SIWSModalProps) {
   // Close on Escape key
   useEffect(() => {
@@ -145,6 +149,21 @@ export function SIWSModal({
                   </>
                 )}
               </button>
+
+              {isAuthenticated && onSignOut && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSignOut();
+                    onClose();
+                  }}
+                  disabled={isSigning}
+                  className="w-full py-2.5 px-4 rounded-xl border border-red-500/30 hover:border-red-500/60 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-mono font-bold text-xs transition-all flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <LogOut size={13} />
+                  <span>Sign Out of Current SIWS Session</span>
+                </button>
+              )}
             </div>
           ) : (
             <button
@@ -188,3 +207,4 @@ export function SIWSModal({
     </div>
   );
 }
+
