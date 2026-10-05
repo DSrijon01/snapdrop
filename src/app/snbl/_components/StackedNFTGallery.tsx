@@ -78,12 +78,7 @@ export const StackedNFTGallery = () => {
         } else {
             setSelectedNFT(null);
         }
-        // If the vault has only 1 asset, open directly into the full Card / Terminal view
-        if (card.nfts && card.nfts.length === 1) {
-            setMobileModalTab('details');
-        } else {
-            setMobileModalTab('gallery');
-        }
+        setMobileModalTab('gallery');
     };
 
     const handleCopyMint = (mint: string) => {
@@ -634,8 +629,8 @@ export const StackedNFTGallery = () => {
                                     </div>
 
                                     <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                                        {/* Mobile Tab Switcher for Direct Collection (Only when >1 items) */}
-                                        {expandedCard.type !== 'candymachine' && (expandedCard.nfts?.length || 0) > 1 && (
+                                        {/* Mobile Tab Switcher for Direct Collection */}
+                                        {expandedCard.type !== 'candymachine' && (
                                             <div className="flex md:hidden items-center bg-muted p-0.5 rounded-xl border border-border text-[11px] font-mono font-bold">
                                                 <button
                                                     type="button"
@@ -1003,9 +998,9 @@ export const StackedNFTGallery = () => {
 
                                         {/* MOBILE VIEW: Full-Height Tabs (md:hidden) */}
                                         <div className="flex md:hidden w-full h-full flex-col relative overflow-hidden bg-card">
-                                            {mobileModalTab === 'gallery' && (expandedCard.nfts?.length || 0) > 1 ? (
+                                            {mobileModalTab === 'gallery' ? (
                                                 /* Mobile Tab 1: Scrollable 2-Column Gallery */
-                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pb-28 relative">
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-3.5 pb-28">
                                                     <div className="grid grid-cols-2 gap-2.5 items-start content-start auto-rows-max">
                                                         {expandedCard.nfts && expandedCard.nfts.length === 0 ? (
                                                             <div className="col-span-full py-16 text-center text-muted-foreground font-mono text-xs">
@@ -1018,11 +1013,8 @@ export const StackedNFTGallery = () => {
                                                                 return (
                                                                     <div
                                                                         key={nft.mintAddress}
-                                                                        onClick={() => {
-                                                                            setSelectedNFT(nft);
-                                                                            setMobileModalTab('details');
-                                                                        }}
-                                                                        className={`relative rounded-xl overflow-hidden border bg-card active:scale-95 transition-all shadow-sm h-fit self-start cursor-pointer hover:border-primary/50 ${
+                                                                        onClick={() => setSelectedNFT(nft)}
+                                                                        className={`relative rounded-xl overflow-hidden border bg-card active:scale-95 transition-all shadow-sm h-fit self-start ${
                                                                             isSelected 
                                                                                 ? 'border-primary ring-2 ring-primary/40' 
                                                                                 : 'border-border'
@@ -1076,9 +1068,9 @@ export const StackedNFTGallery = () => {
                                                     {/* Floating HUD at Bottom of Mobile Gallery */}
                                                     {selectedNFT && (
                                                         <motion.div
-                                                            initial={{ y: 30, opacity: 0 }}
+                                                            initial={{ y: 60, opacity: 0 }}
                                                             animate={{ y: 0, opacity: 1 }}
-                                                            className="sticky bottom-3 left-0 right-0 mt-4 p-3 bg-card/95 backdrop-blur-2xl border border-border rounded-2xl shadow-2xl flex items-center justify-between z-30 gap-2"
+                                                            className="fixed bottom-4 left-4 right-4 p-3 bg-card/95 backdrop-blur-2xl border border-border rounded-2xl shadow-2xl flex items-center justify-between z-30 gap-2"
                                                         >
                                                             <div className="flex items-center gap-2.5 min-w-0">
                                                                 <img
@@ -1125,18 +1117,16 @@ export const StackedNFTGallery = () => {
                                                 </div>
                                             ) : (
                                                 /* Mobile Tab 2: Full Mobile Terminal */
-                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-5 flex flex-col justify-between pb-28 md:pb-8">
+                                                <div className="flex-1 overflow-y-auto custom-scrollbar p-5 flex flex-col justify-between pb-24 md:pb-8">
                                                     <div className="space-y-4">
-                                                        {expandedCard.nfts && expandedCard.nfts.length > 1 && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setMobileModalTab('gallery')}
-                                                                className="flex items-center gap-1.5 text-xs font-mono font-bold text-primary hover:underline mb-1 py-1 px-2.5 rounded-lg bg-primary/10 border border-primary/20 w-fit"
-                                                            >
-                                                                <ArrowLeft size={14} />
-                                                                <span>Back to Vault Showcase ({expandedCard.nfts.length} Items)</span>
-                                                            </button>
-                                                        )}
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setMobileModalTab('gallery')}
+                                                            className="flex items-center gap-1 text-xs font-mono font-bold text-primary hover:underline mb-1"
+                                                        >
+                                                            <ArrowLeft size={14} />
+                                                            <span>Back to Vault Showcase</span>
+                                                        </button>
 
                                                         {selectedNFT ? (
                                                             <>
