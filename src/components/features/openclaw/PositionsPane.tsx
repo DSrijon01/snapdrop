@@ -278,8 +278,8 @@ export const PositionsPane: React.FC<PositionsPaneProps> = ({ engine, balances, 
 
           <div className="space-y-2">
             {/* Address & Live Balance Row */}
-            <div className="font-mono text-[11px] break-all font-bold select-all bg-muted/50 p-2 rounded-lg border border-border flex justify-between items-center gap-2">
-              <span className="text-muted-foreground truncate">{agentAddress}</span>
+            <div className="font-mono text-[11px] break-all font-bold select-all bg-muted/50 p-2 rounded-lg border border-border flex justify-between items-center gap-2 max-w-full overflow-hidden">
+              <span className="text-muted-foreground truncate min-w-0">{agentAddress}</span>
               <span className="text-[10px] font-mono font-black uppercase text-foreground bg-primary/20 px-2 py-0.5 rounded border border-primary/30 shrink-0">
                 {onChainSol.toFixed(3)} SOL
               </span>

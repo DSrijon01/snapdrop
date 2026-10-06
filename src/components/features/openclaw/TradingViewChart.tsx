@@ -19,7 +19,7 @@ interface TradingViewChartProps {
 }
 
 const TIMEFRAMES = [
-  { label: "5S", value: "5s", title: "5 Seconds (Polymarket Fast Trail)" },
+  { label: "5S", value: "5s", title: "5 Seconds (Fast Trail)" },
   { label: "1M", value: "1m", title: "1 Minute" },
   { label: "5M", value: "5m", title: "5 Minutes" },
   { label: "15M", value: "15m", title: "15 Minutes" },
@@ -58,7 +58,7 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({ activeSymbol
     fetchMarketData();
   }, [activeSymbol, interval]);
 
-  // Auto-refresh trail: high-frequency 2.5s for Polymarket 5S trail, 6s for longer
+  // Auto-refresh trail: high-frequency 2.5s for 5S trail, 6s for longer
   useEffect(() => {
     const pollInterval = interval === "5s" ? 2500 : 6000;
     const timer = window.setInterval(() => {
@@ -148,16 +148,16 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({ activeSymbol
     <div className="flex-1 w-full h-full flex flex-col min-h-0 select-none">
       
       {/* Chart Control Bar */}
-      <div className="flex items-center justify-between border-b border-border/20 pb-2 mb-2 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/20 pb-2 mb-2 shrink-0 max-w-full overflow-hidden">
         
         {/* Timeframe Pills */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto no-scrollbar py-0.5 max-w-full">
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf.value}
               onClick={() => setInterval(tf.value)}
               title={tf.title}
-              className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-colors cursor-pointer ${
+              className={`px-2 sm:px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold uppercase transition-colors shrink-0 cursor-pointer ${
                 interval === tf.value
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
@@ -169,41 +169,43 @@ export const TradingViewChart: React.FC<TradingViewChartProps> = ({ activeSymbol
         </div>
 
         {/* Live Stream Status & Mode Toggle */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto shrink-0">
           {marketData && (
-            <div className="hidden sm:flex items-center gap-2.5 text-[10px] font-mono text-muted-foreground">
+            <div className="hidden sm:flex items-center gap-2 text-[10px] font-mono text-muted-foreground">
               <span>H: <strong className="text-foreground">${marketData.high24h.toFixed(activeSymbol === "BONK" ? 6 : activeSymbol === "SNAP" ? 4 : 2)}</strong></span>
               <span>L: <strong className="text-foreground">${marketData.low24h.toFixed(activeSymbol === "BONK" ? 6 : activeSymbol === "SNAP" ? 4 : 2)}</strong></span>
             </div>
           )}
 
-          <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-500/25">
+          <div className="flex items-center gap-1.5 bg-emerald-500/10 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full border border-emerald-500/25 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
             <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest">
               {interval === "5s" ? "5s Trail" : "Live Feed"}
             </span>
           </div>
 
-          <button
-            onClick={() => fetchMarketData()}
-            disabled={isRefreshing}
-            className="hover:text-foreground text-muted-foreground transition-colors p-1"
-            title="Refresh Market Stream"
-          >
-            <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
-          </button>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              onClick={() => fetchMarketData()}
+              disabled={isRefreshing}
+              className="hover:text-foreground text-muted-foreground transition-colors p-1"
+              title="Refresh Market Stream"
+            >
+              <RefreshCw className={`w-3 h-3 ${isRefreshing ? "animate-spin text-primary" : ""}`} />
+            </button>
 
-          {/* Toggle between Native Visualizer & TradingView Pro Embed */}
-          <button
-            onClick={() => setShowTradingViewEmbed(!showTradingViewEmbed)}
-            className={`px-2 py-1 rounded-md text-[9px] font-mono font-bold uppercase transition-colors border ${
-              showTradingViewEmbed
-                ? "bg-primary/20 text-primary border-primary/40"
-                : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/20"
-            }`}
-          >
-            {showTradingViewEmbed ? "Live Stream" : "TradingView"}
-          </button>
+            {/* Toggle between Native Visualizer & TradingView Pro Embed */}
+            <button
+              onClick={() => setShowTradingViewEmbed(!showTradingViewEmbed)}
+              className={`px-2 py-1 rounded-md text-[9px] font-mono font-bold uppercase transition-colors border ${
+                showTradingViewEmbed
+                  ? "bg-primary/20 text-primary border-primary/40"
+                  : "bg-muted/40 text-muted-foreground hover:text-foreground border-border/20"
+              }`}
+            >
+              {showTradingViewEmbed ? "Live Stream" : "TradingView"}
+            </button>
+          </div>
         </div>
       </div>
 
