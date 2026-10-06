@@ -1,5 +1,5 @@
 // Utility hook to fetch live exchange rates and calculate precise fiat values
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export const useExchangeRates = () => {
     const [rates, setRates] = useState<Record<string, number>>({ USD: 1, THB: 35, BDT: 110 }); // Fallbacks
@@ -35,7 +35,7 @@ export const useExchangeRates = () => {
     }, []);
 
     // Helper to format price based on selected fiat
-    const formatPrice = (priceInUsd: number, fiat: string) => {
+    const formatPrice = useCallback((priceInUsd: number, fiat: string) => {
         const rate = rates[fiat] || 1;
         const value = priceInUsd * rate;
         
@@ -48,7 +48,7 @@ export const useExchangeRates = () => {
             default:
                 return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
         }
-    };
+    }, [rates]);
 
     return { rates, formatPrice, loading };
 };

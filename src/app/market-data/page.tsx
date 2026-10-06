@@ -7,7 +7,7 @@ import { MarketDetails } from '@/components/features/market-data/MarketDetails';
 import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
 import { LineChart as ChartIcon, ListFilter, Activity } from 'lucide-react';
 
-const DEFAULT_FAVORITES = ['BTC', 'BNB', 'SOL', 'ETH', 'XRP'];
+const DEFAULT_FAVORITES = ['BTC', 'SOL', 'ETH', 'TSLA', 'NVDA'];
 
 export default function MarketDataPage() {
     // Persistent user preferences
@@ -15,7 +15,7 @@ export default function MarketDataPage() {
     const [fiat, setFiat] = useLocalStorage<string>('market_fiat', 'USD');
     
     // Session state
-    const [selectedCoin, setSelectedCoin] = useState<string>('BTC');
+    const [selectedCoin, setSelectedCoin] = useState<string>('TSLA');
     const [mobileTab, setMobileTab] = useState<'chart' | 'quote' | 'watchlist'>('chart');
     const [isMounted, setIsMounted] = useState(false);
 
@@ -51,6 +51,7 @@ export default function MarketDataPage() {
             <div className="md:hidden px-3 pt-2 pb-1 border-b border-border/30 bg-muted/20 shrink-0">
                 <div className="grid grid-cols-3 gap-1 p-1 bg-muted/60 rounded-xl">
                     <button
+                        id="mobile-tab-chart"
                         onClick={() => setMobileTab('chart')}
                         className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
                             mobileTab === 'chart'
@@ -62,6 +63,7 @@ export default function MarketDataPage() {
                         <span className="truncate">{selectedCoin} Chart</span>
                     </button>
                     <button
+                        id="mobile-tab-quote"
                         onClick={() => setMobileTab('quote')}
                         className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
                             mobileTab === 'quote'
@@ -73,6 +75,7 @@ export default function MarketDataPage() {
                         <span className="truncate">Key Quote</span>
                     </button>
                     <button
+                        id="mobile-tab-watchlist"
                         onClick={() => setMobileTab('watchlist')}
                         className={`flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-lg text-xs font-bold transition-all ${
                             mobileTab === 'watchlist'
