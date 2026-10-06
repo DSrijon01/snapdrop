@@ -664,49 +664,149 @@ export const StackedNFTGallery = () => {
                                 {/* Modal Body */}
                                 {expandedCard.type === 'candymachine' ? (
                                     /* CANDY MACHINE VIEW */
-                                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative z-10">
-                                        {/* Candy Machine Left: Mystery Cover */}
-                                        <div className="md:w-1/2 h-[35%] md:h-full relative overflow-hidden bg-muted/20 flex items-center justify-center p-6 border-b md:border-b-0 md:border-r border-border">
-                                            <div className="relative w-full max-w-[340px] aspect-square rounded-2xl overflow-hidden border border-border shadow-md bg-muted group">
-                                                <img 
-                                                    src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
-                                                    alt={expandedCard.title} 
-                                                    className="w-full h-full object-cover relative z-10 group-hover:scale-105 transition-transform duration-700" 
-                                                    onError={(e) => handleImageFallback(e, expandedCard.title)}
-                                                />
-                                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
-                                                <div className="absolute bottom-4 left-4 right-4 z-20">
-                                                    <span className="inline-block px-2 py-0.5 rounded-md bg-primary text-primary-foreground text-[10px] font-mono font-bold uppercase tracking-wider mb-1">
-                                                        Blind Mint Portal
-                                                    </span>
-                                                    <h3 className="text-xl font-black font-display uppercase tracking-tight text-white drop-shadow">
-                                                        {expandedCard.title}
-                                                    </h3>
+                                    <div className="flex-1 flex overflow-hidden relative z-10">
+                                        {/* DESKTOP CANDY MACHINE (md:flex) */}
+                                        <div className="hidden md:flex w-full h-full">
+                                            {/* Desktop Left: Mystery Cover */}
+                                            <div className="w-1/2 h-full relative overflow-hidden bg-muted/20 flex items-center justify-center p-8 lg:p-12 border-r border-border">
+                                                <div className="relative w-full max-w-[340px] aspect-square rounded-3xl overflow-hidden border border-border shadow-2xl bg-muted group">
+                                                    <img 
+                                                        src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
+                                                        alt={expandedCard.title} 
+                                                        className="w-full h-full object-cover relative z-10 group-hover:scale-105 transition-transform duration-700" 
+                                                        onError={(e) => handleImageFallback(e, expandedCard.title)}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+                                                    <div className="absolute bottom-5 left-5 right-5 z-20">
+                                                        <span className="inline-block px-2.5 py-1 rounded-md bg-primary text-primary-foreground text-[10px] font-mono font-bold uppercase tracking-wider mb-1.5 shadow-sm">
+                                                            Blind Mint Portal
+                                                        </span>
+                                                        <h3 className="text-2xl font-black font-display uppercase tracking-tight text-white drop-shadow">
+                                                            {expandedCard.title}
+                                                        </h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Desktop Right: Stats & Mint CTA */}
+                                            <div className="w-1/2 h-full p-8 lg:p-10 flex flex-col justify-between overflow-y-auto custom-scrollbar bg-card">
+                                                <div className="space-y-6">
+                                                    <div>
+                                                        <h3 className="text-2xl font-black font-display uppercase tracking-tight text-foreground mb-2">
+                                                            Metaplex Blind Mint
+                                                        </h3>
+                                                        <p className="text-muted-foreground text-sm leading-relaxed">
+                                                            Blind mint a random verifiable digital collectible from the {expandedCard.title} collection on the Solana blockchain with instant wallet delivery.
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Stats Cards */}
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div className="bg-muted p-5 rounded-2xl border border-border relative overflow-hidden">
+                                                            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider font-bold mb-1">Mint Progress</p>
+                                                            <p className="text-3xl font-mono font-black text-foreground">
+                                                                {expandedCard.totalMinted ?? 0} <span className="text-xs font-sans font-normal text-muted-foreground">/ {expandedCard.maxSupply ?? "?"}</span>
+                                                            </p>
+                                                            {expandedCard.totalMinted !== undefined && expandedCard.maxSupply && (
+                                                                <div className="w-full bg-border h-1.5 rounded-full mt-3 overflow-hidden">
+                                                                    <div 
+                                                                        className="bg-primary h-full rounded-full transition-all duration-500" 
+                                                                        style={{ width: `${Math.min(100, (expandedCard.totalMinted / expandedCard.maxSupply) * 100)}%` }}
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="bg-muted p-5 rounded-2xl border border-border">
+                                                            <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider font-bold mb-1">Price Per Mint</p>
+                                                            <p className="text-3xl font-mono font-black text-primary">
+                                                                {expandedCard.price} <span className="text-xs font-sans font-normal text-muted-foreground">SOL</span>
+                                                            </p>
+                                                            <p className="text-[10px] font-mono text-primary mt-2 flex items-center gap-1 font-semibold">
+                                                                <ShieldCheck size={12} /> Instant Delivery
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Security & Guarantees */}
+                                                    <div className="space-y-2.5 text-xs font-mono text-muted-foreground bg-muted p-4 rounded-xl border border-border">
+                                                        <div className="flex items-center gap-2">
+                                                            <Check size={14} className="text-primary shrink-0" />
+                                                            <span className="text-foreground">Provably fair Metaplex Candy Machine v2</span>
+                                                        </div>
+                                                        <div className="flex items-center gap-2">
+                                                            <Check size={14} className="text-primary shrink-0" />
+                                                            <span className="text-foreground">Direct-to-wallet on-chain minting</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Mint CTA */}
+                                                <div className="pt-6 border-t border-border mt-6">
+                                                    {expandedCard.totalMinted !== undefined && expandedCard.maxSupply !== undefined && expandedCard.totalMinted >= expandedCard.maxSupply ? (
+                                                        <button 
+                                                            disabled 
+                                                            className="w-full py-4 bg-destructive/10 text-destructive rounded-2xl font-black text-base uppercase tracking-widest cursor-not-allowed border border-destructive/20"
+                                                        >
+                                                            Sold Out
+                                                        </button>
+                                                    ) : (
+                                                        <button 
+                                                            className="w-full py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 font-display"
+                                                            onClick={() => handleMintCM(expandedCard.candyMachineId!)}
+                                                            disabled={isMinting}
+                                                        >
+                                                            <Zap size={18} className="fill-current" />
+                                                            <span>{isMinting ? "Processing Transaction..." : `Mint Random NFT (${expandedCard.price} SOL)`}</span>
+                                                        </button>
+                                                    )}
+                                                    {status && (
+                                                        <div className="mt-3 text-center text-xs font-mono font-bold bg-muted p-3 rounded-xl border border-border text-foreground animate-in fade-in">
+                                                            {status}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Candy Machine Right: Stats & Mint CTA */}
-                                        <div className="md:w-1/2 h-[65%] md:h-full p-6 md:p-10 flex flex-col justify-between overflow-y-auto custom-scrollbar bg-card">
-                                            <div className="space-y-6">
-                                                <div>
-                                                    <h3 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground mb-2">
-                                                        Metaplex Blind Mint
-                                                    </h3>
-                                                    <p className="text-muted-foreground text-sm leading-relaxed">
-                                                        Blind mint a random verifiable digital collectible from the {expandedCard.title} collection on the Solana blockchain with instant wallet delivery.
-                                                    </p>
+                                        {/* MOBILE CANDY MACHINE (md:hidden) - Unified with Terminal View */}
+                                        <div className="flex md:hidden w-full h-full flex-col justify-between p-3.5 sm:p-5 overflow-y-auto custom-scrollbar bg-card">
+                                            <div className="space-y-2.5 sm:space-y-3">
+                                                {/* Header / Badge */}
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-[10px] font-mono text-primary font-bold uppercase tracking-wider flex items-center gap-1">
+                                                        <ShieldCheck size={12} /> Provably Fair Drop
+                                                    </span>
+                                                    <span className="text-[10px] font-mono text-muted-foreground">Metaplex v2</span>
                                                 </div>
 
-                                                {/* Stats Cards */}
-                                                <div className="grid grid-cols-2 gap-3.5">
-                                                    <div className="bg-muted p-4 md:p-5 rounded-2xl border border-border relative overflow-hidden">
-                                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider font-bold mb-1">Mint Progress</p>
-                                                        <p className="text-2xl md:text-3xl font-mono font-black text-foreground">
-                                                            {expandedCard.totalMinted ?? 0} <span className="text-xs font-sans font-normal text-muted-foreground">/ {expandedCard.maxSupply ?? "?"}</span>
-                                                        </p>
+                                                <h3 className="text-base sm:text-lg font-black font-display uppercase tracking-tight text-foreground leading-tight">
+                                                    {expandedCard.title}
+                                                </h3>
+
+                                                {/* Centered Square Artwork Frame (No Clipping, No Cutting Bar!) */}
+                                                <div className="relative w-full max-w-[150px] sm:max-w-[180px] mx-auto aspect-square rounded-2xl overflow-hidden border border-border bg-muted shadow-md group">
+                                                    <img 
+                                                        src={resolveNftImageUrl(expandedCard.images[0], expandedCard.title)} 
+                                                        alt={expandedCard.title} 
+                                                        className="w-full h-full object-cover" 
+                                                        onError={(e) => handleImageFallback(e, expandedCard.title)}
+                                                    />
+                                                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-transparent to-transparent pointer-events-none" />
+                                                    <span className="absolute bottom-2 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full bg-background/90 text-foreground font-mono font-bold text-[9px] sm:text-[10px] backdrop-blur-md border border-border whitespace-nowrap">
+                                                        Blind Mint
+                                                    </span>
+                                                </div>
+
+                                                {/* Stats Cards (2-Columns Compact) */}
+                                                <div className="grid grid-cols-2 gap-2 text-center font-mono">
+                                                    <div className="p-2 sm:p-2.5 rounded-xl bg-muted border border-border">
+                                                        <span className="text-[9px] text-muted-foreground uppercase font-bold block mb-0.5">Mint Progress</span>
+                                                        <span className="text-sm sm:text-base font-black text-foreground block">
+                                                            {expandedCard.totalMinted ?? 0} <span className="text-[10px] font-normal text-muted-foreground">/ {expandedCard.maxSupply ?? "?"}</span>
+                                                        </span>
                                                         {expandedCard.totalMinted !== undefined && expandedCard.maxSupply && (
-                                                            <div className="w-full bg-border h-1.5 rounded-full mt-3 overflow-hidden">
+                                                            <div className="w-full bg-border h-1 rounded-full mt-1.5 overflow-hidden">
                                                                 <div 
                                                                     className="bg-primary h-full rounded-full transition-all duration-500" 
                                                                     style={{ width: `${Math.min(100, (expandedCard.totalMinted / expandedCard.maxSupply) * 100)}%` }}
@@ -715,51 +815,57 @@ export const StackedNFTGallery = () => {
                                                         )}
                                                     </div>
 
-                                                    <div className="bg-muted p-4 md:p-5 rounded-2xl border border-border">
-                                                        <p className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider font-bold mb-1">Price Per Mint</p>
-                                                        <p className="text-2xl md:text-3xl font-mono font-black text-primary">
-                                                            {expandedCard.price} <span className="text-xs font-sans font-normal text-muted-foreground">SOL</span>
-                                                        </p>
-                                                        <p className="text-[10px] font-mono text-primary mt-2 flex items-center gap-1 font-semibold">
-                                                            <ShieldCheck size={12} /> Instant Delivery
-                                                        </p>
+                                                    <div className="p-2 sm:p-2.5 rounded-xl bg-muted border border-border">
+                                                        <span className="text-[9px] text-muted-foreground uppercase font-bold block mb-0.5">Price Per Mint</span>
+                                                        <span className="text-sm sm:text-base font-black text-primary block">
+                                                            {expandedCard.price} <span className="text-[10px] text-muted-foreground font-normal">SOL</span>
+                                                        </span>
+                                                        <span className="text-[9px] text-primary mt-0.5 flex items-center justify-center gap-1 font-bold">
+                                                            Instant Delivery
+                                                        </span>
                                                     </div>
                                                 </div>
 
-                                                {/* Security & Guarantees */}
-                                                <div className="space-y-2 text-xs font-mono text-muted-foreground bg-muted p-4 rounded-xl border border-border">
-                                                    <div className="flex items-center gap-2">
-                                                        <Check size={14} className="text-primary shrink-0" />
-                                                        <span className="text-foreground">Provably fair Metaplex Candy Machine v2</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Check size={14} className="text-primary shrink-0" />
-                                                        <span className="text-foreground">Direct-to-wallet on-chain minting</span>
-                                                    </div>
+                                                {/* Guarantees Chip */}
+                                                <div className="flex items-center justify-between p-2 rounded-xl bg-muted border border-border text-[9px] sm:text-[10px] font-mono text-muted-foreground">
+                                                    <span className="flex items-center gap-1 text-foreground font-bold">
+                                                        <Check size={12} className="text-primary shrink-0" /> Metaplex CMv2
+                                                    </span>
+                                                    <span className="flex items-center gap-1 text-foreground font-bold">
+                                                        <Check size={12} className="text-primary shrink-0" /> Direct To Wallet
+                                                    </span>
                                                 </div>
                                             </div>
 
-                                            {/* Mint CTA */}
-                                            <div className="pt-6 border-t border-border mt-6">
+                                            {/* Mobile Mint CTA */}
+                                            <div className="pt-2 sm:pt-3 border-t border-border mt-2">
+                                                <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                                                    <span className="text-[11px] font-mono uppercase tracking-wider text-muted-foreground font-bold">Total</span>
+                                                    <span className="text-base sm:text-xl font-mono font-black text-primary">
+                                                        {expandedCard.price} SOL
+                                                    </span>
+                                                </div>
+
                                                 {expandedCard.totalMinted !== undefined && expandedCard.maxSupply !== undefined && expandedCard.totalMinted >= expandedCard.maxSupply ? (
                                                     <button 
                                                         disabled 
-                                                        className="w-full py-4 bg-destructive/10 text-destructive rounded-2xl font-black text-base uppercase tracking-widest cursor-not-allowed border border-destructive/20"
+                                                        className="w-full py-2.5 sm:py-3.5 bg-destructive/10 text-destructive rounded-xl font-black text-xs sm:text-sm uppercase tracking-widest cursor-not-allowed border border-destructive/20"
                                                     >
                                                         Sold Out
                                                     </button>
                                                 ) : (
                                                     <button 
-                                                        className="w-full py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base uppercase tracking-wider rounded-2xl shadow-lg shadow-primary/20 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2 font-display"
+                                                        className="w-full py-2.5 sm:py-3.5 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-xs sm:text-sm uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 font-display"
                                                         onClick={() => handleMintCM(expandedCard.candyMachineId!)}
                                                         disabled={isMinting}
                                                     >
-                                                        <Zap size={18} className="fill-current" />
-                                                        <span>{isMinting ? "Processing Transaction..." : `Mint Random NFT (${expandedCard.price} SOL)`}</span>
+                                                        <Zap size={16} className="fill-current" />
+                                                        <span>{isMinting ? "Processing..." : `Mint Random NFT (${expandedCard.price} SOL)`}</span>
                                                     </button>
                                                 )}
+
                                                 {status && (
-                                                    <div className="mt-3 text-center text-xs font-mono font-bold bg-muted p-3 rounded-xl border border-border text-foreground animate-in fade-in">
+                                                    <div className="mt-2 text-center text-[10px] font-mono font-bold bg-muted p-2 rounded-lg border border-border text-foreground animate-in fade-in">
                                                         {status}
                                                     </div>
                                                 )}
