@@ -585,13 +585,13 @@ export const MarketDetails = ({
 
     // Computed price & stats
     const currentPriceNum = isSecurity 
-        ? (securityAsset?.price || securityAsset?.canonicalPrice || knownSecurityMeta?.price || 0)
+        ? (securityAsset?.price || securityAsset?.canonicalPrice || 0)
         : (ticker?.lastPrice ? parseFloat(ticker.lastPrice) : 0);
 
     const currentPriceStr = currentPriceNum > 0 ? formatPrice(currentPriceNum, fiat) : '---';
 
     const pctChange24h = isSecurity
-        ? (securityAsset?.priceChange24hPercent ?? knownSecurityMeta?.priceChange24hPercent ?? 0)
+        ? (securityAsset?.priceChange24hPercent ?? 0)
         : (ticker?.priceChangePercent ? parseFloat(ticker.priceChangePercent) : 0);
 
     const isPositive24h = pctChange24h >= 0;
@@ -619,7 +619,7 @@ export const MarketDetails = ({
         : '0.00';
 
     // Spread between Solana DEX token price and canonical Wall St price
-    const canonicalPriceNum = securityAsset?.canonicalPrice || knownSecurityMeta?.canonicalPrice || 0;
+    const canonicalPriceNum = securityAsset?.canonicalPrice || 0;
     const dexSpreadPct = (canonicalPriceNum > 0 && currentPriceNum > 0)
         ? (((currentPriceNum - canonicalPriceNum) / canonicalPriceNum) * 100)
         : null;
