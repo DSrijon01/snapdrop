@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { MarketSidebar } from '@/components/features/market-data/MarketSidebar';
 import { MarketDetails } from '@/components/features/market-data/MarketDetails';
@@ -17,20 +17,10 @@ export default function MarketDataPage() {
     // Session state
     const [selectedCoin, setSelectedCoin] = useState<string>('TSLA');
     const [mobileTab, setMobileTab] = useState<'chart' | 'quote' | 'watchlist'>('chart');
-    const [isMounted, setIsMounted] = useState(false);
-
-    useEffect(() => {
-        setIsMounted(true);
-    }, []);
-
-    const handleSelectCoin = (coin: string) => {
+    const handleSelectCoin = useCallback((coin: string) => {
         setSelectedCoin(coin);
         setMobileTab('chart');
-    };
-
-    if (!isMounted) {
-        return <div className="flex h-full w-full bg-background items-center justify-center text-muted-foreground animate-pulse">Loading Market Data...</div>;
-    }
+    }, []);
 
     return (
         <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">

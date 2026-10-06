@@ -19,6 +19,11 @@ interface SidebarProps {
     onSelectCoin?: (coin: string) => void;
 }
 
+// Module-level caches to avoid re-fetching & re-sorting thousands of tokens on every tab jump
+let cachedCuratedSecurities: SecurityAsset[] = [];
+let cachedGlobalTickers: any[] = [];
+let globalTickersFetchPromise: Promise<any[]> | null = null;
+
 export const MarketSidebar = ({ 
     favorites, 
     setFavorites, 
@@ -29,8 +34,8 @@ export const MarketSidebar = ({
     onSelectCoin 
 }: SidebarProps) => {
     const [cryptoTickers, setCryptoTickers] = useState<any[]>([]);
-    const [allTickers, setAllTickers] = useState<any[]>([]);
-    const [curatedSecurities, setCuratedSecurities] = useState<SecurityAsset[]>([]);
+    const [allTickers, setAllTickers] = useState<any[]>(cachedGlobalTickers);
+    const [curatedSecurities, setCuratedSecurities] = useState<SecurityAsset[]>(cachedCuratedSecurities);
     const [securityFavs, setSecurityFavs] = useState<Record<string, SecurityAsset>>({});
     const [activeCategory, setActiveCategory] = useState<'all' | 'crypto' | 'securities'>('all');
     
@@ -46,10 +51,13 @@ export const MarketSidebar = ({
         const loadSecurities = async () => {
             const list = await fetchCuratedSecurities();
             if (isMounted && list.length > 0) {
+                cachedCuratedSecurities = list;
                 setCuratedSecurities(list);
             }
         };
-        loadSecurities();
+        if (cachedCuratedSecurities.length === 0) {
+            loadSecurities();
+        }
         const interval = setInterval(loadSecurities, 45000); // 45s refresh
         return () => {
             isMounted = false;
@@ -117,23 +125,48 @@ export const MarketSidebar = ({
         fetchSecurityFavorites();
     }, [favorites, curatedSecurities]);
 
-    // 4. Fetch Global Binance Index of all available crypto pairs
+    // 4. Fetch Global Binance Index of all available crypto pairs (deferred & cached to prevent tab lag)
     useEffect(() => {
-        const fetchGlobalTickers = async () => {
-            try {
-                const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
-                const data = await res.json();
-                if (Array.isArray(data)) {
-                    const filtered = data
-                        .filter(d => d.symbol.endsWith('USDT'))
-                        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
-                    setAllTickers(filtered);
-                }
-            } catch (e) {
-                console.error("Failed to fetch global tickers", e);
+        let isMounted = true;
+        
+        if (cachedGlobalTickers.length > 0) {
+            setAllTickers(cachedGlobalTickers);
+            return;
+        }
+
+        const timer = setTimeout(async () => {
+            if (!globalTickersFetchPromise) {
+                globalTickersFetchPromise = (async () => {
+                    try {
+                        const res = await fetch('https://api.binance.com/api/v3/ticker/24hr');
+                        const data = await res.json();
+                        if (Array.isArray(data)) {
+                            const filtered = data
+                                .filter((d: any) => d.symbol?.endsWith('USDT'))
+                                .sort((a: any, b: any) => parseFloat(b.quoteVolume || '0') - parseFloat(a.quoteVolume || '0'))
+                                .slice(0, 100);
+                            cachedGlobalTickers = filtered;
+                            return filtered;
+                        }
+                    } catch (e) {
+                        console.debug("Global tickers fetch fallback:", e);
+                    } finally {
+                        globalTickersFetchPromise = null;
+                    }
+                    return [];
+                })();
             }
+
+            const list = await globalTickersFetchPromise;
+            if (isMounted && list.length > 0) {
+                setAllTickers(list);
+            }
+        }, 350);
+
+        return () => {
+            isMounted = false;
+            clearTimeout(timer);
         };
-        fetchGlobalTickers();
     }, []);
 
     // 5. Intelligent Multi-Asset Search (Crypto + Securities + On-demand Tokens.xyz query)

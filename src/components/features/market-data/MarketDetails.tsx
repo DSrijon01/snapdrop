@@ -484,6 +484,7 @@ export const MarketDetails = ({
     useEffect(() => {
         if (!selectedCoin) return;
         let isMounted = true;
+        const controller = new AbortController();
 
         const loadChart = async () => {
             setIsLoadingChart(true);
@@ -517,7 +518,7 @@ export const MarketDetails = ({
                     limit = Math.max(daysSinceJan1, 2);
                 }
                 const url = `https://api.binance.com/api/v3/klines?symbol=${selectedCoin}USDT&interval=${currentTimeframe.interval}&limit=${limit}`;
-                const res = await fetch(url);
+                const res = await fetch(url, { signal: controller.signal });
                 const data = await res.json();
                 
                 if (Array.isArray(data) && isMounted) {
@@ -560,14 +561,21 @@ export const MarketDetails = ({
                     });
                     setChartData(formatted);
                 }
-            } catch (e) {
-                console.error("Failed to load historical chart", e);
+            } catch (e: any) {
+                if (e.name !== 'AbortError') {
+                    console.error("Failed to load historical chart", e);
+                }
             } finally {
                 if (isMounted) setIsLoadingChart(false);
             }
         };
 
         loadChart();
+
+        return () => {
+            isMounted = false;
+            controller.abort();
+        };
     }, [selectedCoin, securityAsset?.symbol, securityAsset?.price, currentTimeframe, fiat, formatPrice]);
 
     // Format compact currency

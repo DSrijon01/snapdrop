@@ -30,11 +30,10 @@ type Position = {
   market: Market;
 };
 
+let cachedEPlaysMarkets: Market[] | null = null;
+
 export default function EPlaysPage() {
-  const { connection } = connectionObj();
-  function connectionObj() {
-    return useConnection();
-  }
+  const { connection } = useConnection();
   const { publicKey, sendTransaction, wallet } = useWallet();
   const anchorWallet = useAnchorWallet();
 
@@ -71,10 +70,10 @@ export default function EPlaysPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [txStatus, setTxStatus] = useState<{ type: 'error' | 'success', message: string } | null>(null);
 
-  // Live Blockchain State
-  const [markets, setMarkets] = useState<Market[]>([]);
+  // Live Blockchain State (Instant cached recovery on tab change)
+  const [markets, setMarkets] = useState<Market[]>(cachedEPlaysMarkets || []);
   const [positions, setPositions] = useState<Position[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(!cachedEPlaysMarkets);
   const [showPayoutInfoModal, setShowPayoutInfoModal] = useState(false);
 
   // Default Fallback Markets if blockchain fetch fails or has 0 markets
@@ -192,6 +191,7 @@ export default function EPlaysPage() {
       }
 
       const activeMarkets = onChainMarkets.length > 0 ? onChainMarkets : MOCK_FALLBACK_MARKETS;
+      cachedEPlaysMarkets = activeMarkets;
       setMarkets(activeMarkets);
 
       // Fetch user positions from on-chain token accounts

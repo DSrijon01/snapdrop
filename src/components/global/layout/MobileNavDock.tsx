@@ -89,16 +89,29 @@ export function MobileNavDock() {
       return;
     }
 
+    let isMounted = true;
     connection.getBalance(publicKey).then((lamports) => {
-      setBalance(lamports / LAMPORTS_PER_SOL);
+      if (isMounted) setBalance(lamports / LAMPORTS_PER_SOL);
     }).catch(console.error);
 
-    const subId = connection.onAccountChange(publicKey, (acc) => {
-      setBalance(acc.lamports / LAMPORTS_PER_SOL);
-    });
+    let subId: number | null = null;
+    try {
+      subId = connection.onAccountChange(publicKey, (acc) => {
+        if (isMounted) setBalance(acc.lamports / LAMPORTS_PER_SOL);
+      });
+    } catch (e) {
+      console.debug("Account change subscription failed:", e);
+    }
 
     return () => {
-      connection.removeAccountChangeListener(subId);
+      isMounted = false;
+      if (subId !== null) {
+        try {
+          connection.removeAccountChangeListener(subId);
+        } catch (e) {
+          // ignore
+        }
+      }
     };
   }, [publicKey, connection]);
 
@@ -150,6 +163,7 @@ export function MobileNavDock() {
               <Link
                 key={tab.href}
                 href={tab.href}
+                prefetch={true}
                 className="relative flex flex-col items-center justify-center min-w-[56px] min-h-[48px] py-1 px-2 rounded-xl transition-all duration-200 select-none group active:scale-95"
               >
                 {/* Active Glow Pill */}
@@ -296,6 +310,7 @@ export function MobileNavDock() {
                         <Link
                           key={item.href}
                           href={item.href}
+                          prefetch={true}
                           onClick={() => setIsMenuOpen(false)}
                           className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
                             isActive

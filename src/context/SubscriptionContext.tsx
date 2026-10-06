@@ -134,6 +134,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const isDemo = wallet?.adapter.name === 'Street Sync Demo';
 
+  // In-memory cache to eliminate loading flash on route changes
+  const walletSubCache = React.useRef<Record<string, Record<string, Subscription>>>({});
+
   // Load subscriptions for the active wallet
   const loadSubscriptions = useCallback(() => {
     if (!publicKey) {
@@ -142,8 +145,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return;
     }
 
-    setLoading(true);
     const walletKey = publicKey.toBase58();
+    const cached = walletSubCache.current[walletKey];
+    if (cached) {
+      setSubscriptions(cached);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
     const loadedSubs: Record<string, Subscription> = {};
 
     Object.keys(MODULE_NAMES).forEach((moduleId) => {
@@ -151,10 +161,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const stored = localStorage.getItem(`street_sync_sub_${walletKey}_${moduleId}`);
         if (stored) {
           const parsed = JSON.parse(stored);
-          // Check if expired
           const now = Date.now();
           if (parsed.expiresAt && now > parsed.expiresAt) {
-            // Subscription expired
             loadedSubs[moduleId] = {
               moduleId,
               isSubscribed: false,
@@ -181,6 +189,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
     });
 
+    walletSubCache.current[walletKey] = loadedSubs;
     setSubscriptions(loadedSubs);
     setLoading(false);
   }, [publicKey]);
