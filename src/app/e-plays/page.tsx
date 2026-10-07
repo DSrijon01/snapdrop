@@ -193,6 +193,34 @@ export default function EPlaysPage() {
         console.warn("Failed to fetch on-chain markets, using mock fallback list", err);
       }
 
+      // Also check local custom/demo markets created in One Click Launch
+      try {
+        const storedCustom = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
+        for (const cm of storedCustom) {
+          if (!onChainMarkets.some(m => m.id === cm.id || m.title === cm.title)) {
+            onChainMarkets.unshift({
+              id: cm.id,
+              title: cm.title,
+              volume: cm.volume || "◎ 0.0 Vol",
+              yesPrice: cm.yesPrice || 0.50,
+              noPrice: cm.noPrice || 0.50,
+              category: cm.category || "Prediction Market",
+              resolved: cm.resolved || false,
+              outcome: cm.outcome !== undefined ? cm.outcome : null,
+              totalYesShares: cm.totalYesShares || 0,
+              totalNoShares: cm.totalNoShares || 0,
+              expiryTs: cm.expiryTs || 0,
+              marketStatePubkey: new PublicKey(cm.marketStatePubkey || cm.id),
+              yesMint: cm.yesMint ? new PublicKey(cm.yesMint) : PublicKey.default,
+              noMint: cm.noMint ? new PublicKey(cm.noMint) : PublicKey.default,
+              vault: cm.vault ? new PublicKey(cm.vault) : PublicKey.default,
+            });
+          }
+        }
+      } catch (storageErr) {
+        console.warn("Failed reading custom markets in e-plays page:", storageErr);
+      }
+
       const activeMarkets = onChainMarkets.length > 0 ? onChainMarkets : MOCK_FALLBACK_MARKETS;
       cachedEPlaysMarkets = activeMarkets;
       setMarkets(activeMarkets);
@@ -314,6 +342,14 @@ export default function EPlaysPage() {
 
   useEffect(() => {
     fetchMarketsAndPositions();
+  }, [fetchMarketsAndPositions]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      fetchMarketsAndPositions();
+    };
+    window.addEventListener('prediction_markets_updated', handleSync);
+    return () => window.removeEventListener('prediction_markets_updated', handleSync);
   }, [fetchMarketsAndPositions]);
 
   const handleOpenDrawer = (market: Market, side: 'yes' | 'no') => {

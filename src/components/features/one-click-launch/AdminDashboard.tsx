@@ -388,7 +388,7 @@ export const AdminDashboard: FC = () => {
             ) : activeTab === 'nftstudio' ? (
                 <NFTStudio />
             ) : activeTab === 'eplays' ? (
-                <CreateMarketEvent />
+                <CreateMarketEvent onSwitchToResolve={() => setActiveTab('eplays-resolve')} />
             ) : activeTab === 'treasury-nfts' ? (
                 <TreasuryNFTs nfts={nfts} />
             ) : activeTab === 'snbl-staking' ? (
