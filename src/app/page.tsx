@@ -1,6 +1,6 @@
 "use client";
 
-import { useWallet } from "@solana/wallet-adapter-react";
+import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { AnimatedBackground } from "@/components/global/theme-logo/AnimatedBackground";
 import { StackedNFTGallery } from "@/app/snbl/_components/StackedNFTGallery";
@@ -11,15 +11,48 @@ import { ForSale } from "@/components/features/nft-marketplace/ForSale";
 import { TokensGallery } from "@/components/features/nft-marketplace/TokensGallery";
 import { SellTokens } from "@/components/features/nft-marketplace/SellTokens";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { resumePendingTransactions, isInFlightActionActive } from "@/utils/pendingTransactions";
 
 function StreetSyncContent() {
+  const { connection } = useConnection();
   const { connected, publicKey } = useWallet();
   const [activeTab, setActiveTab] = useState<'stream' | 'for-sale' | 'marketplace' | 'sell-tokens'>('stream');
   const [subTab, setSubTab] = useState<'nfts' | 'tokens'>('nfts');
   const [refreshTrigger, setRefreshTrigger] = useState(0); // For gallery
   const [bgRefreshTrigger, setBgRefreshTrigger] = useState(0); // For background
+
+  useEffect(() => {
+    const handleSwitchTab = (e: any) => {
+      if (e?.detail?.tab) {
+        setActiveTab(e.detail.tab);
+        if (e.detail.subTab) {
+          setSubTab(e.detail.subTab);
+        }
+      }
+    };
+
+    const handleGlobalResumption = async () => {
+      if (isInFlightActionActive()) return;
+      const resumed = await resumePendingTransactions(connection);
+      if (resumed) {
+        setRefreshTrigger(prev => prev + 1);
+      }
+    };
+
+    handleGlobalResumption();
+    window.addEventListener("switch_tab", handleSwitchTab);
+    window.addEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
+    window.addEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
+    window.addEventListener("phantom_mobile_signed", handleGlobalResumption);
+    return () => {
+      window.removeEventListener("switch_tab", handleSwitchTab);
+      window.removeEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
+      window.removeEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
+      window.removeEventListener("phantom_mobile_signed", handleGlobalResumption);
+    };
+  }, [connection]);
 
   const handleMintSuccess = () => {
       // Trigger a refresh

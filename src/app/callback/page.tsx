@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { processPhantomMobileRedirect } from "@/lib/wallet/phantomDeeplink";
+import { Connection } from "@solana/web3.js";
+import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
+import { resumePendingTransactions } from "@/utils/pendingTransactions";
 import { Loader2, CheckCircle2 } from "lucide-react";
 
 export default function CallbackPage() {
@@ -12,25 +15,33 @@ export default function CallbackPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    try {
-      const result = processPhantomMobileRedirect();
-      if (result.handled) {
-        setStatus("Wallet action confirmed! Redirecting...");
+    const processCallback = async () => {
+      try {
+        const result = processPhantomMobileRedirect();
+        if (result.handled) {
+          setStatus("Wallet action confirmed! Resuming transaction...");
+          try {
+            const connection = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+            await resumePendingTransactions(connection);
+          } catch (resErr) {
+            console.warn("[CallbackPage] Resumption note:", resErr);
+          }
+        }
+      } catch (e) {
+        console.warn("[CallbackPage] Error parsing redirect:", e);
       }
-    } catch (e) {
-      console.warn("[CallbackPage] Error parsing redirect:", e);
-    }
 
-    const returnUrl = sessionStorage.getItem("phantom_mobile_return_url") || "/";
-    const cleanReturn = returnUrl.startsWith("http")
-      ? new URL(returnUrl).pathname
-      : returnUrl;
+      const returnUrl = sessionStorage.getItem("phantom_mobile_return_url") || "/";
+      const cleanReturn = returnUrl.startsWith("http")
+        ? new URL(returnUrl).pathname
+        : returnUrl;
 
-    const timer = setTimeout(() => {
-      router.replace(cleanReturn);
-    }, 600);
+      setTimeout(() => {
+        router.replace(cleanReturn);
+      }, 500);
+    };
 
-    return () => clearTimeout(timer);
+    processCallback();
   }, [router]);
 
   return (

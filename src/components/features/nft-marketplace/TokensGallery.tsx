@@ -8,6 +8,7 @@ import { useTokenMetadata } from "@/hooks/useTokenMetadata";
 import { motion, AnimatePresence } from "framer-motion";
 import { TokenListingModal } from "./TokenListingModal";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
+import { resumePendingTransactions } from "@/utils/pendingTransactions";
 
 type TokenAccountInfo = {
     mint: PublicKey;
@@ -36,7 +37,44 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         } else {
             setTokens([]);
         }
+
+        const handleUpdate = () => {
+            if (publicKey) {
+                delete walletTokensCache[publicKey.toBase58()];
+                fetchWalletTokens();
+            }
+        };
+
+        window.addEventListener("token_purchases_updated", handleUpdate);
+        window.addEventListener("token_listings_updated", handleUpdate);
+        window.addEventListener("storage", handleUpdate);
+        return () => {
+            window.removeEventListener("token_purchases_updated", handleUpdate);
+            window.removeEventListener("token_listings_updated", handleUpdate);
+            window.removeEventListener("storage", handleUpdate);
+        };
     }, [publicKey, connected, refreshTrigger]);
+
+    // Universal mobile deeplink resumption for token actions
+    useEffect(() => {
+        const handleResumption = async () => {
+            const resumed = await resumePendingTransactions(connection);
+            if (resumed && publicKey) {
+                delete walletTokensCache[publicKey.toBase58()];
+                fetchWalletTokens();
+            }
+        };
+
+        handleResumption();
+        window.addEventListener("phantom_mobile_tx_signed", handleResumption);
+        window.addEventListener("phantom_mobile_tx_sent", handleResumption);
+        window.addEventListener("phantom_mobile_signed", handleResumption);
+        return () => {
+            window.removeEventListener("phantom_mobile_tx_signed", handleResumption);
+            window.removeEventListener("phantom_mobile_tx_sent", handleResumption);
+            window.removeEventListener("phantom_mobile_signed", handleResumption);
+        };
+    }, [connection, publicKey]);
 
     const fetchWalletTokens = async () => {
         if (!publicKey) return;
@@ -68,8 +106,33 @@ export const TokensGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 return t.amount > 0 && t.decimals > 0;
             });
 
-            setTokens(filteredTokens);
-            walletTokensCache[walletKey] = filteredTokens;
+            // Optimistically merge recent local token purchases so user sees tokens immediately
+            let mergedTokens = [...filteredTokens];
+            try {
+                const purchases = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
+                for (const p of purchases) {
+                    if (p.type === "BUY" && p.mint) {
+                        const pMintStr = typeof p.mint === 'string' ? p.mint : p.mint.toBase58();
+                        const existing = mergedTokens.find(t => t.mint.toBase58() === pMintStr);
+                        const rawAmountNum = typeof p.amount === 'number' ? p.amount : parseFloat(String(p.amount).replace(/,/g, ''));
+                        const pDecimals = p.decimals ?? 9;
+                        const pRawBigInt = BigInt(Math.floor((rawAmountNum || 1) * Math.pow(10, pDecimals)));
+                        if (!existing && pRawBigInt > BigInt(0)) {
+                            mergedTokens.unshift({
+                                mint: new PublicKey(pMintStr),
+                                amount: pRawBigInt,
+                                decimals: pDecimals,
+                                programId: TOKEN_PROGRAM_ID,
+                            });
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn("Could not merge local purchases into tokens gallery:", e);
+            }
+
+            setTokens(mergedTokens);
+            walletTokensCache[walletKey] = mergedTokens;
         } catch (e) {
             console.error("Error fetching tokens", e);
             if (!walletTokensCache[walletKey]) {

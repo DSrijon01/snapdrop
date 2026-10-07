@@ -18,6 +18,7 @@ import { PublicKey, SystemProgram, ComputeBudgetProgram } from "@solana/web3.js"
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddress, createAssociatedTokenAccountInstruction } from "@solana/spl-token";
 import { getTokenMetadataWithCache } from "@/hooks/useTokenMetadata";
 import { resolveNftImageUrl, getFallbackImage, handleImageFallback, fetchJsonWithGatewayFailover } from "@/utils/nftImageResolver";
+import { resumePendingTransactions } from "@/utils/pendingTransactions";
 
 interface NFT {
     name: string;
@@ -303,10 +304,25 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
                 // Combine
                 let availableNfts = [...validListedNfts, ...walletNfts];
 
-                // --- LEGACY LOCAL STORAGE REMOVED ---
-                // We now rely purely on on-chain data.
-                // If you bought an item, it is transferred to your wallet.
-                // 'fetchAllDigitalAssetByOwner' will pick it up automatically in the next fetch cycle.
+                // Optimistically include recently listed NFTs by this user from localStorage
+                try {
+                    const localUserListings = JSON.parse(localStorage.getItem('street_sync_user_listings') || '[]');
+                    for (const ul of localUserListings) {
+                        if (ul.seller === walletKey && !availableNfts.some(n => n.mint === ul.mint)) {
+                            availableNfts.unshift({
+                                name: ul.name,
+                                image: ul.image,
+                                mint: ul.mint,
+                                uri: "",
+                                json: { name: ul.name, image: ul.image },
+                                ownerName: "Me (Listed)",
+                                ownerAddress: "Escrow",
+                                isListed: true,
+                                listingPrice: ul.price,
+                            } as NFT);
+                        }
+                    }
+                } catch (e) {}
 
                 setNfts(availableNfts);
                 walletNftsCache[walletKey] = availableNfts;
@@ -322,7 +338,44 @@ export const NFTGallery: FC<Props> = ({ refreshTrigger = 0 }) => {
         };
 
         fetchNFTs();
+
+        const handleUpdate = () => {
+            if (wallet.publicKey) {
+                delete walletNftsCache[wallet.publicKey.toBase58()];
+                fetchNFTs();
+            }
+        };
+
+        window.addEventListener('nft_listings_updated', handleUpdate);
+        window.addEventListener('nft_purchases_updated', handleUpdate);
+        window.addEventListener('storage', handleUpdate);
+        return () => {
+            window.removeEventListener('nft_listings_updated', handleUpdate);
+            window.removeEventListener('nft_purchases_updated', handleUpdate);
+            window.removeEventListener('storage', handleUpdate);
+        };
     }, [wallet.publicKey, umi, refreshTrigger]);
+
+    // Universal mobile deeplink resumption for NFT transactions
+    useEffect(() => {
+        const handleResumption = async () => {
+            const resumed = await resumePendingTransactions(connection);
+            if (resumed && wallet.publicKey) {
+                delete walletNftsCache[wallet.publicKey.toBase58()];
+                window.dispatchEvent(new Event('nft_purchases_updated'));
+            }
+        };
+
+        handleResumption();
+        window.addEventListener("phantom_mobile_tx_signed", handleResumption);
+        window.addEventListener("phantom_mobile_tx_sent", handleResumption);
+        window.addEventListener("phantom_mobile_signed", handleResumption);
+        return () => {
+            window.removeEventListener("phantom_mobile_tx_signed", handleResumption);
+            window.removeEventListener("phantom_mobile_tx_sent", handleResumption);
+            window.removeEventListener("phantom_mobile_signed", handleResumption);
+        };
+    }, [connection, wallet.publicKey]);
 
     // Render preview cards if wallet not connected or no NFTs minted yet
     const isDisconnected = !wallet.publicKey;

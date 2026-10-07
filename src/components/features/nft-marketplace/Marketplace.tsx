@@ -1,7 +1,8 @@
 "use client";
 
-import { FC, useState } from "react";
+import { FC, useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useConnection } from "@solana/wallet-adapter-react";
 import { useLaunchpad, BondingCurveAccount } from "../../../hooks/useLaunchpad";
 import { useTokenMetadata, metadataCache } from "../../../hooks/useTokenMetadata";
 import { CompanyDetailModal } from "../market-data/CompanyDetailModal";
@@ -10,6 +11,7 @@ import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
+import { resumePendingTransactions } from "@/utils/pendingTransactions";
 import { LayoutGrid, List } from "lucide-react";
 
 const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) => {
@@ -110,11 +112,28 @@ interface MarketplaceProps {
 }
 
 export const Marketplace: FC<MarketplaceProps> = () => {
+    const { connection } = useConnection();
     const { curves, fixedPriceVaults, loading } = useLaunchpad();
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [extensionFilter, setExtensionFilter] = useState<string>("all");
     const [mobileGrid, setMobileGrid] = useState<'grid' | 'single'>('grid');
+
+    // Universal mobile deeplink resumption for token purchases
+    useEffect(() => {
+        const handleResumption = async () => {
+            await resumePendingTransactions(connection);
+        };
+        handleResumption();
+        window.addEventListener("phantom_mobile_tx_signed", handleResumption);
+        window.addEventListener("phantom_mobile_tx_sent", handleResumption);
+        window.addEventListener("phantom_mobile_signed", handleResumption);
+        return () => {
+            window.removeEventListener("phantom_mobile_tx_signed", handleResumption);
+            window.removeEventListener("phantom_mobile_tx_sent", handleResumption);
+            window.removeEventListener("phantom_mobile_signed", handleResumption);
+        };
+    }, [connection]);
 
     const allItems = [...curves, ...fixedPriceVaults];
 

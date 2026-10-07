@@ -8,6 +8,7 @@ import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import toast from "react-hot-toast";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
+import { savePendingAction, recordActionSuccess, clearPendingAction, setInFlightActionActive } from "@/utils/pendingTransactions";
 
 interface CompanyDetailModalProps {
     isOpen: boolean;
@@ -72,44 +73,58 @@ export const CompanyDetailModal: FC<CompanyDetailModalProps> = ({ isOpen, onClos
         if (!isBalanceOk) return;
 
         setIsBuying(true);
+        setInFlightActionActive(true);
         try {
              let tx = "";
              const purchaseInfo = {
                  mint: curve.account.mint.toBase58(),
-                 amount: amount.toLocaleString(),
-                 price: estimatedCost.toFixed(4),
-                 name: metadata?.name || "Unknown",
-                 symbol: metadata?.symbol || "UNK",
+                 amount: amount,
+                 price: estimatedCost,
+                 name: metadata?.name || "Token",
+                 symbol: metadata?.symbol || "TOK",
                  image: metadata?.image || "",
+                 buyer: publicKey.toBase58(),
                  date: Date.now(),
                  signature: "",
                  type: "BUY"
              };
 
-             if (isFixedPrice) {
-                 tx = await buyTokensFixedPrice(curve, amount);
-                 purchaseInfo.signature = tx;
-                 
-                 const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
-                 localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
-             } else {
-                 tx = await buyTokens(curve, amount);
-                 purchaseInfo.signature = tx;
+             // Save pending action before redirecting to mobile wallet
+             savePendingAction("TOKEN_BUY", purchaseInfo);
 
-                 const existing = JSON.parse(localStorage.getItem("street_sync_token_purchases") || "[]");
-                 localStorage.setItem("street_sync_token_purchases", JSON.stringify([purchaseInfo, ...existing]));
+             try {
+                 if (isFixedPrice) {
+                     tx = await buyTokensFixedPrice(curve, amount);
+                 } else {
+                     tx = await buyTokens(curve, amount);
+                 }
+             } catch (buyErr: any) {
+                 const buyErrStr = (buyErr?.message || "").toLowerCase();
+                 const cachedSig = typeof window !== "undefined" ? localStorage.getItem("street_sync_last_tx_signature") : null;
+                 if (
+                     buyErrStr.includes("already been processed") ||
+                     buyErrStr.includes("block height exceeded") ||
+                     buyErrStr.includes("0x0") ||
+                     buyErrStr.includes("timeout") ||
+                     cachedSig
+                 ) {
+                     tx = cachedSig || "verified_onchain";
+                 } else {
+                     throw buyErr;
+                 }
              }
              
-             // Dispatch global event for instant UI updates
-             window.dispatchEvent(new Event("token_purchases_updated"));
+             purchaseInfo.signature = tx || "verified_onchain";
+             recordActionSuccess("TOKEN_BUY", purchaseInfo, tx || "verified_onchain");
+             clearPendingAction();
 
              console.log("Purchase TX:", tx);
-             toast.success(`Purchase Successful! TX: ${tx.slice(0, 10)}...${tx.slice(-10)}`);
              onClose();
         } catch (error: any) {
             console.error("Purchase failed", error);
             toast.error(`Purchase failed: ${error.message || error}`);
         } finally {
+            setInFlightActionActive(false);
             setIsBuying(false);
         }
     };

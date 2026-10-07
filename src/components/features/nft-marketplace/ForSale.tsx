@@ -12,6 +12,7 @@ import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
 import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
+import { savePendingAction, recordActionSuccess, clearPendingAction, resumePendingTransactions } from "@/utils/pendingTransactions";
 import bs58 from "bs58";
 
 const NFT3DGallery = dynamic(
@@ -113,7 +114,20 @@ export const ForSale: FC = () => {
                     };
                 }));
 
-                setActiveListings(resolvedItems);
+                // Merge user-created listings from localStorage for instantaneous updates on devnet
+                let mergedListings = [...resolvedItems];
+                try {
+                    const userListings = JSON.parse(localStorage.getItem('street_sync_user_listings') || '[]');
+                    for (const ul of userListings) {
+                        if (!mergedListings.some(m => m.mint === ul.mint)) {
+                            mergedListings.unshift(ul);
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Could not load user listings from storage:", e);
+                }
+
+                setActiveListings(mergedListings);
 
              } catch (err) {
                   console.error("Error fetching listings:", err);
@@ -139,73 +153,23 @@ export const ForSale: FC = () => {
 
     }, [connection, wallet, umi]);
 
-    // Mobile deeplink resumption for NFT buy if browser reloaded upon Phantom return
+    // Universal mobile deeplink resumption for NFT buy & NFT listing
     useEffect(() => {
-        const handlePendingMobileNftBuy = async () => {
-            if (typeof window === "undefined") return;
-            const rawPending = localStorage.getItem("street_sync_pending_nft_buy");
-            const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
-
-            if (!rawPending || !signedTxStr) return;
-
-            let pending: any;
-            try {
-                pending = JSON.parse(rawPending);
-            } catch {
-                localStorage.removeItem("street_sync_pending_nft_buy");
-                return;
-            }
-
-            if (Date.now() - pending.timestamp > 10 * 60 * 1000) {
-                localStorage.removeItem("street_sync_pending_nft_buy");
-                localStorage.removeItem("street_sync_last_signed_tx");
-                return;
-            }
-
-            try {
-                const rawBytes = bs58.decode(signedTxStr);
-                const signature = await withSolanaRetry(async () => {
-                    return await connection.sendRawTransaction(rawBytes, {
-                        skipPreflight: true,
-                        maxRetries: 5,
-                        preflightCommitment: "confirmed",
-                    });
-                });
-
-                await connection.confirmTransaction(signature, "confirmed");
-
-                const purchaseItem = { 
-                    ...pending.item, 
-                    buyer: pending.buyer, 
-                    purchaseDate: Date.now(),
-                    date: Date.now(),
-                    signature: signature 
-                };
-                const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
-                localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
-
-                window.dispatchEvent(new Event('storage'));
+        const handleResumption = async () => {
+            const resumed = await resumePendingTransactions(connection);
+            if (resumed) {
                 window.dispatchEvent(new Event('nft_listings_updated'));
-                window.dispatchEvent(new Event('nft_purchases_updated'));
-
-                setSuccessTx({
-                    signature: signature,
-                    name: pending.item.name,
-                    image: pending.item.image,
-                    price: pending.item.price
-                });
-            } catch (err) {
-                console.error("Failed to broadcast returned mobile NFT buy:", err);
-            } finally {
-                localStorage.removeItem("street_sync_pending_nft_buy");
-                localStorage.removeItem("street_sync_last_signed_tx");
             }
         };
 
-        handlePendingMobileNftBuy();
-        window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileNftBuy);
+        handleResumption();
+        window.addEventListener("phantom_mobile_tx_signed", handleResumption);
+        window.addEventListener("phantom_mobile_tx_sent", handleResumption);
+        window.addEventListener("phantom_mobile_signed", handleResumption);
         return () => {
-            window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileNftBuy);
+            window.removeEventListener("phantom_mobile_tx_signed", handleResumption);
+            window.removeEventListener("phantom_mobile_tx_sent", handleResumption);
+            window.removeEventListener("phantom_mobile_signed", handleResumption);
         };
     }, [connection]);
 
@@ -277,11 +241,10 @@ export const ForSale: FC = () => {
             const TREASURY_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
 
             // Persist pending buy in case mobile browser reloads upon return
-            localStorage.setItem('street_sync_pending_nft_buy', JSON.stringify({
-                item,
+            savePendingAction("NFT_BUY", {
+                ...item,
                 buyer: wallet.publicKey.toBase58(),
-                timestamp: Date.now()
-            }));
+            });
 
             const signature = await withSolanaRetry(async () => {
                 return await program.methods
@@ -301,22 +264,12 @@ export const ForSale: FC = () => {
                     .rpc({ skipPreflight: true });
             });
             
-            // --- STATE UPDATE: Add to Purchases (for the buyer) ---
-            // We still use localStorage for "My Purchases" history as we don't have an indexer
-            const purchaseItem = { 
-                ...item, 
-                buyer: wallet.publicKey.toBase58(), 
-                purchaseDate: Date.now(),
-                date: Date.now(),
-                signature: signature 
-            };
-            const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
-            localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
-
-            // Dispatch event to update Gallery & Listings immediately
-            window.dispatchEvent(new Event('storage'));
-            window.dispatchEvent(new Event('nft_listings_updated'));
-            window.dispatchEvent(new Event('nft_purchases_updated'));
+            // Record purchase success across local storage & dispatch events
+            recordActionSuccess("NFT_BUY", {
+                ...item,
+                buyer: wallet.publicKey.toBase58(),
+            }, signature);
+            clearPendingAction();
 
             // Show custom success modal with signature
             setSuccessTx({
