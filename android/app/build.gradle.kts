@@ -88,8 +88,10 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = true
-            if (hasReleaseSigning) {
-                signingConfig = signingConfigs.getByName("webShellRelease")
+            signingConfig = if (hasReleaseSigning) {
+                signingConfigs.getByName("webShellRelease")
+            } else {
+                signingConfigs.getByName("debug")
             }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),

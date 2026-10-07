@@ -8,6 +8,7 @@ import dynamic from "next/dynamic";
 import { InstallWalletModal } from "./InstallWalletModal";
 
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 const BaseWalletMultiButton = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -15,11 +16,12 @@ const BaseWalletMultiButton = dynamic(
 );
 
 export const ClientWalletMultiButton = (props: any) => {
-  const { connected, wallets } = useWallet();
+  const { connected, wallets, select, connect } = useWallet();
   const { setVisible } = useWalletModal();
   const [showInstallModal, setShowInstallModal] = useState(false);
   const [hasPendingInstall, setHasPendingInstall] = useState(false);
   const [hasMobileSession, setHasMobileSession] = useState(false);
+  const [isStandalone, setIsStandalone] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -28,6 +30,8 @@ export const ClientWalletMultiButton = (props: any) => {
 
       const session = getStoredPhantomSession();
       setHasMobileSession(Boolean(session && session.publicKey));
+
+      setIsStandalone(isStandaloneApp());
 
       const handleConnect = () => setHasMobileSession(true);
       const handleDisconnect = () => setHasMobileSession(false);
@@ -41,6 +45,22 @@ export const ClientWalletMultiButton = (props: any) => {
   }, []);
 
   const handleClick = () => {
+    // In standalone native Android app: directly connect via Mobile Wallet Adapter without browser redirects
+    if (isStandaloneApp()) {
+      const mwaWallet = wallets.find(
+        (w) => w.adapter.name === "Mobile Wallet Adapter"
+      );
+      if (mwaWallet) {
+        select(mwaWallet.adapter.name);
+        connect().catch((err) => {
+          console.debug("MWA direct connect error/rejected:", err);
+        });
+        return;
+      }
+      setVisible(true);
+      return;
+    }
+
     const isMobile = typeof window !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean(
       (window as any).solana ||
@@ -87,7 +107,7 @@ export const ClientWalletMultiButton = (props: any) => {
         className={`wallet-adapter-button ${props.className || ""}`}
         style={{ pointerEvents: 'auto', ...props.style }}
       >
-        {props.children || (hasPendingInstall ? "🔄 Reload to Connect" : "Select Wallet")}
+        {props.children || (hasPendingInstall ? "🔄 Reload to Connect" : isStandalone ? "Connect Mobile Wallet" : "Select Wallet")}
       </button>
 
       <InstallWalletModal

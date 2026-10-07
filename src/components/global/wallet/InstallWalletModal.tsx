@@ -6,6 +6,7 @@ import {
   initiatePhantomMobileConnect,
   initiateSolflareMobileConnect,
 } from "@/lib/wallet/phantomDeeplink";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import toast from "react-hot-toast";
 
 interface InstallWalletModalProps {
@@ -24,12 +25,14 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   const [isReloading, setIsReloading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isApp, setIsApp] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       const ua = navigator.userAgent;
       setIsMobile(/Android|iPhone|iPad|iPod/i.test(ua));
       setIsIOS(/iPhone|iPad|iPod/i.test(ua));
+      setIsApp(isStandaloneApp());
 
       const isPending = sessionStorage.getItem("street_sync_install_pending");
       if (isPending) {
@@ -174,7 +177,23 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {isMobile ? (
+                {isApp ? (
+                  <>
+                    <button
+                      onClick={handleConnectMwa}
+                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
+                    >
+                      <Smartphone className="w-4 h-4 fill-primary-foreground" />
+                      <span>Connect Mobile Wallet (MWA)</span>
+                    </button>
+                    <button
+                      onClick={onOpenStandardModal}
+                      className="w-full py-2.5 px-4 bg-secondary/80 text-muted-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border"
+                    >
+                      <span>Choose Other Wallet</span>
+                    </button>
+                  </>
+                ) : isMobile ? (
                   <>
                     <button
                       onClick={handleOpenPhantomApp}

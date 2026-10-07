@@ -3,12 +3,14 @@ package com.streetsync.app
 import android.annotation.SuppressLint
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -39,15 +41,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.streetsync.app.ui.theme.WebShellTheme
-import org.json.JSONObject
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,7 +75,6 @@ fun WebShellScreen() {
 
     var progress by remember { mutableFloatStateOf(0f) }
     var isLoading by remember { mutableStateOf(true) }
-    var isRefreshing by remember { mutableStateOf(false) }
     var hasError by remember { mutableStateOf(false) }
     var showSplash by remember { mutableStateOf(true) }
 
@@ -88,30 +86,57 @@ fun WebShellScreen() {
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.databaseEnabled = true
-                settings.loadWithOverviewMode = false
-                settings.useWideViewPort = false
-                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                settings.builtInZoomControls = true
-                settings.displayZoomControls = false
-                settings.setSupportZoom(true)
-                settings.javaScriptCanOpenWindowsAutomatically = true
-                settings.setSupportMultipleWindows(true)
-                settings.offscreenPreRaster = true
+
+                // Match dark mode theme to eliminate white flashes and GPU blanking
+                setBackgroundColor(android.graphics.Color.parseColor("#090a0f"))
+
+                // Eliminate overscroll bounce/stretch which causes GPU surface clipping on Android
+                overScrollMode = View.OVER_SCROLL_NEVER
+                isVerticalScrollBarEnabled = false
+                isHorizontalScrollBarEnabled = false
+                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+
+                settings.apply {
+                    javaScriptEnabled = true
+                    domStorageEnabled = true
+                    databaseEnabled = true
+                    loadWithOverviewMode = true
+                    useWideViewPort = true
+                    mixedContentMode = WebSettings.MIXED_CONTENT_COMPATIBILITY_MODE
+                    cacheMode = WebSettings.LOAD_DEFAULT
+                    allowFileAccess = false
+                    allowContentAccess = false
+                    setSupportZoom(false)
+                    builtInZoomControls = false
+                    displayZoomControls = false
+                    javaScriptCanOpenWindowsAutomatically = true
+                    // Keep in single window so external browser popups are not triggered unnecessarily
+                    setSupportMultipleWindows(false)
+                    // Disable offscreenPreRaster to avoid Android low memory killer dropping GPU raster
+                    offscreenPreRaster = false
+                }
+
+                // Native bridge marker for frontend Web3 detection
+                addJavascriptInterface(
+                    object {
+                        @android.webkit.JavascriptInterface
+                        fun isNativeApp(): Boolean = true
+
+                        @android.webkit.JavascriptInterface
+                        fun getAppVersion(): String = "1.0.2"
+                    },
+                    "StreetSyncNative",
+                )
 
                 val originalUa = settings.userAgentString
-                settings.userAgentString =
-                    appendUserAgentMarker(
-                        baseUserAgent = originalUa,
-                    )
+                settings.userAgentString = appendUserAgentMarker(baseUserAgent = originalUa)
 
                 if (BuildConfig.DEBUG) {
                     Log.i(TAG, "UA original: $originalUa")
                     Log.i(TAG, "UA verify:   ${settings.userAgentString}")
                 }
 
+                CookieManager.getInstance().setAcceptCookie(true)
                 CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
 
                 webChromeClient =
@@ -132,8 +157,8 @@ fun WebShellScreen() {
                         ) {
                             super.onPageFinished(view, url)
                             hasError = false
-                            isRefreshing = false
-                            probeViewportAndMaybePatch(view, BuildConfig.DEBUG)
+                            isLoading = false
+                            showSplash = false
                         }
 
                         override fun onReceivedError(
@@ -142,9 +167,10 @@ fun WebShellScreen() {
                             error: WebResourceError?,
                         ) {
                             super.onReceivedError(view, request, error)
-                            if (request?.isForMainFrame == true) {
+                            if (request?.isForMainFrame == true && (error?.errorCode ?: 0) != WebViewClient.ERROR_UNKNOWN) {
                                 hasError = true
-                                isRefreshing = false
+                                isLoading = false
+                                showSplash = false
                             }
                         }
                     }
@@ -152,23 +178,9 @@ fun WebShellScreen() {
                 loadUrl(startUrl)
             }
         }
-    val swipeRefreshLayout =
-        remember(webView) {
-            SwipeRefreshLayout(context).apply {
-                layoutParams =
-                    ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                    )
-                // Disable pull-to-refresh completely so scrolling up or down never triggers page reload
-                isEnabled = false
-                addView(webView)
-            }
-        }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(webView) {
         onDispose {
-            swipeRefreshLayout.removeView(webView)
             webView.destroy()
         }
     }
@@ -183,8 +195,7 @@ fun WebShellScreen() {
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
                 .windowInsetsPadding(WindowInsets.systemBars),
-        swipeRefreshLayout = swipeRefreshLayout,
-        isRefreshing = isRefreshing,
+        webView = webView,
         isLoading = isLoading,
         progress = progress,
         hasError = hasError,
@@ -192,7 +203,6 @@ fun WebShellScreen() {
         onRetry = {
             hasError = false
             isLoading = true
-            isRefreshing = false
             webView.reload()
         },
     )
@@ -201,8 +211,7 @@ fun WebShellScreen() {
 @Composable
 private fun WebViewLayer(
     modifier: Modifier,
-    swipeRefreshLayout: SwipeRefreshLayout,
-    isRefreshing: Boolean,
+    webView: WebView,
     isLoading: Boolean,
     progress: Float,
     hasError: Boolean,
@@ -212,15 +221,13 @@ private fun WebViewLayer(
     Box(modifier = modifier) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
-            factory = { swipeRefreshLayout },
+            factory = { webView },
             update = { view ->
                 view.layoutParams =
                     ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                view.isEnabled = false
-                view.isRefreshing = false
             },
         )
 
@@ -272,28 +279,8 @@ private fun WebViewLayer(
     }
 }
 
-private fun probeViewportAndMaybePatch(
-    webView: WebView,
-    isDebug: Boolean,
-) {
-    webView.evaluateJavascript(VIEWPORT_PROBE_AND_PATCH_SCRIPT) { rawResult ->
-        val decoded = decodeJavascriptStringResult(rawResult)
-        val parsed = runCatching { JSONObject(decoded) }.getOrNull()
-        val isBroken = parsed?.optBoolean("broken") == true
-        if (isDebug || isBroken) {
-            Log.i(TAG, "[VP] ${parsed?.toString() ?: decoded}")
-        }
-    }
-}
-
-private fun decodeJavascriptStringResult(rawResult: String?): String {
-    if (rawResult.isNullOrBlank() || rawResult == "null") return ""
-    return runCatching { JSONObject("{\"value\":$rawResult}").getString("value") }
-        .getOrDefault(rawResult)
-}
-
 private fun appendUserAgentMarker(baseUserAgent: String): String {
-    val marker = "Solana Mobile Web Shell"
+    val marker = "Solana Mobile Web Shell StreetSyncApp"
     if (marker.isEmpty()) return baseUserAgent.trim()
     return if (baseUserAgent.contains(marker)) {
         baseUserAgent.trim()
@@ -319,79 +306,3 @@ private fun normalizeHttpUrl(): String? {
 }
 
 private const val TAG = "WebShell"
-
-private val VIEWPORT_PROBE_AND_PATCH_SCRIPT =
-    """
-    (function () {
-      function measureViewport() {
-        var probe = document.createElement('div');
-        probe.style.cssText = 'position:fixed;top:0;left:0;width:0;visibility:hidden;pointer-events:none;';
-        document.documentElement.appendChild(probe);
-        probe.style.height = '100vh';
-        var vh = probe.getBoundingClientRect().height;
-        probe.style.height = '100dvh';
-        var dvh = probe.getBoundingClientRect().height;
-        document.documentElement.removeChild(probe);
-        return {
-          innerHeight: window.innerHeight || 0,
-          visualViewportHeight: window.visualViewport ? window.visualViewport.height : 0,
-          vh: vh,
-          dvh: dvh
-        };
-      }
-
-      function updateViewportVars() {
-        var px = Math.max(window.innerHeight || 0, 1) + 'px';
-        document.documentElement.style.setProperty('--webshell-vh-px', px);
-        document.documentElement.style.setProperty('--webshell-dvh-px', px);
-      }
-
-      function applyFallbackPatch() {
-        updateViewportVars();
-        if (!window.__webshell_viewport_resize_hook__) {
-          window.__webshell_viewport_resize_hook__ = true;
-          window.addEventListener('resize', updateViewportVars);
-          window.addEventListener('orientationchange', updateViewportVars);
-          if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', updateViewportVars);
-          }
-        }
-
-        var style = document.getElementById('__webshell_viewport_patch_style__');
-        if (!style) {
-          style = document.createElement('style');
-          style.id = '__webshell_viewport_patch_style__';
-          style.textContent = [
-            ':root { --webshell-vh-px: 100vh; --webshell-dvh-px: 100vh; }',
-            'html, body, #root, #app { min-height: var(--webshell-dvh-px) !important; height: auto !important; }',
-            '[class~="h-screen"], [class~="h-dvh"], [class*="h-screen"], [class*="h-dvh"] { height: var(--webshell-dvh-px) !important; }',
-            '[class~="min-h-screen"], [class~="min-h-dvh"], [class*="min-h-screen"], [class*="min-h-dvh"] { min-height: var(--webshell-dvh-px) !important; }',
-            '[class~="max-h-screen"], [class~="max-h-dvh"], [class*="max-h-screen"], [class*="max-h-dvh"] { max-height: var(--webshell-dvh-px) !important; }'
-          ].join('\\n');
-          document.documentElement.appendChild(style);
-        }
-
-        var classElements = document.querySelectorAll('[class]');
-        for (var i = 0; i < classElements.length; i++) {
-          var className = classElements[i].className;
-          if (typeof className !== 'string') continue;
-          if (className.indexOf('max-h-[calc(100dvh-1rem)]') !== -1 || className.indexOf('max-h-[calc(100vh-1rem)]') !== -1) {
-            classElements[i].style.maxHeight = 'calc(var(--webshell-dvh-px) - 1rem)';
-          }
-        }
-      }
-
-      var before = measureViewport();
-      var broken = before.innerHeight > 0 && (before.vh <= 1 || before.dvh <= 1);
-      if (broken) {
-        applyFallbackPatch();
-      }
-      var after = measureViewport();
-      return JSON.stringify({
-        broken: broken,
-        patched: broken,
-        before: before,
-        after: after
-      });
-    })();
-    """.trimIndent()

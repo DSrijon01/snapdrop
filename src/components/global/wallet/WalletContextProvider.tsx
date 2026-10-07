@@ -41,6 +41,7 @@ import {
   PhantomMobileWalletAdapter,
   PhantomMobileWalletName,
 } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 /**
  * Listens for newly installed wallet extensions on desktop and handles auto-reconnect on reload
@@ -99,7 +100,7 @@ const WalletExtensionWatcher: FC = () => {
   // 2. Tab focus listener when install is pending (desktop browser extensions only)
   useEffect(() => {
     if (typeof window === "undefined" || connected) return;
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp()) return;
 
     const handleTabFocus = () => {
       const isPending = sessionStorage.getItem("street_sync_install_pending");

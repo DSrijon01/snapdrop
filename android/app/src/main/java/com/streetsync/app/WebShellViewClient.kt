@@ -47,7 +47,7 @@ open class WebShellViewClient(
             }
 
             "http", "https" -> {
-                if (url.host.equals(scopeHostProvider.invoke(), ignoreCase = true)) {
+                if (isInternalHost(url.host, scopeHostProvider.invoke())) {
                     false
                 } else {
                     launchExternal(Intent(Intent.ACTION_VIEW, url))
@@ -91,6 +91,13 @@ open class WebShellViewClient(
         } catch (_: Exception) {
             // Malformed intent URL — silently ignore
         }
+    }
+
+    private fun isInternalHost(host: String?, scopeHost: String): Boolean {
+        if (host == null) return false
+        val cleanHost = host.removePrefix("www.").lowercase()
+        val cleanScope = scopeHost.removePrefix("www.").lowercase()
+        return cleanHost == cleanScope || cleanHost.endsWith(".$cleanScope") || host.equals("localhost", ignoreCase = true)
     }
 
     private fun launchExternal(intent: Intent): Boolean {
