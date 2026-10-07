@@ -20,7 +20,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   onClose,
   onOpenStandardModal,
 }) => {
-  const { wallets, select } = useWallet();
+  const { wallets, select, connect } = useWallet();
   const [installStarted, setInstallStarted] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);

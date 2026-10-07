@@ -32,6 +32,7 @@ export interface CarouselItem {
   title: string;
   subtitle?: string;
   images: string[];
+  image?: string;
   price?: number; // Only needed for candy machine summary
   candyMachineId?: string;
   totalMinted?: number;
@@ -310,7 +311,7 @@ export const StackedNFTGallery = () => {
                     id: nftMint.publicKey.toString(),
                     mint: nftMint.publicKey.toString(),
                     name: `${activeCard?.title || "Candy Machine Drop"} #${Date.now().toString().slice(-4)}`,
-                    image: activeCard?.image || "",
+                    image: activeCard?.images?.[0] || activeCard?.image || "",
                     price: activeCard?.price || 0,
                     seller: candyMachineIdStr,
                     buyer: wallet.publicKey.toBase58(),
@@ -419,7 +420,7 @@ export const StackedNFTGallery = () => {
                     id: mintAddress,
                     mint: mintAddress,
                     name: nftToBuy.name || expandedCard?.title || "Exclusive NFT",
-                    image: nftToBuy.image || expandedCard?.image || "",
+                    image: nftToBuy.image || expandedCard?.images?.[0] || expandedCard?.image || "",
                     price: nftToBuy.price || expandedCard?.price || 0,
                     seller: expandedCard?.adminWallet || "Admin Vault",
                     buyer: wallet.publicKey.toBase58(),
