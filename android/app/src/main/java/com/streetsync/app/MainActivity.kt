@@ -46,6 +46,23 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.streetsync.app.ui.theme.WebShellTheme
 
@@ -311,12 +328,66 @@ private fun WebViewLayer(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(MaterialTheme.colorScheme.background),
+                        .background(Color(0xFF090A0F)),
                 contentAlignment = Alignment.Center,
             ) {
-                CircularProgressIndicator()
+                SplashLoadingView()
             }
         }
+    }
+}
+
+@Composable
+private fun SplashLoadingView() {
+    val infiniteTransition = rememberInfiniteTransition(label = "splash_pulse")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.94f,
+        targetValue = 1.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "scale",
+    )
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = Modifier.fillMaxSize(),
+    ) {
+        Box(
+            modifier = Modifier
+                .size(112.dp)
+                .scale(scale)
+                .clip(RoundedCornerShape(26.dp))
+                .border(2.dp, Color(0xFFE3182D).copy(alpha = 0.7f), RoundedCornerShape(26.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Image(
+                painter = painterResource(id = R.drawable.ic_splash_logo),
+                contentDescription = "Street Sync Logo",
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "STREET SYNC",
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Black,
+                letterSpacing = 4.sp,
+                color = Color.White,
+            ),
+        )
+
+        Spacer(modifier = Modifier.height(18.dp))
+
+        CircularProgressIndicator(
+            modifier = Modifier.size(28.dp),
+            color = Color(0xFFE3182D),
+            strokeWidth = 3.dp,
+        )
     }
 }
 
