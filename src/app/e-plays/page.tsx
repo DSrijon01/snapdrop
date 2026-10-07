@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, Loader2, Coins, ArrowUpRight, Award, Trash2, ShieldAlert, Info } from 'lucide-react';
+import { X, TrendingUp, AlertCircle, Clock, ShoppingCart, Loader2, Coins, ArrowUpRight, Award, Trash2, ShieldAlert, Info, ArrowLeft } from 'lucide-react';
 import { useConnection, useWallet, useAnchorWallet } from '@solana/wallet-adapter-react';
 import { Program, AnchorProvider, Idl, BN } from '@coral-xyz/anchor';
 import { PublicKey, SystemProgram, Transaction, ComputeBudgetProgram } from '@solana/web3.js';
@@ -851,7 +851,7 @@ export default function EPlaysPage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={closeDrawer}
-              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-[60]"
             />
             
             <motion.div
@@ -859,22 +859,41 @@ export default function EPlaysPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 h-full w-full max-w-md bg-card/90 backdrop-blur-md border-l border-border/80 shadow-2xl z-50 flex flex-col"
+              className="fixed top-0 right-0 h-full w-full max-w-md bg-card/95 backdrop-blur-xl border-l border-border/80 shadow-2xl z-[70] flex flex-col font-sans"
             >
-              <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-xl font-black uppercase font-display tracking-tight flex items-center gap-2">
-                  <ShoppingCart className="w-5 h-5 text-primary" />
-                  Order Ticket
-                </h2>
-                <button 
-                  onClick={closeDrawer}
-                  className="p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors rounded-full"
-                >
-                  <X className="w-6 h-6" />
-                </button>
+              {/* Mobile Drag Indicator */}
+              <div className="pt-2.5 pb-1 flex justify-center md:hidden bg-card/95">
+                <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-8">
+              {/* Drawer Top Header with prominent Mobile Back Button & Desktop Close */}
+              <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-border/80 bg-card/95 backdrop-blur-md">
+                <button 
+                  onClick={closeDrawer}
+                  className="flex items-center gap-1.5 sm:gap-2 px-3 py-1.5 sm:py-2 rounded-xl bg-muted/80 hover:bg-muted active:scale-95 text-foreground text-xs sm:text-sm font-bold font-mono uppercase tracking-wider transition-all border border-border/60 hover:border-primary/40 group cursor-pointer"
+                  aria-label="Back to Markets"
+                >
+                  <ArrowLeft className="w-4 h-4 text-primary group-hover:-translate-x-0.5 transition-transform" />
+                  <span>Back to Markets</span>
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono font-bold uppercase text-muted-foreground px-2.5 py-1 rounded-lg bg-muted/50 border border-border/40">
+                    <ShoppingCart className="w-3.5 h-3.5 text-primary" />
+                    <span>Order Ticket</span>
+                  </div>
+                  <button 
+                    onClick={closeDrawer}
+                    className="p-1.5 sm:p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors rounded-xl border border-border/50 cursor-pointer active:scale-95"
+                    aria-label="Close Order Ticket"
+                    title="Close"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 flex flex-col gap-6 sm:gap-8 overscroll-contain">
                 
                 {txStatus && (
                     <div className={`p-4 rounded-xl text-xs border ${
@@ -1017,13 +1036,13 @@ export default function EPlaysPage() {
                 </div>
               )}
 
-              <div className="p-6 border-t border-border/60 bg-background/50 backdrop-blur-md">
+              <div className="p-4 sm:p-6 border-t border-border/60 bg-card/95 backdrop-blur-md sticky bottom-0 z-10 pb-8 sm:pb-6 flex flex-col gap-2">
                 <button 
                   onClick={handlePlaceOrder}
                   disabled={amountNum <= 0 || isSubmitting}
-                  className={`w-full flex items-center justify-center gap-2 py-4 text-base font-black uppercase tracking-widest transition-all rounded-xl ${
+                  className={`w-full flex items-center justify-center gap-2 py-3.5 sm:py-4 text-sm sm:text-base font-black uppercase tracking-widest transition-all rounded-xl cursor-pointer ${
                     amountNum > 0 && !isSubmitting
-                      ? 'bg-primary text-primary-foreground hover:bg-primary-hover hover:scale-[1.02] shadow-lg shadow-primary/20' 
+                      ? 'bg-primary text-primary-foreground hover:bg-primary-hover hover:scale-[1.01] active:scale-[0.99] shadow-lg shadow-primary/20' 
                       : 'bg-muted text-muted-foreground cursor-not-allowed border border-border opacity-70'
                   }`}
                 >
@@ -1032,6 +1051,14 @@ export default function EPlaysPage() {
                   ) : (
                       'Confirm Buy Trade'
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={closeDrawer}
+                  disabled={isSubmitting}
+                  className="w-full py-2 text-xs font-bold font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors active:scale-98 cursor-pointer text-center"
+                >
+                  Cancel & Return to Markets
                 </button>
               </div>
             </motion.div>
@@ -1042,7 +1069,7 @@ export default function EPlaysPage() {
       {/* Payout Calculation Clarification Modal */}
       <AnimatePresence>
         {showPayoutInfoModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[80] flex items-center justify-center p-4">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
