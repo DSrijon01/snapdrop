@@ -12,6 +12,7 @@ import toast from "react-hot-toast";
 import { PublicKey } from "@solana/web3.js";
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
+import { LayoutGrid, List } from "lucide-react";
 
 const SecondaryListingItem = ({ 
     listing, 
@@ -47,7 +48,7 @@ const SecondaryListingItem = ({
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 flex flex-col"
+            className="group relative bg-card border border-border rounded-xl sm:rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 flex flex-col"
         >
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
                 {metadata?.image ? (
@@ -60,50 +61,52 @@ const SecondaryListingItem = ({
                         }}
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground animate-pulse">Loading Image...</div>
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs font-mono animate-pulse">Loading...</div>
                 )}
                 
-                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex gap-1.5 sm:gap-2">
                     {isToken2022 ? (
-                        <TokenBadge type="TOKEN_2022" />
+                        <TokenBadge type="TOKEN_2022" className="px-1.5 py-0.5 text-[8px] sm:text-[10px] sm:px-2 sm:py-1" />
                     ) : (
-                        <TokenBadge type="SPL" />
+                        <TokenBadge type="SPL" className="px-1.5 py-0.5 text-[8px] sm:text-[10px] sm:px-2 sm:py-1" />
                     )}
                 </div>
             </div>
 
-            <div className="p-4 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-2">
-                    <div>
-                        <h3 className="font-bold text-foreground text-lg font-display uppercase truncate max-w-[150px]" title={metadata?.name}>{metadata?.name || "Loading..."}</h3>
-                        <p className="text-xs font-mono text-muted-foreground">{metadata?.symbol || "..."}</p>
+            <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-1 sm:mb-2 gap-1">
+                    <div className="min-w-0">
+                        <h3 className="font-bold text-foreground text-xs sm:text-lg font-display uppercase truncate max-w-[95px] sm:max-w-[150px]" title={metadata?.name}>
+                            {metadata?.name || "Loading..."}
+                        </h3>
+                        <p className="text-[10px] sm:text-xs font-mono text-muted-foreground truncate">{metadata?.symbol || "..."}</p>
                     </div>
-                    <div className="text-right">
-                        <span className="text-[10px] text-muted-foreground uppercase block">Amount</span>
-                        <span className="font-mono font-bold text-foreground">{displayAmount}</span>
+                    <div className="text-right shrink-0">
+                        <span className="text-[8px] sm:text-[10px] text-muted-foreground uppercase block font-mono">Amount</span>
+                        <span className="font-mono font-bold text-xs sm:text-sm text-foreground">{displayAmount}</span>
                     </div>
                 </div>
 
                 {metadata?.extensions && metadata.extensions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="hidden sm:flex flex-wrap gap-1.5 mb-4">
                         {metadata.extensions.map((ext: number) => (
                             <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
                         ))}
                     </div>
                 )}
 
-                <div className="flex justify-between items-end mt-auto pt-4 border-t border-border/50">
-                    <div>
-                        <div className="text-[10px] text-muted-foreground uppercase">Total Price</div>
-                        <div className="font-bold text-lg text-primary">{priceSol.toFixed(4)} SOL</div>
+                <div className="flex justify-between items-end mt-auto pt-2 sm:pt-4 border-t border-border/50 gap-1.5">
+                    <div className="min-w-0">
+                        <div className="text-[8px] sm:text-[10px] text-muted-foreground uppercase font-mono">Total</div>
+                        <div className="font-bold text-xs sm:text-lg text-primary truncate">{priceSol.toFixed(4)} <span className="text-[8px] sm:text-xs">SOL</span></div>
                     </div>
                     
-                    <div>
+                    <div className="shrink-0">
                         {isSeller ? (
                             <button
                                 onClick={onCancel}
                                 disabled={isCanceling}
-                                className="px-4 py-2 bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground font-bold text-xs uppercase tracking-wider rounded-xl transition-all disabled:opacity-50"
+                                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-destructive/10 border border-destructive/20 text-destructive hover:bg-destructive hover:text-destructive-foreground font-bold text-[10px] sm:text-xs uppercase tracking-wider rounded-lg sm:rounded-xl transition-all disabled:opacity-50"
                             >
                                 {isCanceling ? "..." : "Cancel"}
                             </button>
@@ -111,15 +114,15 @@ const SecondaryListingItem = ({
                             <button
                                 onClick={onBuy}
                                 disabled={isBuying || !walletAddress}
-                                className="px-4 py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-black text-xs uppercase tracking-widest rounded-xl transition-all disabled:opacity-50"
+                                className="px-2.5 sm:px-4 py-1.5 sm:py-2 bg-primary hover:bg-primary/95 text-primary-foreground font-black text-[10px] sm:text-xs uppercase tracking-wider rounded-lg sm:rounded-xl transition-all shadow-sm active:scale-95 disabled:opacity-50"
                             >
-                                {isBuying ? "..." : "Buy Now"}
+                                {isBuying ? "..." : "Buy"}
                             </button>
                         )}
                     </div>
                 </div>
                 
-                <div className="mt-2 text-[9px] text-muted-foreground font-mono truncate text-left">
+                <div className="hidden sm:block mt-2 text-[9px] text-muted-foreground font-mono truncate text-left">
                     Seller: {listing.account.seller.toBase58().slice(0, 4)}...{listing.account.seller.toBase58().slice(-4)}
                 </div>
             </div>
@@ -213,6 +216,7 @@ export const SellTokens: FC = () => {
     const [completedListingIds, setCompletedListingIds] = useState<string[]>([]);
     const [purchaseHistory, setPurchaseHistory] = useState<any[]>([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [mobileGrid, setMobileGrid] = useState<'grid' | 'single'>('grid');
 
     const loadPurchaseHistory = () => {
         try {
@@ -343,17 +347,54 @@ export const SellTokens: FC = () => {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-            <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between p-4 rounded-2xl border border-border bg-card shadow-md">
-                <h2 className="text-2xl font-black font-display uppercase italic">Secondary Token Market</h2>
+        <div className="container mx-auto p-2.5 sm:p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-5 sm:mb-8 items-start md:items-center justify-between p-3 sm:p-4 rounded-2xl border border-border bg-card shadow-md">
+                <div className="flex items-center justify-between w-full md:w-auto">
+                    <div>
+                        <h2 className="text-xl sm:text-2xl font-black font-display uppercase italic leading-tight">Secondary Token Market</h2>
+                        <div className="text-xs text-muted-foreground font-mono mt-0.5 sm:hidden">
+                            {filteredListings.length} listings
+                        </div>
+                    </div>
+
+                    {/* Mobile Layout Switcher: 2-Col Grid vs Single List */}
+                    <div className="flex sm:hidden items-center bg-muted/60 border border-border rounded-xl p-0.5 shrink-0">
+                        <button
+                            type="button"
+                            onClick={() => setMobileGrid('grid')}
+                            className={`p-1.5 rounded-lg transition-all ${
+                                mobileGrid === 'grid'
+                                    ? 'bg-background text-primary shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            title="2-Column Grid View"
+                            aria-label="2-Column Grid View"
+                        >
+                            <LayoutGrid size={15} />
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setMobileGrid('single')}
+                            className={`p-1.5 rounded-lg transition-all ${
+                                mobileGrid === 'single'
+                                    ? 'bg-background text-primary shadow-xs'
+                                    : 'text-muted-foreground hover:text-foreground'
+                            }`}
+                            title="Single Column Detailed View"
+                            aria-label="Single Column Detailed View"
+                        >
+                            <List size={15} />
+                        </button>
+                    </div>
+                </div>
                 
-                <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                     {/* Search */}
-                    <div className="relative w-full md:w-80">
+                    <div className="relative flex-1 md:w-80">
                         <input
                             type="text"
                             placeholder="Search mint / seller..."
-                            className="w-full bg-muted border border-border rounded-xl py-2.5 px-4 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full bg-muted border border-border rounded-xl py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all font-mono"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                         />
@@ -361,16 +402,17 @@ export const SellTokens: FC = () => {
                     {/* Toggle Sidebar Button */}
                     <button
                         onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold transition-all uppercase tracking-wide w-full sm:w-auto justify-center ${
+                        className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-bold transition-all uppercase tracking-wide shrink-0 ${
                             isSidebarOpen 
                                 ? 'bg-primary/10 border-primary/30 text-primary' 
                                 : 'bg-muted border-border text-muted-foreground hover:text-foreground'
                         }`}
                     >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                         </svg>
-                        {isSidebarOpen ? "Hide Live Feed" : "Show Live Feed"}
+                        <span className="hidden sm:inline">{isSidebarOpen ? "Hide Live Feed" : "Show Live Feed"}</span>
+                        <span className="sm:hidden">{isSidebarOpen ? "Hide Feed" : "Live Feed"}</span>
                     </button>
                 </div>
             </div>
@@ -383,7 +425,7 @@ export const SellTokens: FC = () => {
                             No active secondary token listings available.
                         </div>
                     ) : (
-                        <div className={`grid grid-cols-1 sm:grid-cols-2 ${isSidebarOpen ? 'xl:grid-cols-3' : 'lg:grid-cols-4'} gap-6`}>
+                        <div className={`grid ${mobileGrid === 'grid' ? 'grid-cols-2 gap-2.5' : 'grid-cols-1 gap-4'} sm:grid-cols-2 ${isSidebarOpen ? 'xl:grid-cols-3' : 'lg:grid-cols-4'} sm:gap-6`}>
                             {filteredListings.map((listing) => (
                                 <SecondaryListingItem
                                     key={listing.publicKey.toBase58()}

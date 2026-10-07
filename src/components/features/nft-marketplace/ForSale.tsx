@@ -10,7 +10,7 @@ import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import dynamic from "next/dynamic";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
-import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
+import { X, CheckCircle, Copy, ExternalLink, Box, LayoutGrid, List } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import bs58 from "bs58";
 
@@ -40,6 +40,7 @@ export const ForSale: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [viewMode, setViewMode] = useState<'grid' | '3d'>('grid');
+    const [mobileGrid, setMobileGrid] = useState<'grid' | 'single'>('grid');
     
     // State for Real On-Chain Listings
     const [activeListings, setActiveListings] = useState<any[]>([]);
@@ -406,7 +407,29 @@ export const ForSale: FC = () => {
                     
                      <div className="h-8 w-px bg-border mx-1" />
 
-                     {/* View Toggles */}
+                     {/* Mobile Grid Density Toggle (Mobile only, when in grid mode) */}
+                     {viewMode === 'grid' && (
+                         <div className="flex sm:hidden bg-muted rounded-xl p-1 border border-border">
+                            <button 
+                                onClick={() => setMobileGrid('grid')}
+                                className={`p-1.5 rounded-lg transition-colors ${mobileGrid === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                                title="2-Column Grid"
+                                aria-label="2-Column Grid"
+                            >
+                                <LayoutGrid size={16} />
+                            </button>
+                            <button 
+                                onClick={() => setMobileGrid('single')}
+                                className={`p-1.5 rounded-lg transition-colors ${mobileGrid === 'single' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
+                                title="Single Column View"
+                                aria-label="Single Column View"
+                            >
+                                <List size={16} />
+                            </button>
+                         </div>
+                     )}
+
+                     {/* View Toggles (Desktop & Mobile) */}
                      <div className="flex bg-muted rounded-xl p-1 border border-border">
                         <button 
                             onClick={() => setViewMode('grid')}
@@ -438,93 +461,93 @@ export const ForSale: FC = () => {
                     isBuying={isBuying} 
                 />
             ) : (
-                /* Grid */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                /* Grid - Mobile 2-column or 1-column toggle, Desktop preserved */
+                <div className={`grid ${mobileGrid === 'grid' ? 'grid-cols-2 gap-2.5' : 'grid-cols-1 gap-4'} sm:grid-cols-2 lg:grid-cols-4 sm:gap-6`}>
                     {filteredItems.map((item) => (
                         <motion.div
                             key={item.id}
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300"
+                            className="group relative bg-card border border-border rounded-xl sm:rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
                         >
                             {/* Image */}
                             <div className="overflow-hidden relative aspect-square w-full">
-                                <div className="absolute top-3 left-3 z-10 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md border border-white/10">
-                                    <span className="text-[10px] uppercase font-bold text-white tracking-widest">P2P Listing</span>
+                                <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-black/60 backdrop-blur-md px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/10">
+                                    <span className="text-[9px] sm:text-[10px] uppercase font-bold text-white tracking-wider sm:tracking-widest">P2P</span>
                                 </div>
 
-                            {/* 3D View Button */}
-                            <button
-                                type="button"
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelected3DItem({
-                                        id: item.id,
-                                        name: item.name,
-                                        rank: item.rank,
-                                        image: resolveNftImageUrl(item.image, item.name),
-                                        mint: item.mint,
-                                        price: item.price,
-                                        seller: item.seller,
-                                        raw: item,
-                                    });
-                                }}
-                                className="absolute top-3 right-3 z-20 px-2 py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
-                                title="View in 3D"
-                                aria-label="View in 3D"
-                            >
-                                <Box size={11} className="text-primary group-hover/btn:text-primary-foreground transition-colors" />
-                                <span>3D</span>
-                            </button>
+                                {/* 3D View Button */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelected3DItem({
+                                            id: item.id,
+                                            name: item.name,
+                                            rank: item.rank,
+                                            image: resolveNftImageUrl(item.image, item.name),
+                                            mint: item.mint,
+                                            price: item.price,
+                                            seller: item.seller,
+                                            raw: item,
+                                        });
+                                    }}
+                                    className="absolute top-2 right-2 sm:top-3 sm:right-3 z-20 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-black/60 hover:bg-primary text-white hover:text-primary-foreground backdrop-blur-md border border-white/15 hover:border-primary/50 rounded-md text-[9px] sm:text-[10px] font-mono font-bold flex items-center gap-1 transition-all shadow-md group/btn"
+                                    title="View in 3D"
+                                    aria-label="View in 3D"
+                                >
+                                    <Box size={10} className="text-primary group-hover/btn:text-primary-foreground transition-colors" />
+                                    <span>3D</span>
+                                </button>
 
-                            <img 
-                                src={resolveNftImageUrl(item.image, item.name)} 
-                                alt={item.name}
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                                onError={(e) => {
-                                    handleImageFallback(e, item.name);
-                                }}
-                            />
-                        </div>
-
-                        {/* Info */}
-                        <div className="p-4">
-                            <div>
-                                <div className="flex justify-between items-start mb-2">
-                                    <h3 className="font-bold text-foreground text-lg font-display uppercase">{item.name}</h3>
-                                    <span className="text-xs font-mono font-bold text-muted-foreground bg-muted px-2 py-1 rounded border border-border">#{item.rank}</span>
-                                </div>
+                                <img 
+                                    src={resolveNftImageUrl(item.image, item.name)} 
+                                    alt={item.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                                    onError={(e) => {
+                                        handleImageFallback(e, item.name);
+                                    }}
+                                />
                             </div>
-                            
-                            <div className="mt-4 pt-4 border-t border-border flex items-end justify-between">
+
+                            {/* Info */}
+                            <div className="p-2.5 sm:p-4 flex flex-col flex-1 justify-between">
                                 <div>
-                                    <div className="text-foreground font-bold text-lg flex items-center gap-1">
-                                        {item.price} <span className="text-xs text-muted-foreground font-normal">SOL</span>
+                                    <div className="flex justify-between items-start gap-1 mb-1.5 sm:mb-2">
+                                        <h3 className="font-bold text-foreground text-xs sm:text-lg font-display uppercase truncate" title={item.name}>{item.name}</h3>
+                                        <span className="text-[9px] sm:text-xs font-mono font-bold text-muted-foreground bg-muted px-1.5 sm:px-2 py-0.5 sm:py-1 rounded border border-border whitespace-nowrap">#{item.rank}</span>
                                     </div>
                                 </div>
-                                {
-                                    item.seller && wallet && item.seller === wallet.publicKey.toBase58() ? (
-                                        <button 
-                                            disabled
-                                            className="text-xs text-muted-foreground font-bold bg-muted px-2 py-1 rounded border border-border cursor-not-allowed"
-                                        >
-                                            You Listed This
-                                        </button>
-                                    ) : (
-                                        <button 
-                                            onClick={() => handleBuy(item)}
-                                            disabled={isBuying === item.id}
-                                            className="text-xs text-primary font-bold bg-primary/10 px-2 py-1 rounded border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50"
-                                        >
-                                            {isBuying === item.id ? "..." : "Buy Now"}
-                                        </button>
-                                    )
-                                }
+                                
+                                <div className="mt-2 sm:mt-4 pt-2 sm:pt-4 border-t border-border flex items-end justify-between gap-1">
+                                    <div>
+                                        <div className="text-foreground font-bold text-xs sm:text-lg flex items-center gap-0.5 sm:gap-1">
+                                            {item.price} <span className="text-[9px] sm:text-xs text-muted-foreground font-normal">SOL</span>
+                                        </div>
+                                    </div>
+                                    {
+                                        item.seller && wallet && item.seller === wallet.publicKey.toBase58() ? (
+                                            <button 
+                                                disabled
+                                                className="text-[9px] sm:text-xs text-muted-foreground font-bold bg-muted px-1.5 sm:px-2 py-1 rounded border border-border cursor-not-allowed whitespace-nowrap"
+                                            >
+                                                Yours
+                                            </button>
+                                        ) : (
+                                            <button 
+                                                onClick={() => handleBuy(item)}
+                                                disabled={isBuying === item.id}
+                                                className="text-[10px] sm:text-xs text-primary font-bold bg-primary/10 px-2 sm:px-2.5 py-1 rounded border border-primary/20 hover:bg-primary hover:text-primary-foreground transition-colors disabled:opacity-50 whitespace-nowrap"
+                                            >
+                                                {isBuying === item.id ? "..." : "Buy"}
+                                            </button>
+                                        )
+                                    }
+                                </div>
                             </div>
-                        </div>
-                    </motion.div>
-                ))}
-            </div>
+                        </motion.div>
+                    ))}
+                </div>
             )}
 
             <AnimatePresence>

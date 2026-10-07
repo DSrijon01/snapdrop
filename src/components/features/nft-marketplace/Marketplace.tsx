@@ -10,6 +10,7 @@ import { TokenBadge } from "../../global/wallet/TokenBadge";
 import { ExtensionType } from "@solana/spl-token";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
+import { LayoutGrid, List } from "lucide-react";
 
 const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) => {
     const isFixedPrice = !!item.account.pricePerToken;
@@ -34,7 +35,7 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="group relative bg-card border border-border rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col"
+            className="group relative bg-card border border-border rounded-xl sm:rounded-2xl overflow-hidden hover:border-primary/30 hover:shadow-xl transition-all duration-300 cursor-pointer flex flex-col"
             onClick={onClick}
         >
             <div className="aspect-square w-full bg-muted relative overflow-hidden shrink-0">
@@ -48,50 +49,54 @@ const MarketplaceItem = ({ item, onClick }: { item: any, onClick: () => void }) 
                         }}
                     />
                 ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">Loading...</div>
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs font-mono">Loading...</div>
                 )}
                 
-                <div className="absolute top-3 right-3 z-10 flex gap-2">
+                <div className="absolute top-2 right-2 sm:top-3 sm:right-3 z-10 flex gap-1.5 sm:gap-2">
                     {isToken2022 ? (
-                        <TokenBadge type="TOKEN_2022" />
+                        <TokenBadge type="TOKEN_2022" className="px-1.5 py-0.5 text-[8px] sm:text-[10px] sm:px-2 sm:py-1" />
                     ) : (
-                        <TokenBadge type="SPL" />
+                        <TokenBadge type="SPL" className="px-1.5 py-0.5 text-[8px] sm:text-[10px] sm:px-2 sm:py-1" />
                     )}
                 </div>
             </div>
 
-            <div className="p-4 flex flex-col flex-1">
-                <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-bold text-foreground text-lg font-display uppercase truncate max-w-[150px]" title={metadata?.name}>{metadata?.name || "Unknown"}</h3>
+            <div className="p-2.5 sm:p-4 flex flex-col flex-1">
+                <div className="flex justify-between items-start mb-0.5 sm:mb-1 gap-1">
+                    <h3 className="font-bold text-foreground text-xs sm:text-lg font-display uppercase truncate max-w-[105px] sm:max-w-[150px]" title={metadata?.name}>
+                        {metadata?.name || "Unknown"}
+                    </h3>
                     {isFixedPrice && (
-                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                            Fixed Price
+                        <span className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[8px] sm:text-[9px] px-1.5 sm:px-2 py-0.5 rounded-full font-bold uppercase tracking-wider shrink-0">
+                            Fixed
                         </span>
                     )}
                 </div>
-                <p className="text-xs font-mono text-muted-foreground mb-3">{metadata?.symbol || "..."}</p>
+                <p className="text-[10px] sm:text-xs font-mono text-muted-foreground mb-1.5 sm:mb-3 truncate">
+                    {metadata?.symbol || "..."}
+                </p>
                 
                 {metadata?.extensions && metadata.extensions.length > 0 && (
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    <div className="hidden sm:flex flex-wrap gap-1.5 mb-4">
                         {metadata.extensions.map((ext: number) => (
                             <TokenBadge key={ext} type="EXTENSION" extensionType={ext} />
                         ))}
                     </div>
                 )}
                 
-                <div className="flex justify-between items-end mt-auto">
-                    <div>
-                        <div className="text-[10px] text-muted-foreground uppercase">
-                            {isFixedPrice ? "Price Per Token" : "Price"}
+                <div className="flex justify-between items-end mt-auto pt-1.5 sm:pt-0 border-t border-border/40 sm:border-0">
+                    <div className="min-w-0">
+                        <div className="text-[8px] sm:text-[10px] text-muted-foreground uppercase font-mono">
+                            {isFixedPrice ? "Price" : "Price"}
                         </div>
-                        <div className="font-bold text-lg">
-                            {isFixedPrice ? parseFloat(price.toFixed(6)) : price.toFixed(6)} SOL
+                        <div className="font-bold text-xs sm:text-lg text-foreground truncate">
+                            {isFixedPrice ? parseFloat(price.toFixed(4)) : parseFloat(price.toFixed(5))} <span className="text-[8px] sm:text-xs text-muted-foreground">SOL</span>
                         </div>
                     </div>
-                     <div className="text-right">
-                        <div className="text-[10px] text-muted-foreground uppercase">Supply</div>
-                        <div className="font-bold text-lg">
-                            {(Number(supply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                     <div className="text-right shrink-0">
+                        <div className="text-[8px] sm:text-[10px] text-muted-foreground uppercase font-mono">Supply</div>
+                        <div className="font-bold text-xs sm:text-lg text-foreground font-mono">
+                            {(Number(supply) / Math.pow(10, decimals)).toLocaleString(undefined, { maximumFractionDigits: 0, notation: "compact" })}
                         </div>
                     </div>
                 </div>
@@ -109,6 +114,7 @@ export const Marketplace: FC<MarketplaceProps> = () => {
     const [selectedItem, setSelectedItem] = useState<any | null>(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [extensionFilter, setExtensionFilter] = useState<string>("all");
+    const [mobileGrid, setMobileGrid] = useState<'grid' | 'single'>('grid');
 
     const allItems = [...curves, ...fixedPriceVaults];
 
@@ -148,44 +154,76 @@ export const Marketplace: FC<MarketplaceProps> = () => {
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+        <div className="container mx-auto p-2.5 sm:p-4 md:p-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
              <CompanyDetailModal 
                 isOpen={!!selectedItem} 
                 onClose={() => setSelectedItem(null)} 
                 curve={selectedItem} 
             />
 
-            <div className="flex flex-col md:flex-row gap-4 mb-8 justify-between items-start md:items-center border-b border-border/40 pb-5">
-                 <div>
-                     <h2 className="text-3xl font-black font-display uppercase">Launchpad Market</h2>
-                     <div className="text-sm text-muted-foreground mt-1">
-                        {filteredItems.length} of {allItems.length} Live Tokens
+            <div className="flex flex-col md:flex-row gap-3 sm:gap-4 mb-5 sm:mb-8 justify-between items-start md:items-center border-b border-border/40 pb-4 sm:pb-5">
+                 <div className="flex items-center justify-between w-full md:w-auto">
+                     <div>
+                         <h2 className="text-xl sm:text-3xl font-black font-display uppercase tracking-tight">Launchpad Market</h2>
+                         <div className="text-xs sm:text-sm text-muted-foreground mt-0.5 sm:mt-1 font-mono">
+                            {filteredItems.length} of {allItems.length} Live Tokens
+                         </div>
+                     </div>
+
+                     {/* Mobile Layout Switcher: 2-Col Grid vs Single List */}
+                     <div className="flex sm:hidden items-center bg-muted/60 border border-border rounded-xl p-0.5 shrink-0">
+                         <button
+                             type="button"
+                             onClick={() => setMobileGrid('grid')}
+                             className={`p-1.5 rounded-lg transition-all ${
+                                 mobileGrid === 'grid'
+                                     ? 'bg-background text-primary shadow-xs'
+                                     : 'text-muted-foreground hover:text-foreground'
+                             }`}
+                             title="2-Column Grid View"
+                             aria-label="2-Column Grid View"
+                         >
+                             <LayoutGrid size={15} />
+                         </button>
+                         <button
+                             type="button"
+                             onClick={() => setMobileGrid('single')}
+                             className={`p-1.5 rounded-lg transition-all ${
+                                 mobileGrid === 'single'
+                                     ? 'bg-background text-primary shadow-xs'
+                                     : 'text-muted-foreground hover:text-foreground'
+                             }`}
+                             title="Single Column Detailed View"
+                             aria-label="Single Column Detailed View"
+                         >
+                             <List size={15} />
+                         </button>
                      </div>
                  </div>
 
-                 <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                 <div className="flex items-center gap-2 sm:gap-3 w-full md:w-auto">
                      {/* Search Input */}
                      <input
                          type="text"
-                         placeholder="Search name, symbol, mint..."
+                         placeholder="Search tokens..."
                          value={searchTerm}
                          onChange={(e) => setSearchTerm(e.target.value)}
-                         className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors w-full sm:w-64"
+                         className="bg-card border border-border rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-foreground outline-none focus:border-primary/50 transition-colors flex-1 md:w-64"
                      />
                      {/* Extension Dropdown */}
                      <select
                          value={extensionFilter}
                          onChange={(e) => setExtensionFilter(e.target.value)}
-                         className="bg-card border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:border-primary/50 transition-colors cursor-pointer w-full sm:w-auto min-w-[200px]"
+                         className="bg-card border border-border rounded-xl px-2.5 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm text-foreground outline-none focus:border-primary/50 transition-colors cursor-pointer shrink-0 max-w-[150px] sm:max-w-none sm:min-w-[180px]"
                      >
-                         <option value="all">All Token Types</option>
+                         <option value="all">All Types</option>
                          <option value="spl">Standard SPL</option>
-                         <option value="token-2022">Token-2022 (All)</option>
-                         <option value="1">↳ Transfer Fee Config</option>
-                         <option value="5">↳ Interest Bearing Config</option>
-                         <option value="4">↳ Non-Transferable (Soulbound)</option>
-                         <option value="8">↳ Permanent Delegate</option>
-                         <option value="15">↳ Token Group Parent</option>
+                         <option value="token-2022">Token-2022</option>
+                         <option value="1">↳ Transfer Fee</option>
+                         <option value="5">↳ Interest Bearing</option>
+                         <option value="4">↳ Soulbound</option>
+                         <option value="8">↳ Perm Delegate</option>
+                         <option value="15">↳ Group Parent</option>
                      </select>
                  </div>
             </div>
@@ -195,7 +233,7 @@ export const Marketplace: FC<MarketplaceProps> = () => {
                     No active tokens match your search or filter options.
                 </div>
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className={`grid ${mobileGrid === 'grid' ? 'grid-cols-2 gap-2.5' : 'grid-cols-1 gap-4'} sm:grid-cols-2 lg:grid-cols-4 sm:gap-6`}>
                     {filteredItems.map((item: any) => (
                         <MarketplaceItem 
                             key={item.publicKey.toString()} 

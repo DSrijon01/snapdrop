@@ -32,10 +32,10 @@ function StreetSyncContent() {
       
         {/* OpenSea-style Tab Navigation (Only visible when connected) */}
         <div className="border-b border-border bg-background/80 backdrop-blur-sm sticky top-[0px] z-40">
-            <div className="container mx-auto px-6 flex items-center gap-8 overflow-x-auto no-scrollbar">
+            <div className="container mx-auto px-3 sm:px-6 flex items-center gap-4 sm:gap-8 overflow-x-auto no-scrollbar">
                 <button
                     onClick={() => setActiveTab('stream')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
+                    className={`py-3 sm:py-4 text-xs sm:text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'stream' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -49,7 +49,7 @@ function StreetSyncContent() {
                 </button>
                 <button
                     onClick={() => setActiveTab('for-sale')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
+                    className={`py-3 sm:py-4 text-xs sm:text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'for-sale' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -63,7 +63,7 @@ function StreetSyncContent() {
                 </button>
                 <button
                     onClick={() => setActiveTab('marketplace')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
+                    className={`py-3 sm:py-4 text-xs sm:text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'marketplace' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
@@ -77,7 +77,7 @@ function StreetSyncContent() {
                 </button>
                 <button
                     onClick={() => setActiveTab('sell-tokens')}
-                    className={`py-4 text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
+                    className={`py-3 sm:py-4 text-xs sm:text-base font-bold font-display uppercase tracking-wide relative transition-colors whitespace-nowrap ${
                         activeTab === 'sell-tokens' ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
                 >
