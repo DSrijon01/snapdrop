@@ -302,6 +302,31 @@ export const StackedNFTGallery = () => {
             });
 
             setStatus("Mint successful!");
+
+            // Record mint in street_sync_purchases so SS Scan shows it
+            try {
+                const activeCard = cards.find(c => c.candyMachineId === candyMachineIdStr);
+                const mintRecord = {
+                    id: nftMint.publicKey.toString(),
+                    mint: nftMint.publicKey.toString(),
+                    name: `${activeCard?.title || "Candy Machine Drop"} #${Date.now().toString().slice(-4)}`,
+                    image: activeCard?.image || "",
+                    price: activeCard?.price || 0,
+                    seller: candyMachineIdStr,
+                    buyer: wallet.publicKey.toBase58(),
+                    purchaseDate: Date.now(),
+                    date: Date.now(),
+                    signature: nftMint.publicKey.toString(),
+                    type: "BUY",
+                };
+                const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
+                localStorage.setItem('street_sync_purchases', JSON.stringify([mintRecord, ...existingPurchases]));
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('nft_purchases_updated'));
+                window.dispatchEvent(new Event('nft_listings_updated'));
+            } catch (err) {
+                console.error("Failed to store mint in localStorage:", err);
+            }
         } catch (error: any) {
             console.error("Mint failed:", error);
             setStatus(`Mint failed: ${error.message || "Unknown error"}`);
@@ -369,7 +394,7 @@ export const StackedNFTGallery = () => {
 
             setStatus("Confirm Transaction in your wallet...");
             
-            await withSolanaRetry(async () => {
+            const txSig = await withSolanaRetry(async () => {
                 return await program.methods.buyNft()
                     .accounts({
                         buyer: wallet.publicKey,
@@ -387,6 +412,30 @@ export const StackedNFTGallery = () => {
             });
 
             setStatus("Purchase successful!");
+
+            // Record purchase to street_sync_purchases so SS Scan and Explorer capture it immediately
+            try {
+                const purchaseItem = {
+                    id: mintAddress,
+                    mint: mintAddress,
+                    name: nftToBuy.name || expandedCard?.title || "Exclusive NFT",
+                    image: nftToBuy.image || expandedCard?.image || "",
+                    price: nftToBuy.price || expandedCard?.price || 0,
+                    seller: expandedCard?.adminWallet || "Admin Vault",
+                    buyer: wallet.publicKey.toBase58(),
+                    purchaseDate: Date.now(),
+                    date: Date.now(),
+                    signature: typeof txSig === "string" ? txSig : "verified_onchain",
+                    type: "BUY",
+                };
+                const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
+                localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
+                window.dispatchEvent(new Event('storage'));
+                window.dispatchEvent(new Event('nft_purchases_updated'));
+                window.dispatchEvent(new Event('nft_listings_updated'));
+            } catch (saveErr) {
+                console.error("Failed to store purchase in localStorage:", saveErr);
+            }
 
             // Remove purchased NFT from local storage to update UI
             const stored = localStorage.getItem("street_sync_nft_gallery");

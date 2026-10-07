@@ -186,6 +186,7 @@ export const ForSale: FC = () => {
 
                 window.dispatchEvent(new Event('storage'));
                 window.dispatchEvent(new Event('nft_listings_updated'));
+                window.dispatchEvent(new Event('nft_purchases_updated'));
 
                 setSuccessTx({
                     signature: signature,
@@ -315,6 +316,7 @@ export const ForSale: FC = () => {
             // Dispatch event to update Gallery & Listings immediately
             window.dispatchEvent(new Event('storage'));
             window.dispatchEvent(new Event('nft_listings_updated'));
+            window.dispatchEvent(new Event('nft_purchases_updated'));
 
             // Show custom success modal with signature
             setSuccessTx({
