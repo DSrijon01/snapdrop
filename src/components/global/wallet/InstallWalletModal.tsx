@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import {
   initiatePhantomMobileConnect,
   initiateSolflareMobileConnect,
+  openInPhantomBrowser,
 } from "@/lib/wallet/phantomDeeplink";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import toast from "react-hot-toast";
@@ -43,6 +44,12 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
     }
   }, [isOpen]);
 
+  const handleOpenInPhantomBrowser = () => {
+    if (typeof window === "undefined") return;
+    openInPhantomBrowser();
+    onClose();
+  };
+
   const handleOpenPhantomApp = () => {
     if (typeof window === "undefined") return;
     initiatePhantomMobileConnect();
@@ -57,15 +64,13 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleConnectMwa = () => {
     const mwaWallet = wallets.find(
-      (w) => w.adapter.name === "Mobile Wallet Adapter" || w.adapter.name === "Phantom"
+      (w) => w.adapter.name === "Mobile Wallet Adapter"
     );
     if (mwaWallet) {
       select(mwaWallet.adapter.name);
-      setTimeout(() => {
-        connect().catch((err) => {
-          console.debug("MWA connect note:", err);
-        });
-      }, 50);
+      connect().catch((err) => {
+        console.debug("MWA connect note:", err);
+      });
       onClose();
     } else {
       onOpenStandardModal();
@@ -196,46 +201,57 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {isApp || isAndroid ? (
+                {isApp || isMobile || isAndroid ? (
                   <>
-                    <button
-                      onClick={handleConnectMwa}
-                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
-                    >
-                      <Zap className="w-4 h-4 fill-primary-foreground" />
-                      <span>Connect Phantom / Mobile Wallet</span>
-                    </button>
-                    <button
-                      onClick={onOpenStandardModal}
-                      className="w-full py-2.5 px-4 bg-secondary/80 text-muted-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border"
-                    >
-                      <span>Choose Other Wallet</span>
-                    </button>
-                  </>
-                ) : isMobile ? (
-                  <>
+                    {/* Option 1: Open in Phantom App (1-Tap Web3 Browser) - Official Phantom recommendation */}
+                    {!isApp && (
+                      <button
+                        onClick={handleOpenInPhantomBrowser}
+                        className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer"
+                      >
+                        <Zap className="w-4 h-4 fill-primary-foreground" />
+                        <span>Open in Phantom App (1-Tap Web3)</span>
+                      </button>
+                    )}
+
+                    {/* Option 2: 2-Way Phantom Deep Link (Universal link & streetsync:// scheme) */}
                     <button
                       onClick={handleOpenPhantomApp}
-                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
+                      className={`w-full py-3 px-4 ${
+                        isApp 
+                          ? "bg-primary text-primary-foreground font-black text-sm shadow-lg shadow-primary/25" 
+                          : "bg-secondary text-secondary-foreground font-bold text-xs border border-border shadow-sm"
+                      } font-display uppercase tracking-wider rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer`}
                     >
-                      <Zap className="w-4 h-4 fill-primary-foreground" />
-                      <span>Connect Phantom</span>
+                      <Zap className="w-4 h-4 fill-current" />
+                      <span>{isApp ? "Connect Phantom Wallet" : "Connect Phantom (Deep Link)"}</span>
                     </button>
 
+                    {/* Option 3: Solflare */}
                     <button
                       onClick={handleOpenSolflareApp}
-                      className="w-full py-3 px-4 bg-secondary text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border shadow-sm"
+                      className="w-full py-2.5 px-4 bg-secondary/80 text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border shadow-sm cursor-pointer"
                     >
                       <Zap className="w-4 h-4 text-orange-500 fill-orange-500" />
                       <span>Connect Solflare</span>
                     </button>
 
+                    {/* Option 4: Solana Mobile Wallet Adapter (Saga & Seed Vault) */}
+                    {(isAndroid || isApp) && (
+                      <button
+                        onClick={handleConnectMwa}
+                        className="w-full py-2.5 px-4 bg-muted/60 text-muted-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-muted active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border cursor-pointer"
+                      >
+                        <Smartphone className="w-4 h-4 text-primary" />
+                        <span>Solana Mobile (MWA / Seed Vault)</span>
+                      </button>
+                    )}
+
                     <button
-                      onClick={handleConnectMwa}
-                      className="w-full py-2.5 px-4 bg-muted/60 text-muted-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-muted active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border"
+                      onClick={onOpenStandardModal}
+                      className="w-full py-2 px-4 text-muted-foreground hover:text-foreground font-display uppercase tracking-wider font-bold text-[11px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                     >
-                      <Smartphone className="w-4 h-4 text-primary" />
-                      <span>Mobile Wallet Adapter (MWA)</span>
+                      <span>Choose Other Wallet</span>
                     </button>
                   </>
                 ) : (

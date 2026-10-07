@@ -37,6 +37,19 @@ open class WebShellViewClient(
                 true
             }
 
+            "streetsync" -> {
+                val query = url.query
+                val path = url.path?.removePrefix("/") ?: ""
+                val scopeHost = scopeHostProvider.invoke()
+                val targetUrl = if (!query.isNullOrBlank()) {
+                    "https://$scopeHost/$path?$query"
+                } else {
+                    "https://$scopeHost/$path"
+                }
+                view.loadUrl(targetUrl)
+                true
+            }
+
             "intent" -> {
                 handleIntentScheme(url.toString())
                 true

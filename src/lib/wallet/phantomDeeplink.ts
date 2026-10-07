@@ -1,6 +1,7 @@
 import nacl from "tweetnacl";
 import bs58 from "bs58";
 import { Buffer } from "buffer";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 const DAPP_KEYS_STORAGE_KEY = "street_sync_phantom_dapp_keys";
 const SESSION_STORAGE_KEY = "street_sync_phantom_mobile_session";
@@ -82,6 +83,36 @@ export function disconnectPhantomMobileSession(): void {
 }
 
 /**
+ * Calculates the appropriate redirect link.
+ * Inside standalone Android app, uses custom scheme streetsync://callback so Phantom returns
+ * into the Android native app instead of launching Google Chrome.
+ */
+export function getMobileRedirectLink(customRedirectUrl?: string): string {
+  if (typeof window === "undefined") return "https://streetsync-ss.com/";
+  if (isStandaloneApp()) {
+    return "streetsync://callback";
+  }
+  const currentUrl = customRedirectUrl || window.location.href;
+  return currentUrl.split("#")[0].split("?")[0];
+}
+
+/**
+ * Opens current dApp page directly in Phantom's in-app Web3 browser.
+ * In Phantom's in-app browser, window.phantom.solana is injected natively,
+ * completely eliminating redirect bounces, lost state, and timeout issues.
+ */
+export function openInPhantomBrowser(targetUrl?: string): void {
+  if (typeof window === "undefined") return;
+  const current = targetUrl || window.location.href;
+  const appOrigin = window.location.origin.startsWith("http")
+    ? window.location.origin
+    : "https://streetsync-ss.com";
+
+  const browseUrl = `https://phantom.com/ul/browse/${encodeURIComponent(current)}?ref=${encodeURIComponent(appOrigin)}`;
+  window.location.href = browseUrl;
+}
+
+/**
  * Universal Mobile Wallet Connect initiation for Phantom or Solflare.
  * Saves walletName in localStorage BEFORE redirecting so the wallet adapter
  * connects immediately upon returning.
@@ -101,7 +132,7 @@ export function initiateMobileWalletConnect(
 
   const dappKeyPair = getOrCreateDappKeyPair();
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+  const redirectLink = getMobileRedirectLink(currentUrl);
 
   sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
   sessionStorage.setItem("mobile_wallet_type", walletType);
@@ -120,7 +151,7 @@ export function initiateMobileWalletConnect(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/connect"
-      : "https://phantom.app/ul/v1/connect";
+      : "https://phantom.com/ul/v1/connect";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -163,7 +194,7 @@ export function initiatePhantomMobileSignMessage(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+  const redirectLink = getMobileRedirectLink(currentUrl);
   sessionStorage.setItem(PENDING_SIGN_KEY, bs58.encode(messageBytes));
 
   const params = new URLSearchParams({
@@ -177,7 +208,7 @@ export function initiatePhantomMobileSignMessage(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signMessage"
-      : "https://phantom.app/ul/v1/signMessage";
+      : "https://phantom.com/ul/v1/signMessage";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -213,7 +244,7 @@ export function initiatePhantomMobileSignTransaction(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+  const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
     dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
@@ -226,7 +257,7 @@ export function initiatePhantomMobileSignTransaction(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signTransaction"
-      : "https://phantom.app/ul/v1/signTransaction";
+      : "https://phantom.com/ul/v1/signTransaction";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -261,7 +292,7 @@ export function initiatePhantomMobileSignAllTransactions(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+  const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
     dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
@@ -274,7 +305,7 @@ export function initiatePhantomMobileSignAllTransactions(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signAllTransactions"
-      : "https://phantom.app/ul/v1/signAllTransactions";
+      : "https://phantom.com/ul/v1/signAllTransactions";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -311,7 +342,7 @@ export function initiatePhantomMobileSignAndSendTransaction(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = currentUrl.split("#")[0].split("?")[0];
+  const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
     dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
@@ -324,7 +355,7 @@ export function initiatePhantomMobileSignAndSendTransaction(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signAndSendTransaction"
-      : "https://phantom.app/ul/v1/signAndSendTransaction";
+      : "https://phantom.com/ul/v1/signAndSendTransaction";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }

@@ -45,24 +45,6 @@ export const ClientWalletMultiButton = (props: any) => {
   }, []);
 
   const handleClick = () => {
-    // In standalone native Android app: directly connect via Mobile Wallet Adapter without browser redirects
-    if (isStandaloneApp()) {
-      const mwaWallet = wallets.find(
-        (w) => w.adapter.name === "Mobile Wallet Adapter"
-      );
-      if (mwaWallet) {
-        select(mwaWallet.adapter.name);
-        setTimeout(() => {
-          connect().catch((err) => {
-            console.debug("MWA direct connect error/rejected:", err);
-          });
-        }, 50);
-        return;
-      }
-      setVisible(true);
-      return;
-    }
-
     const isMobile = typeof window !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean(
       (window as any).solana ||
@@ -78,8 +60,8 @@ export const ClientWalletMultiButton = (props: any) => {
       return;
     }
 
-    // On mobile web browsers (Safari, Chrome, etc.), show the mobile-optimized modal with 1-tap Phantom app deep-link & MWA
-    if (isMobile) {
+    // On mobile devices or standalone Android app without injected extension, show mobile-optimized modal
+    if (isMobile || isStandaloneApp()) {
       setShowInstallModal(true);
       return;
     }

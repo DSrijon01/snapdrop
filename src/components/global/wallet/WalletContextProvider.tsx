@@ -320,12 +320,11 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
       });
 
       // On mobile browsers without desktop extension:
-      // - On Android: Phantom and Solflare are MWA-compliant native wallets. Delegate to mwaAdapter to use native solana-wallet:// IPC
-      //   This completely eliminates premature browser redirect loops and partial signature issues on Android.
-      // - On iOS: MWA does not exist on iOS. Use PhantomMobileWalletAdapter for 2-way universal deeplinks.
+      // Both Android and iOS use PhantomMobileWalletAdapter for 2-way universal deeplinks to Phantom app.
+      // mwaAdapter is registered separately for Solana Mobile Standard / Saga / Seed Vault devices.
       const phantomAdapter =
         isMobile && !hasInjectedPhantom
-          ? new PhantomMobileWalletAdapter(isAndroid ? { mwaDelegate: mwaAdapter } : undefined)
+          ? new PhantomMobileWalletAdapter()
           : new PhantomWalletAdapter();
 
       return [

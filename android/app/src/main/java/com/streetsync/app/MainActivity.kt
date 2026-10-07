@@ -1,6 +1,7 @@
 package com.streetsync.app
 
 import android.annotation.SuppressLint
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -49,6 +50,8 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.streetsync.app.ui.theme.WebShellTheme
 
 class MainActivity : ComponentActivity() {
+    private var webViewRef: WebView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -56,7 +59,42 @@ class MainActivity : ComponentActivity() {
         WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
         setContent {
             WebShellTheme {
-                WebShellScreen()
+                WebShellScreen(
+                    onWebViewCreated = { webViewRef = it },
+                )
+            }
+        }
+        handleDeepLinkIntent(intent)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLinkIntent(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: Intent?) {
+        val uri = intent?.data ?: return
+        Log.i(TAG, "Incoming deep link: $uri")
+        val scheme = uri.scheme?.lowercase() ?: return
+        val webView = webViewRef ?: return
+
+        if (scheme == "streetsync") {
+            val query = uri.query
+            val path = uri.path?.removePrefix("/") ?: ""
+            val baseHost = (BuildConfig.SOLANA_MOBILE_URL.trim().ifBlank { "https://streetsync-ss.com/" }).removeSuffix("/")
+            val targetUrl = if (!query.isNullOrBlank()) {
+                "$baseHost/$path?$query"
+            } else {
+                "$baseHost/$path"
+            }
+            Log.i(TAG, "Routing streetsync deep link to WebView: $targetUrl")
+            webView.post {
+                webView.loadUrl(targetUrl)
+            }
+        } else if (scheme == "https" || scheme == "http") {
+            webView.post {
+                webView.loadUrl(uri.toString())
             }
         }
     }
@@ -64,7 +102,9 @@ class MainActivity : ComponentActivity() {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun WebShellScreen() {
+fun WebShellScreen(
+    onWebViewCreated: (WebView) -> Unit = {},
+) {
     val context = LocalContext.current
     val startUrl = remember { normalizeHttpUrl() }
     if (startUrl == null) {
@@ -81,6 +121,7 @@ fun WebShellScreen() {
     val webView =
         remember {
             WebView(context).apply {
+                onWebViewCreated(this)
                 layoutParams =
                     ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
