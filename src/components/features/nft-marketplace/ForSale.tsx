@@ -10,7 +10,7 @@ import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import dynamic from "next/dynamic";
 import { withSolanaRetry, createConfirmedProvider } from "@/utils/solanaRetry";
 import { NFT3DViewer } from "./NFT3DViewer";
-import { X, CheckCircle, Copy, ExternalLink, Box, LayoutGrid, List } from "lucide-react";
+import { X, CheckCircle, Copy, ExternalLink, Box } from "lucide-react";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import bs58 from "bs58";
 
@@ -40,7 +40,6 @@ export const ForSale: FC = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
     const [viewMode, setViewMode] = useState<'grid' | '3d'>('grid');
-    const [mobileGrid, setMobileGrid] = useState<'grid' | 'single'>('grid');
     
     // State for Real On-Chain Listings
     const [activeListings, setActiveListings] = useState<any[]>([]);
@@ -407,30 +406,8 @@ export const ForSale: FC = () => {
                     
                      <div className="h-8 w-px bg-border mx-1" />
 
-                     {/* Mobile Grid Density Toggle (Mobile only, when in grid mode) */}
-                     {viewMode === 'grid' && (
-                         <div className="flex sm:hidden bg-muted rounded-xl p-1 border border-border">
-                            <button 
-                                onClick={() => setMobileGrid('grid')}
-                                className={`p-1.5 rounded-lg transition-colors ${mobileGrid === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
-                                title="2-Column Grid"
-                                aria-label="2-Column Grid"
-                            >
-                                <LayoutGrid size={16} />
-                            </button>
-                            <button 
-                                onClick={() => setMobileGrid('single')}
-                                className={`p-1.5 rounded-lg transition-colors ${mobileGrid === 'single' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
-                                title="Single Column View"
-                                aria-label="Single Column View"
-                            >
-                                <List size={16} />
-                            </button>
-                         </div>
-                     )}
-
-                     {/* View Toggles (Desktop & Mobile) */}
-                     <div className="flex bg-muted rounded-xl p-1 border border-border">
+                     {/* View Toggles: Grid View (responsive mobile 2-col / desktop 4-col) vs 3D NFT Gallery */}
+                     <div className="flex bg-muted rounded-xl p-1 border border-border shrink-0">
                         <button 
                             onClick={() => setViewMode('grid')}
                             className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
@@ -461,8 +438,8 @@ export const ForSale: FC = () => {
                     isBuying={isBuying} 
                 />
             ) : (
-                /* Grid - Mobile 2-column or 1-column toggle, Desktop preserved */
-                <div className={`grid ${mobileGrid === 'grid' ? 'grid-cols-2 gap-2.5' : 'grid-cols-1 gap-4'} sm:grid-cols-2 lg:grid-cols-4 sm:gap-6`}>
+                /* Grid - Automatically 2-column on mobile / app view, 4-column on desktop */
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
                     {filteredItems.map((item) => (
                         <motion.div
                             key={item.id}
