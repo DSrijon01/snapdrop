@@ -436,12 +436,7 @@ function SessionsBoardContent() {
         {/* L2 Database Connection & Sync Controls */}
         <div className="relative z-10 shrink-0 flex flex-wrap items-center gap-2">
           <L2DatabaseSyncBadge
-            onOpenModal={() =>
-              openSIWSModal({
-                reason:
-                  "Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.",
-              })
-            }
+            onOpenModal={() => openSIWSModal()}
           />
 
           <button 

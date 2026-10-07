@@ -379,16 +379,27 @@ export function useFirebaseAuth() {
     []
   );
 
-  const effectiveUser =
-    firebaseUser ||
-    (localDevUid
-      ? ({
-          uid: localDevUid,
-          displayName:
-            localDisplayName || `User_${localDevUid.slice(0, 4)}`,
-          isAnonymous: isGuestSession,
-        } as User)
-      : null);
+  const isAuthenticated = Boolean(
+    (authenticatedWallet && authenticatedWallet.length >= 32) || isGuestSession
+  );
+
+  const effectiveUser: User | null = (authenticatedWallet && authenticatedWallet.length >= 32)
+    ? ({
+        ...(firebaseUser || {}),
+        uid: authenticatedWallet,
+        displayName:
+          localDisplayName ||
+          `${authenticatedWallet.slice(0, 4)}..${authenticatedWallet.slice(-4)}`,
+        isAnonymous: false,
+      } as unknown as User)
+    : isGuestSession
+    ? ({
+        ...(firebaseUser || {}),
+        uid: localDevUid || "guest",
+        displayName: localDisplayName || "Guest",
+        isAnonymous: true,
+      } as unknown as User)
+    : null;
 
   return {
     user: effectiveUser,
@@ -396,7 +407,7 @@ export function useFirebaseAuth() {
     isGuest: isGuestSession,
     loading,
     error,
-    isAuthenticated: !!effectiveUser,
+    isAuthenticated,
     loginWithWallet,
     loginAsGuest: signInAsBrowserGuest,
     logout: signOutFirebase,

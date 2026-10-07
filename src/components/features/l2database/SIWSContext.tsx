@@ -38,50 +38,27 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
   } = useFirebaseAuth();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalReason, setModalReason] = useState<string>("Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.");
+  const [modalReason, setModalReason] = useState<string>("");
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
-  // Auto-Signoff 1: When user disconnects their wallet
+  // Invalidate session ONLY when an actively connected wallet explicitly differs from the authenticated wallet
   useEffect(() => {
     if (loading) return;
 
-    // If user was signed in via SIWS wallet (not guest) and wallet is disconnected
-    if (isAuthenticated && !isGuest) {
-      if (!connected || !publicKey) {
-        console.log("[SIWS] Solana wallet disconnected. Automatically signing off SIWS session.");
-        logout().catch(console.error);
-        toast("SIWS signed out (wallet disconnected)", {
-          icon: "🔒",
-          style: {
-            borderRadius: "12px",
-            background: "#18181b",
-            color: "#fff",
-            border: "1px solid #27272a",
-          },
-        });
-      }
-    }
-  }, [connected, publicKey, isAuthenticated, isGuest, loading, logout]);
-
-  // Auto-Signoff 2: When active wallet changes to a different wallet than the SIWS signed wallet
-  useEffect(() => {
-    if (loading) return;
-
-    if (isAuthenticated && !isGuest && publicKey) {
+    if (isAuthenticated && !isGuest && connected && publicKey && authenticatedWallet) {
       const currentPubkey = publicKey.toBase58();
-      const currentAuthWallet =
-        authenticatedWallet ||
-        (user?.displayName && !user.displayName.includes("..") ? user.displayName : null) ||
-        (user?.uid && !user.uid.startsWith("guest_") && user.uid.length >= 32 ? user.uid : null);
-
-      if (currentAuthWallet && currentAuthWallet !== currentPubkey) {
+      if (
+        currentPubkey.length >= 32 &&
+        authenticatedWallet.length >= 32 &&
+        authenticatedWallet !== currentPubkey
+      ) {
         console.log(
-          `[SIWS] Active wallet changed from ${currentAuthWallet} to ${currentPubkey}. Invalidating previous SIWS session.`
+          `[SIWS] Active wallet changed from ${authenticatedWallet} to ${currentPubkey}. Invalidating previous session.`
         );
         logout().catch(console.error);
         toast(
-          `Wallet changed to ${currentPubkey.slice(0, 4)}..${currentPubkey.slice(-4)}. Please sign in with your active wallet.`,
+          `Wallet changed to ${currentPubkey.slice(0, 4)}..${currentPubkey.slice(-4)}. Please sign in with active wallet.`,
           {
             icon: "🔄",
             style: {
@@ -94,14 +71,10 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
         );
       }
     }
-  }, [publicKey, authenticatedWallet, user, isAuthenticated, isGuest, loading, logout]);
+  }, [connected, publicKey, authenticatedWallet, isAuthenticated, isGuest, loading, logout]);
 
   const openSIWSModal = useCallback((options?: { reason?: string; onSuccess?: () => void }) => {
-    if (options?.reason) {
-      setModalReason(options.reason);
-    } else {
-      setModalReason("Sign in with your Solana wallet to unlock real-time social posting, live chat, and virtual rooms.");
-    }
+    setModalReason(options?.reason || "");
     if (options?.onSuccess) {
       setPendingAction(() => options.onSuccess);
     } else {
@@ -198,7 +171,7 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
       action();
     } else {
       openSIWSModal({
-        reason: reason || "Sign In with Solana (SIWS) is required to perform this action.",
+        reason: reason || undefined,
         onSuccess: action,
       });
     }
