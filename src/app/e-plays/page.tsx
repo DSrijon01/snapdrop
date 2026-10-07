@@ -135,17 +135,20 @@ export default function EPlaysPage() {
     try {
       setLoading(true);
       
-      // Setup Anchor Provider
-      const dummyWallet = {
-          publicKey: publicKey || PublicKey.default,
-          signTransaction: async (tx: any) => tx,
-          signAllTransactions: async (txs: any[]) => txs,
-      };
-      const provider = new AnchorProvider(connection, (window as any).solana || dummyWallet, { preflightCommitment: 'confirmed' });
-      const program = new Program(idl as Idl, provider);
+      const activeWallet = (anchorWallet && anchorWallet.publicKey)
+        ? anchorWallet
+        : ((window as any)?.solana && (window as any)?.solana?.publicKey)
+        ? (window as any).solana
+        : {
+            publicKey: publicKey || PublicKey.default,
+            signTransaction: async (tx: any) => tx,
+            signAllTransactions: async (txs: any[]) => txs,
+          };
 
       let onChainMarkets: Market[] = [];
       try {
+        const provider = new AnchorProvider(connection, activeWallet, { preflightCommitment: 'confirmed' });
+        const program = new Program(idl as Idl, provider);
         const marketAccounts = await (program.account as any).marketState.all();
         onChainMarkets = marketAccounts.map((account: any) => {
           const accData = account.account as any;

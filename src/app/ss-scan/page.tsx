@@ -278,14 +278,20 @@ export default function SSScanPage() {
         const pendingBuy = localStorage.getItem("street_sync_pending_nft_buy");
         if (pendingBuy) {
           const parsed = JSON.parse(pendingBuy);
-          if (parsed && parsed.item && !realNftsRaw.some((n: any) => n.id === parsed.item.id || n.mint === parsed.item.mint)) {
-            realNftsRaw.unshift({
-              ...parsed.item,
-              buyer: parsed.buyer || "You",
-              date: parsed.timestamp || Date.now(),
-              signature: parsed.signature || "",
-              type: "BUY",
-            });
+          const itemData = parsed?.item || parsed;
+          if (itemData && (itemData.mint || itemData.id)) {
+            const targetMint = itemData.mint || itemData.id;
+            if (!realNftsRaw.some((n: any) => n.id === targetMint || n.mint === targetMint)) {
+              realNftsRaw.unshift({
+                ...itemData,
+                id: targetMint,
+                mint: targetMint,
+                buyer: itemData.buyer || (publicKey ? publicKey.toBase58() : "You"),
+                date: itemData.timestamp || Date.now(),
+                signature: itemData.signature || parsed.signature || "",
+                type: "BUY",
+              });
+            }
           }
         }
       } catch {}

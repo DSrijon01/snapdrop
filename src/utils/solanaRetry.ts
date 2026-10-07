@@ -96,6 +96,64 @@ export async function withSolanaRetry<T>(
     }
 }
 
+import bs58 from "bs58";
+
+/**
+ * Robustly confirms a transaction signature by polling getSignatureStatus first,
+ * with fallback to confirmTransaction, preventing false timeouts when lastValidBlockHeight
+ * is exceeded or websocket connections drop on mobile networks.
+ */
+export async function confirmTransactionRobust(
+    connection: Connection,
+    signature: string,
+    blockhash?: string,
+    lastValidBlockHeight?: number,
+    timeoutMs: number = 30000
+): Promise<boolean> {
+    const start = Date.now();
+    // 1. Poll getSignatureStatus directly first
+    while (Date.now() - start < timeoutMs) {
+        try {
+            const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
+            if (status.value?.confirmationStatus === "confirmed" || status.value?.confirmationStatus === "finalized") {
+                if (status.value.err) {
+                    throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(status.value.err)}`);
+                }
+                return true;
+            }
+        } catch (e: any) {
+            if (e?.message?.includes("failed on-chain")) throw e;
+        }
+        await new Promise((r) => setTimeout(r, 1200));
+    }
+
+    // 2. Fallback to standard confirmTransaction if status check didn't resolve in time
+    try {
+        if (blockhash && lastValidBlockHeight) {
+            const res = await connection.confirmTransaction(
+                { signature, blockhash, lastValidBlockHeight },
+                "confirmed"
+            );
+            if (res.value.err) {
+                throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(res.value.err)}`);
+            }
+        } else {
+            await connection.confirmTransaction(signature, "confirmed");
+        }
+        return true;
+    } catch (confErr: any) {
+        // Final sanity check: query one last time
+        const finalStatus = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
+        if (finalStatus.value?.confirmationStatus === "confirmed" || finalStatus.value?.confirmationStatus === "finalized") {
+            if (finalStatus.value.err) {
+                throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(finalStatus.value.err)}`);
+            }
+            return true;
+        }
+        throw confErr;
+    }
+}
+
 /**
  * Creates an AnchorProvider with cluster-wide 'confirmed' commitment and skipPreflight,
  * overriding sendAndConfirm with modern blockhash-aware confirmation and maxRetries
@@ -178,26 +236,38 @@ export function createConfirmedProvider(connection: Connection, wallet: any): An
                 throw signErr;
             }
 
-            const signature = await connection.sendRawTransaction(rawTx, {
-                skipPreflight: true,
-                maxRetries: 5,
-                preflightCommitment: "confirmed",
-                ...opts,
-            });
-
-            // Modern block-height-exceedance confirmation strategy instead of 30-second legacy timeout
-            const confirmation = await connection.confirmTransaction(
-                {
-                    signature,
-                    blockhash: latestBlockhash.blockhash,
-                    lastValidBlockHeight: latestBlockhash.lastValidBlockHeight,
-                },
-                "confirmed"
-            );
-
-            if (confirmation.value.err) {
-                throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(confirmation.value.err)}`);
+            let signature: string;
+            try {
+                signature = await connection.sendRawTransaction(rawTx, {
+                    skipPreflight: true,
+                    maxRetries: 5,
+                    preflightCommitment: "confirmed",
+                    ...opts,
+                });
+            } catch (sendErr: any) {
+                const sendErrStr = (sendErr?.message || "").toLowerCase();
+                // If already processed or submitted by background resumption, recover signature
+                if (sendErrStr.includes("already been processed") || sendErrStr.includes("0x0")) {
+                    const extractedSig = tx.signatures?.[0]
+                        ? (typeof tx.signatures[0] === "string" ? tx.signatures[0] : bs58.encode(tx.signatures[0]?.signature || tx.signatures[0]))
+                        : null;
+                    if (extractedSig) {
+                        signature = extractedSig;
+                    } else {
+                        throw sendErr;
+                    }
+                } else {
+                    throw sendErr;
+                }
             }
+
+            // Modern block-height-exceedance robust confirmation strategy
+            await confirmTransactionRobust(
+                connection,
+                signature,
+                latestBlockhash.blockhash,
+                latestBlockhash.lastValidBlockHeight
+            );
 
             return signature;
         };

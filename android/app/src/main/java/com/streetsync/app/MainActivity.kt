@@ -107,11 +107,65 @@ class MainActivity : ComponentActivity() {
             }
             Log.i(TAG, "Routing streetsync deep link to WebView: $targetUrl")
             webView.post {
-                webView.loadUrl(targetUrl)
+                val currentUrl = webView.url
+                // If WebView has an active page running, evaluate the deep link in-memory without page reload!
+                // This keeps in-flight transaction Promises and event listeners alive.
+                if (!currentUrl.isNullOrBlank() && !currentUrl.startsWith("data:") && !currentUrl.startsWith("about:")) {
+                    val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
+                    val js = """
+                        (function() {
+                            if (window.__handlePhantomDeepLink) {
+                                window.__handlePhantomDeepLink('$fullDeepLink');
+                            } else {
+                                const current = new URL(window.location.href);
+                                const incoming = new URL('$fullDeepLink');
+                                incoming.searchParams.forEach(function(v, k) { current.searchParams.set(k, v); });
+                                window.history.replaceState({}, document.title, current.toString());
+                                window.dispatchEvent(new Event('popstate'));
+                                if (window.processPhantomMobileRedirect) {
+                                    window.processPhantomMobileRedirect();
+                                }
+                            }
+                        })();
+                    """.trimIndent()
+                    Log.i(TAG, "Evaluating deep link callback in-memory via evaluateJavascript")
+                    webView.evaluateJavascript(js, null)
+                } else {
+                    Log.i(TAG, "Loading initial targetUrl: $targetUrl")
+                    webView.loadUrl(targetUrl)
+                }
             }
         } else if (scheme == "https" || scheme == "http") {
+            val query = uri.query
+            val isWalletCallback = query?.contains("nonce") == true ||
+                    query?.contains("phantom_encryption_public_key") == true ||
+                    query?.contains("errorCode") == true
+
             webView.post {
-                webView.loadUrl(uri.toString())
+                val currentUrl = webView.url
+                if (isWalletCallback && !currentUrl.isNullOrBlank() && !currentUrl.startsWith("data:") && !currentUrl.startsWith("about:")) {
+                    val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
+                    val js = """
+                        (function() {
+                            if (window.__handlePhantomDeepLink) {
+                                window.__handlePhantomDeepLink('$fullDeepLink');
+                            } else {
+                                const current = new URL(window.location.href);
+                                const incoming = new URL('$fullDeepLink');
+                                incoming.searchParams.forEach(function(v, k) { current.searchParams.set(k, v); });
+                                window.history.replaceState({}, document.title, current.toString());
+                                window.dispatchEvent(new Event('popstate'));
+                                if (window.processPhantomMobileRedirect) {
+                                    window.processPhantomMobileRedirect();
+                                }
+                            }
+                        })();
+                    """.trimIndent()
+                    Log.i(TAG, "Evaluating https wallet callback in-memory via evaluateJavascript")
+                    webView.evaluateJavascript(js, null)
+                } else {
+                    webView.loadUrl(uri.toString())
+                }
             }
         }
     }
@@ -145,14 +199,15 @@ fun WebShellScreen(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
 
-                // Match dark mode theme to eliminate white flashes and GPU blanking
+                // Match dark mode theme to eliminate white flashes
                 setBackgroundColor(android.graphics.Color.parseColor("#090a0f"))
 
                 // Eliminate overscroll bounce/stretch which causes GPU surface clipping on Android
                 overScrollMode = View.OVER_SCROLL_NEVER
                 isVerticalScrollBarEnabled = false
                 isHorizontalScrollBarEnabled = false
-                setLayerType(View.LAYER_TYPE_HARDWARE, null)
+                // Use default native hardware layer to prevent offscreen GPU texture exhaustion and black screens on complex CSS
+                setLayerType(View.LAYER_TYPE_NONE, null)
 
                 settings.apply {
                     javaScriptEnabled = true

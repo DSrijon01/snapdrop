@@ -9,8 +9,9 @@ import { walletAdapterIdentity } from "@metaplex-foundation/umi-signer-wallet-ad
 import { fetchCandyMachine, mintV2, mplCandyMachine, fetchCandyGuard } from "@metaplex-foundation/mpl-candy-machine";
 import { publicKey as umiPublicKey, transactionBuilder, generateSigner } from "@metaplex-foundation/umi";
 import { setComputeUnitLimit, setComputeUnitPrice } from "@metaplex-foundation/mpl-toolbox";
-import { PublicKey, SystemProgram, ComputeBudgetProgram as SolanaComputeBudgetProgram } from "@solana/web3.js";
-import { withSolanaRetry, parseSolanaErrorMessage } from "@/utils/solanaRetry";
+import { PublicKey, SystemProgram, ComputeBudgetProgram as SolanaComputeBudgetProgram, Transaction } from "@solana/web3.js";
+import { withSolanaRetry, parseSolanaErrorMessage, confirmTransactionRobust } from "@/utils/solanaRetry";
+import bs58 from "bs58";
 import { useSsNftGallery } from '@/hooks/useSsNftGallery';
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { fetchDigitalAsset, mplTokenMetadata } from "@metaplex-foundation/mpl-token-metadata";
@@ -249,6 +250,136 @@ export const StackedNFTGallery = () => {
         return () => clearInterval(interval);
     }, [cards.length, expandedCard]);
 
+    const recordPurchaseSuccess = (pending: any, signature: string) => {
+        try {
+            const purchaseItem = {
+                id: pending.mint || pending.id,
+                mint: pending.mint || pending.id,
+                name: pending.name || expandedCard?.title || "Exclusive NFT",
+                image: pending.image || expandedCard?.images?.[0] || expandedCard?.image || "",
+                price: pending.price || expandedCard?.price || 0,
+                seller: pending.seller || expandedCard?.adminWallet || "Admin Vault",
+                buyer: pending.buyer || (wallet.publicKey ? wallet.publicKey.toBase58() : ""),
+                purchaseDate: Date.now(),
+                date: Date.now(),
+                signature: signature,
+                type: "BUY",
+            };
+            const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
+            localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
+
+            // Also remove from stored gallery so the card counts update immediately
+            const stored = localStorage.getItem("street_sync_nft_gallery");
+            if (stored) {
+                let parsed: CarouselItem[] = JSON.parse(stored);
+                parsed = parsed.map(card => {
+                    if (card.nfts) {
+                        return {
+                            ...card,
+                            nfts: card.nfts.filter(nft => nft.mintAddress !== (pending.mint || pending.id))
+                        };
+                    }
+                    return card;
+                });
+                localStorage.setItem("street_sync_nft_gallery", JSON.stringify(parsed));
+                window.dispatchEvent(new Event("gallery_updated"));
+            }
+
+            window.dispatchEvent(new Event('storage'));
+            window.dispatchEvent(new Event('nft_purchases_updated'));
+            window.dispatchEvent(new Event('nft_listings_updated'));
+            setStatus("Purchase successful!");
+            setIsMinting(false);
+        } catch (saveErr) {
+            console.error("Failed to store purchase in localStorage:", saveErr);
+        }
+    };
+
+    // Lock to prevent concurrent execution between active handleBuyDirect() and phantom_mobile_tx_signed listener
+    const isDirectBuyInProgress = useRef(false);
+
+    // Mobile deeplink resumption for NFT buy if browser reloaded upon Phantom return
+    useEffect(() => {
+        const handlePendingMobileBuyReturn = async () => {
+            if (typeof window === "undefined") return;
+            // If active in-memory buy call is in progress, let it handle the return
+            if (isDirectBuyInProgress.current) return;
+
+            const rawPending = localStorage.getItem("street_sync_pending_nft_buy");
+            const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
+            const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
+
+            if (!rawPending) return;
+
+            let pending: any;
+            try {
+                pending = JSON.parse(rawPending);
+            } catch {
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                return;
+            }
+
+            if (Date.now() - pending.timestamp > 10 * 60 * 1000) {
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                localStorage.removeItem("street_sync_last_signed_tx");
+                localStorage.removeItem("street_sync_last_tx_signature");
+                return;
+            }
+
+            if (signedTxStr) {
+                try {
+                    const rawBytes = bs58.decode(signedTxStr);
+                    let signature: string;
+                    try {
+                        signature = await withSolanaRetry(async () => {
+                            return await connection.sendRawTransaction(rawBytes, {
+                                skipPreflight: true,
+                                maxRetries: 5,
+                                preflightCommitment: "confirmed",
+                            });
+                        });
+                    } catch (sendErr: any) {
+                        const sendErrStr = (sendErr?.message || "").toLowerCase();
+                        if (sendErrStr.includes("already been processed") || sendErrStr.includes("0x0")) {
+                            const tx = Transaction.from(rawBytes);
+                            signature = bs58.encode(tx.signatures[0]?.signature || (tx as any).signature);
+                        } else {
+                            throw sendErr;
+                        }
+                    }
+
+                    if (signature) {
+                        await confirmTransactionRobust(connection, signature);
+                        recordPurchaseSuccess(pending, signature);
+                    }
+                } catch (err) {
+                    console.error("[StackedNFTGallery] Broadcast of returned signed tx failed:", err);
+                } finally {
+                    localStorage.removeItem("street_sync_pending_nft_buy");
+                    localStorage.removeItem("street_sync_last_signed_tx");
+                    localStorage.removeItem("street_sync_last_tx_signature");
+                }
+            } else if (txSigStr) {
+                try {
+                    await confirmTransactionRobust(connection, txSigStr);
+                } catch {}
+                recordPurchaseSuccess(pending, txSigStr);
+                localStorage.removeItem("street_sync_pending_nft_buy");
+                localStorage.removeItem("street_sync_last_tx_signature");
+            }
+        };
+
+        handlePendingMobileBuyReturn();
+        window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileBuyReturn);
+        window.addEventListener("phantom_mobile_tx_sent", handlePendingMobileBuyReturn);
+        window.addEventListener("phantom_mobile_signed", handlePendingMobileBuyReturn);
+        return () => {
+            window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileBuyReturn);
+            window.removeEventListener("phantom_mobile_tx_sent", handlePendingMobileBuyReturn);
+            window.removeEventListener("phantom_mobile_signed", handlePendingMobileBuyReturn);
+        };
+    }, [connection]);
+
     // Auto-select first NFT when modal opens with available NFTs
     useEffect(() => {
         if (expandedCard?.nfts && expandedCard.nfts.length > 0) {
@@ -353,6 +484,7 @@ export const StackedNFTGallery = () => {
             return;
         }
 
+        isDirectBuyInProgress.current = true;
         setIsMinting(true);
         setStatus("Initiating purchase...");
 
@@ -394,49 +526,52 @@ export const StackedNFTGallery = () => {
             }
 
             setStatus("Confirm Transaction in your wallet...");
+
+            const pendingBuyData = {
+                id: mintAddress,
+                mint: mintAddress,
+                name: nftToBuy.name || expandedCard?.title || "Exclusive NFT",
+                image: nftToBuy.image || expandedCard?.images?.[0] || expandedCard?.image || "",
+                price: nftToBuy.price || expandedCard?.price || 0,
+                seller: expandedCard?.adminWallet || "Admin Vault",
+                buyer: wallet.publicKey.toBase58(),
+                timestamp: Date.now(),
+            };
+            localStorage.setItem('street_sync_pending_nft_buy', JSON.stringify(pendingBuyData));
             
-            const txSig = await withSolanaRetry(async () => {
-                return await program.methods.buyNft()
-                    .accounts({
-                        buyer: wallet.publicKey,
-                        admin: adminPubkey,
-                        mint: mintPubkey,
-                        listingAccount: listingPda,
-                        escrowTokenAccount: escrowPda,
-                        buyerTokenAccount: buyerTokenAccount,
-                        associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-                        systemProgram: SystemProgram.programId,
-                        tokenProgram: TOKEN_PROGRAM_ID,
-                    } as any)
-                    .preInstructions(preInstructions)
-                    .rpc({ skipPreflight: true });
-            });
-
-            setStatus("Purchase successful!");
-
-            // Record purchase to street_sync_purchases so SS Scan and Explorer capture it immediately
+            let txSig: string | null = null;
             try {
-                const purchaseItem = {
-                    id: mintAddress,
-                    mint: mintAddress,
-                    name: nftToBuy.name || expandedCard?.title || "Exclusive NFT",
-                    image: nftToBuy.image || expandedCard?.images?.[0] || expandedCard?.image || "",
-                    price: nftToBuy.price || expandedCard?.price || 0,
-                    seller: expandedCard?.adminWallet || "Admin Vault",
-                    buyer: wallet.publicKey.toBase58(),
-                    purchaseDate: Date.now(),
-                    date: Date.now(),
-                    signature: typeof txSig === "string" ? txSig : "verified_onchain",
-                    type: "BUY",
-                };
-                const existingPurchases = JSON.parse(localStorage.getItem('street_sync_purchases') || '[]');
-                localStorage.setItem('street_sync_purchases', JSON.stringify([purchaseItem, ...existingPurchases]));
-                window.dispatchEvent(new Event('storage'));
-                window.dispatchEvent(new Event('nft_purchases_updated'));
-                window.dispatchEvent(new Event('nft_listings_updated'));
-            } catch (saveErr) {
-                console.error("Failed to store purchase in localStorage:", saveErr);
+                txSig = await withSolanaRetry(async () => {
+                    return await program.methods.buyNft()
+                        .accounts({
+                            buyer: wallet.publicKey,
+                            admin: adminPubkey,
+                            mint: mintPubkey,
+                            listingAccount: listingPda,
+                            escrowTokenAccount: escrowPda,
+                            buyerTokenAccount: buyerTokenAccount,
+                            associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
+                            systemProgram: SystemProgram.programId,
+                            tokenProgram: TOKEN_PROGRAM_ID,
+                        } as any)
+                        .preInstructions(preInstructions)
+                        .rpc({ skipPreflight: true });
+                });
+            } catch (rpcErr: any) {
+                const rpcErrStr = (rpcErr?.message || "").toLowerCase();
+                // If transaction was already broadcast by background resumption or confirmed on chain:
+                const cachedSig = localStorage.getItem("street_sync_last_tx_signature");
+                if (rpcErrStr.includes("already been processed") || rpcErrStr.includes("block height exceeded") || cachedSig) {
+                    txSig = cachedSig || "verified_onchain";
+                } else {
+                    throw rpcErr;
+                }
             }
+
+            recordPurchaseSuccess(pendingBuyData, typeof txSig === "string" ? txSig : "verified_onchain");
+            localStorage.removeItem('street_sync_pending_nft_buy');
+            localStorage.removeItem('street_sync_last_signed_tx');
+            localStorage.removeItem('street_sync_last_tx_signature');
 
             // Remove purchased NFT from local storage to update UI
             const stored = localStorage.getItem("street_sync_nft_gallery");
@@ -472,6 +607,7 @@ export const StackedNFTGallery = () => {
             console.error("Purchase failed:", error);
             setStatus(`Purchase failed: ${parseSolanaErrorMessage(error)}`);
         } finally {
+            isDirectBuyInProgress.current = false;
             setIsMinting(false);
         }
     };

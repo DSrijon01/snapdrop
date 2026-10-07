@@ -38,15 +38,15 @@ open class WebShellViewClient(
             }
 
             "streetsync" -> {
-                val query = url.query
-                val path = url.path?.removePrefix("/") ?: ""
-                val scopeHost = scopeHostProvider.invoke()
-                val targetUrl = if (!query.isNullOrBlank()) {
-                    "https://$scopeHost/$path?$query"
-                } else {
-                    "https://$scopeHost/$path"
-                }
-                view.loadUrl(targetUrl)
+                val fullDeepLink = url.toString().replace("\\", "\\\\").replace("'", "\\'")
+                val js = """
+                    (function() {
+                        if (window.__handlePhantomDeepLink) {
+                            window.__handlePhantomDeepLink('$fullDeepLink');
+                        }
+                    })();
+                """.trimIndent()
+                view.evaluateJavascript(js, null)
                 true
             }
 

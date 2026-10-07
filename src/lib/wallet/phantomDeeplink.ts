@@ -89,10 +89,16 @@ export function disconnectPhantomMobileSession(): void {
  */
 export function getMobileRedirectLink(customRedirectUrl?: string): string {
   if (typeof window === "undefined") return "https://streetsync-ss.com/";
-  if (isStandaloneApp()) {
-    return "streetsync://callback";
-  }
   const currentUrl = customRedirectUrl || window.location.href;
+  if (isStandaloneApp()) {
+    try {
+      const urlObj = new URL(currentUrl);
+      const cleanPath = urlObj.pathname.replace(/^\//, "");
+      return cleanPath ? `streetsync://${cleanPath}` : "streetsync://callback";
+    } catch {
+      return "streetsync://callback";
+    }
+  }
   return currentUrl.split("#")[0].split("?")[0];
 }
 
@@ -365,7 +371,7 @@ export function initiatePhantomMobileSignAndSendTransaction(
  * Decrypts payload, sets session and walletName immediately so autoConnect works seamlessly,
  * dispatches appropriate events, and strips query parameters from URL.
  */
-export function processPhantomMobileRedirect(): {
+export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
   handled: boolean;
   type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
   publicKey?: string;
@@ -376,7 +382,21 @@ export function processPhantomMobileRedirect(): {
 } {
   if (typeof window === "undefined") return { handled: false };
 
-  const urlParams = new URLSearchParams(window.location.search);
+  let urlParams: URLSearchParams;
+  if (customUrlOrQuery) {
+    try {
+      if (customUrlOrQuery.includes("?")) {
+        urlParams = new URLSearchParams(customUrlOrQuery.split("?")[1]);
+      } else {
+        urlParams = new URLSearchParams(customUrlOrQuery);
+      }
+    } catch {
+      urlParams = new URLSearchParams(window.location.search);
+    }
+  } else {
+    urlParams = new URLSearchParams(window.location.search);
+  }
+
   const phantomPubKeyStr = urlParams.get("phantom_encryption_public_key");
   const nonceStr = urlParams.get("nonce");
   const dataStr = urlParams.get("data");
@@ -385,6 +405,7 @@ export function processPhantomMobileRedirect(): {
 
   // Clean URL parameters helper
   const cleanUrl = () => {
+    if (customUrlOrQuery) return;
     try {
       const cleanParams = new URLSearchParams(window.location.search);
       cleanParams.delete("phantom_encryption_public_key");
@@ -560,6 +581,10 @@ export function processPhantomMobileRedirect(): {
 
 // Automatically process redirect parameters immediately upon script load if in browser
 if (typeof window !== "undefined") {
+  (window as any).__handlePhantomDeepLink = (deepLinkUrl: string) => {
+    return processPhantomMobileRedirect(deepLinkUrl);
+  };
+  (window as any).processPhantomMobileRedirect = processPhantomMobileRedirect;
   try {
     processPhantomMobileRedirect();
   } catch (e) {
