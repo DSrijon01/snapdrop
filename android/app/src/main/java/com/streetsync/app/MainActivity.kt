@@ -73,8 +73,6 @@ fun WebShellScreen() {
         return
     }
     val scopeHost = remember(startUrl) { startUrl.toUri().host.orEmpty() }
-    val refreshIndicatorColor = MaterialTheme.colorScheme.primary.toArgb()
-    val refreshIndicatorBackgroundColor = MaterialTheme.colorScheme.surface.toArgb()
 
     var progress by remember { mutableFloatStateOf(0f) }
     var isLoading by remember { mutableStateOf(true) }
@@ -155,24 +153,15 @@ fun WebShellScreen() {
             }
         }
     val swipeRefreshLayout =
-        remember(webView, refreshIndicatorColor, refreshIndicatorBackgroundColor) {
+        remember(webView) {
             SwipeRefreshLayout(context).apply {
                 layoutParams =
                     ViewGroup.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                setColorSchemeColors(
-                    refreshIndicatorColor,
-                )
-                setProgressBackgroundColorSchemeColor(refreshIndicatorBackgroundColor)
-                setOnChildScrollUpCallback { _, _ -> webView.canScrollVertically(-1) }
-                setOnRefreshListener {
-                    hasError = false
-                    isLoading = true
-                    isRefreshing = true
-                    webView.reload()
-                }
+                // Disable pull-to-refresh completely so scrolling up or down never triggers page reload
+                isEnabled = false
                 addView(webView)
             }
         }
@@ -230,8 +219,8 @@ private fun WebViewLayer(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT,
                     )
-                view.isEnabled = !hasError
-                view.isRefreshing = isRefreshing
+                view.isEnabled = false
+                view.isRefreshing = false
             },
         )
 
