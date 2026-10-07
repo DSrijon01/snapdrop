@@ -70,6 +70,7 @@ export function LiveChatWall({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isQrOpen, setIsQrOpen] = useState(false);
   const [isExtendOpen, setIsExtendOpen] = useState(false);
+  const [selectedRoomForQr, setSelectedRoomForQr] = useState<ChatRoom | null>(null);
 
   // Realtime Database sync for active room
   const [remoteMessages, setRemoteMessages] = useState<FirebaseChatMessage[]>([]);
@@ -173,33 +174,34 @@ export function LiveChatWall({
 
   // Callback when a new room is created -> automatically open the share QR code modal!
   const handleRoomCreated = (newRoom: ChatRoom) => {
+    setSelectedRoomForQr(newRoom);
     setIsQrOpen(true);
   };
 
   return (
     <div className="glass-card live-chat-card flex flex-col w-full rounded-2xl border border-border shadow-lg overflow-hidden relative">
       {/* Chat Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-border bg-secondary/10 shrink-0 gap-2">
+      <div className="flex items-center justify-between p-2.5 sm:p-3.5 border-b border-border bg-secondary/10 shrink-0 gap-2">
         <div className="flex items-center gap-2 min-w-0">
-          <Activity size={18} className="text-primary animate-pulse shrink-0" />
+          <Activity size={16} className="text-primary animate-pulse shrink-0" />
           <div className="min-w-0">
-            <h3 className="text-xs sm:text-sm font-black font-display uppercase tracking-wider text-foreground leading-none truncate flex items-center gap-1.5">
-              <span>{activeRoom.isGlobal ? "Live Trading Chat" : activeRoom.name}</span>
+            <h3 className="text-xs sm:text-sm font-black font-display uppercase tracking-wider text-foreground leading-none truncate">
+              {activeRoom.isGlobal ? "Live Trading Chat" : activeRoom.name}
             </h3>
-            <span className="text-[10px] text-muted-foreground font-mono block truncate">
+            <span className="text-[10px] text-muted-foreground font-mono block truncate mt-0.5">
               {activeRoom.isGlobal
-                ? "Instant Community Feed"
-                : activeRoom.topic || "Virtual Chat Room"}
+                ? "Street Sync Feed"
+                : activeRoom.topic || "Virtual Squad Room"}
             </span>
           </div>
         </div>
 
         {/* Right Header Actions */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Virtual Room Status / Timer Pill */}
           {!activeRoom.isGlobal && (
             <div
-              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-mono font-bold ${
+              className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-mono font-bold ${
                 activeRoomTime.isExpired
                   ? "bg-red-500/10 border-red-500/30 text-red-500"
                   : activeRoomTime.isExpiringSoon
@@ -208,8 +210,8 @@ export function LiveChatWall({
               }`}
               title="Session duration countdown"
             >
-              <Clock size={12} className={activeRoomTime.isExpiringSoon ? "animate-spin" : ""} />
-              <span>{activeRoomTime.isExpired ? "EXPIRED" : activeRoomTime.formatted}</span>
+              <Clock size={11} className={activeRoomTime.isExpiringSoon ? "animate-spin" : ""} />
+              <span>{activeRoomTime.isExpired ? "EXP" : activeRoomTime.formatted}</span>
             </div>
           )}
 
@@ -217,12 +219,15 @@ export function LiveChatWall({
           {!activeRoom.isGlobal && (
             <button
               type="button"
-              onClick={() => setIsQrOpen(true)}
-              className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-secondary/70 hover:bg-secondary border border-border text-foreground hover:text-primary transition-all text-xs font-mono font-bold flex items-center gap-1 shadow-2xs"
+              onClick={() => {
+                setSelectedRoomForQr(activeRoom.isGlobal ? null : activeRoom);
+                setIsQrOpen(true);
+              }}
+              className="p-1 sm:px-2 sm:py-1 rounded-lg bg-secondary/70 hover:bg-secondary border border-border text-foreground hover:text-primary transition-all text-xs font-mono font-bold flex items-center gap-1 cursor-pointer"
               title="Share QR Code & Invite Friends"
             >
-              <QrCode size={14} className="text-primary" />
-              <span className="hidden sm:inline">QR / Invite</span>
+              <QrCode size={13} className="text-primary" />
+              <span className="hidden sm:inline text-[10px]">QR</span>
             </button>
           )}
 
@@ -231,18 +236,17 @@ export function LiveChatWall({
             <button
               type="button"
               onClick={() => setIsExtendOpen(true)}
-              className="p-1.5 sm:px-2.5 sm:py-1 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary hover:text-primary-hover transition-all text-xs font-mono font-bold flex items-center gap-1 shadow-2xs active:scale-95"
+              className="p-1 sm:px-2 sm:py-1 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary hover:text-primary-hover transition-all text-xs font-mono font-bold flex items-center gap-1 active:scale-95 cursor-pointer"
               title="Extend room duration by 1 hour for 0.0001 SOL"
             >
-              <Zap size={14} className="fill-primary/20" />
-              <span className="hidden sm:inline">+1h (0.0001 SOL)</span>
-              <span className="sm:hidden">+1h</span>
+              <Zap size={13} className="fill-primary/20" />
+              <span className="hidden sm:inline text-[10px]">+1h</span>
             </button>
           )}
 
           {/* Global Wall Live Badge */}
           {activeRoom.isGlobal && (
-            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full bg-green-500/10 border border-green-500/20">
+            <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 border border-green-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-ping" />
               <span className="text-[10px] font-mono font-bold uppercase text-green-500 tracking-wider">
                 LIVE
@@ -259,12 +263,12 @@ export function LiveChatWall({
                 "Sign In with Solana (SIWS) is required to create a virtual chat room."
               )
             }
-            className="flex items-center gap-1 px-2.5 sm:px-3 py-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover text-[11px] sm:text-xs font-bold transition-all shadow-sm active:scale-95 shrink-0"
+            className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover text-[11px] font-bold transition-all shadow-sm active:scale-95 shrink-0 cursor-pointer"
             title="Create a 10-minute free virtual room with shareable QR code"
           >
-            <Plus size={14} className="stroke-[2.5]" />
-            <span className="hidden sm:inline">Create a Room</span>
-            <span className="sm:hidden">Room</span>
+            <Plus size={13} className="stroke-[2.5]" />
+            <span className="hidden sm:inline">Room</span>
+            <span className="sm:hidden">New</span>
           </button>
         </div>
       </div>
@@ -341,7 +345,7 @@ export function LiveChatWall({
       {/* Messages Scroll Area */}
       <div
         ref={scrollRef}
-        className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-3 scrollbar-hide bg-secondary/5 min-h-[220px]"
+        className="flex-1 min-h-0 p-3 sm:p-3.5 overflow-y-auto space-y-2.5 scrollbar-hide bg-secondary/5"
       >
         {displayMessages.length === 0 ? (
           <div className="h-full min-h-[160px] flex flex-col items-center justify-center text-center p-4 text-muted-foreground space-y-2">
@@ -429,33 +433,33 @@ export function LiveChatWall({
 
         {/* Expired Session Lock Banner */}
         {!activeRoom.isGlobal && activeRoomTime.isExpired && (
-          <div className="p-4 rounded-2xl bg-card border-2 border-red-500/40 shadow-xl text-center space-y-3 my-3 animate-in fade-in">
-            <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 mx-auto flex items-center justify-center">
-              <Clock size={20} />
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-card border border-red-500/40 shadow-xl text-center space-y-2 my-2 animate-in fade-in">
+            <div className="w-8 h-8 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 mx-auto flex items-center justify-center">
+              <Clock size={16} />
             </div>
             <div>
-              <h4 className="text-sm font-black font-display uppercase tracking-tight text-foreground">
-                10-Minute Free Session Expired
+              <h4 className="text-xs sm:text-sm font-black font-display uppercase tracking-tight text-foreground">
+                Session Expired
               </h4>
-              <p className="text-xs text-muted-foreground font-mono mt-1 max-w-sm mx-auto">
-                This virtual room has ended. Extend it for 1 hour for just 0.0001 SOL to keep chatting with your friends!
+              <p className="text-[11px] text-muted-foreground font-mono mt-0.5 max-w-xs mx-auto">
+                Extend for 1h (0.0001 SOL) to keep chatting.
               </p>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-0.5">
               <button
                 type="button"
                 onClick={() => setIsExtendOpen(true)}
-                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover text-xs font-bold transition-all shadow-md flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-xl bg-primary text-primary-foreground hover:bg-primary-hover text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
               >
-                <Zap size={14} />
-                <span>Extend for 1 Hour (0.0001 SOL)</span>
+                <Zap size={13} />
+                <span>Extend 1h (0.0001 SOL)</span>
               </button>
               <button
                 type="button"
                 onClick={() => switchRoom("global")}
-                className="px-3 py-2 rounded-xl border border-border bg-secondary/40 hover:bg-secondary text-xs font-bold text-foreground transition-colors"
+                className="px-3 py-1.5 rounded-xl border border-border bg-secondary/40 hover:bg-secondary text-xs font-bold text-foreground transition-colors cursor-pointer"
               >
-                Back to Global Wall
+                Global Wall
               </button>
             </div>
           </div>
@@ -544,12 +548,20 @@ export function LiveChatWall({
       {/* Shareable QR Code Modal */}
       <RoomQRModal
         isOpen={isQrOpen}
-        onClose={() => setIsQrOpen(false)}
-        room={activeRoom.isGlobal ? null : activeRoom}
-        timeRemaining={activeRoomTime}
+        onClose={() => {
+          setIsQrOpen(false);
+          setSelectedRoomForQr(null);
+        }}
+        room={selectedRoomForQr || (activeRoom.isGlobal ? null : activeRoom)}
+        timeRemaining={selectedRoomForQr ? getTimeRemaining(selectedRoomForQr) : activeRoomTime}
         getShareUrl={getShareUrl}
         getShareQrDataUrl={getShareQrDataUrl}
         onOpenExtendModal={() => setIsExtendOpen(true)}
+        onEnterRoom={(roomId) => {
+          switchRoom(roomId);
+          setSelectedRoomForQr(null);
+          setIsQrOpen(false);
+        }}
       />
 
       {/* 0.0001 SOL 1-Hour Extend Modal */}

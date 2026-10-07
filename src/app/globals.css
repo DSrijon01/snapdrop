@@ -177,13 +177,14 @@
   /* Full-Height Trading Chat Wall */
   @media (max-width: 1023px) {
     .live-chat-card {
-      height: calc(100dvh - 200px) !important;
-      min-height: 480px !important;
+      height: min(540px, calc(100dvh - 200px)) !important;
+      min-height: 440px !important;
+      max-height: 580px !important;
     }
   }
   @media (min-width: 1024px) {
     .live-chat-card {
-      height: 420px !important;
+      height: 520px !important;
     }
   }
 
