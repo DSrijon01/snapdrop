@@ -299,29 +299,37 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
       const isMobile =
         typeof window !== "undefined" &&
         /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isAndroid =
+        typeof window !== "undefined" &&
+        (/Android/i.test(navigator.userAgent) || isStandaloneApp());
       const hasInjectedPhantom =
         typeof window !== "undefined" &&
         Boolean((window as any).phantom?.solana);
 
-      // On mobile browsers without desktop extension, use PhantomMobileWalletAdapter for 2-way deep linking
+      // Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
+      const mwaAdapter = new SolanaMobileWalletAdapter({
+        addressSelector: createDefaultAddressSelector(),
+        appIdentity: {
+          name: "Street Sync",
+          uri: origin,
+          icon: "/pwa-192x192.png",
+        },
+        authorizationResultCache: createDefaultAuthorizationResultCache(),
+        chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
+        onWalletNotFound: createMwaAdapterNotFoundHandler(),
+      });
+
+      // On mobile browsers without desktop extension:
+      // - On Android: Phantom and Solflare are MWA-compliant native wallets. Delegate to mwaAdapter to use native solana-wallet:// IPC
+      //   This completely eliminates premature browser redirect loops and partial signature issues on Android.
+      // - On iOS: MWA does not exist on iOS. Use PhantomMobileWalletAdapter for 2-way universal deeplinks.
       const phantomAdapter =
         isMobile && !hasInjectedPhantom
-          ? new PhantomMobileWalletAdapter()
+          ? new PhantomMobileWalletAdapter(isAndroid ? { mwaDelegate: mwaAdapter } : undefined)
           : new PhantomWalletAdapter();
 
       return [
-        // Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
-        new SolanaMobileWalletAdapter({
-          addressSelector: createDefaultAddressSelector(),
-          appIdentity: {
-            name: "Street Sync",
-            uri: origin,
-            icon: "/pwa-192x192.png",
-          },
-          authorizationResultCache: createDefaultAuthorizationResultCache(),
-          chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
-          onWalletNotFound: createMwaAdapterNotFoundHandler(),
-        }),
+        mwaAdapter,
         phantomAdapter,
         new SolflareWalletAdapter(),
         new CoinbaseWalletAdapter(),

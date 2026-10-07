@@ -25,6 +25,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   const [isReloading, setIsReloading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
+  const [isAndroid, setIsAndroid] = useState(false);
   const [isApp, setIsApp] = useState(false);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
       const ua = navigator.userAgent;
       setIsMobile(/Android|iPhone|iPad|iPod/i.test(ua));
       setIsIOS(/iPhone|iPad|iPod/i.test(ua));
+      setIsAndroid(/Android/i.test(ua) || isStandaloneApp());
       setIsApp(isStandaloneApp());
 
       const isPending = sessionStorage.getItem("street_sync_install_pending");
@@ -55,10 +57,15 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleConnectMwa = () => {
     const mwaWallet = wallets.find(
-      (w) => w.adapter.name === "Mobile Wallet Adapter"
+      (w) => w.adapter.name === "Mobile Wallet Adapter" || w.adapter.name === "Phantom"
     );
     if (mwaWallet) {
       select(mwaWallet.adapter.name);
+      setTimeout(() => {
+        connect().catch((err) => {
+          console.debug("MWA connect note:", err);
+        });
+      }, 50);
       onClose();
     } else {
       onOpenStandardModal();
@@ -149,7 +156,19 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
               </div>
 
               {/* Status Info Box */}
-              {isMobile ? (
+              {isApp || isAndroid ? (
+                <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-2.5">
+                  <div className="flex items-start gap-2.5">
+                    <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      <p className="font-bold text-foreground">Solana Mobile Wallet (Android)</p>
+                      <p className="text-muted-foreground leading-relaxed mt-0.5">
+                        Connect with Phantom, Solflare, or Seed Vault natively on Android via Solana Mobile Wallet Adapter. Instant, secure, and no redirect bounce loops.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ) : isMobile ? (
                 <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-2.5">
                   <div className="flex items-start gap-2.5">
                     <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
@@ -177,14 +196,14 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {isApp ? (
+                {isApp || isAndroid ? (
                   <>
                     <button
                       onClick={handleConnectMwa}
                       className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25"
                     >
-                      <Smartphone className="w-4 h-4 fill-primary-foreground" />
-                      <span>Connect Mobile Wallet (MWA)</span>
+                      <Zap className="w-4 h-4 fill-primary-foreground" />
+                      <span>Connect Phantom / Mobile Wallet</span>
                     </button>
                     <button
                       onClick={onOpenStandardModal}

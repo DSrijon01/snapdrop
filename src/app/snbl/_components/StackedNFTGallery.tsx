@@ -93,11 +93,11 @@ export const StackedNFTGallery = () => {
         const u = createUmi(connection.rpcEndpoint)
             .use(mplCandyMachine())
             .use(mplTokenMetadata());
-        if (wallet.wallet?.adapter) {
+        if (wallet.wallet?.adapter && wallet.connected) {
             u.use(walletAdapterIdentity(wallet.wallet.adapter));
         }
         return u;
-    }, [connection.rpcEndpoint, wallet.wallet]);
+    }, [connection.rpcEndpoint, wallet.wallet, wallet.connected, wallet.publicKey]);
 
     // Load custom deployed NFTs from localStorage AND On-Chain Gallery Listings
     useEffect(() => {
@@ -329,7 +329,7 @@ export const StackedNFTGallery = () => {
             }
         } catch (error: any) {
             console.error("Mint failed:", error);
-            setStatus(`Mint failed: ${error.message || "Unknown error"}`);
+            setStatus(`Mint failed: ${parseSolanaErrorMessage(error)}`);
         } finally {
             setIsMinting(false);
         }

@@ -123,7 +123,7 @@ fun WebShellScreen() {
                         fun isNativeApp(): Boolean = true
 
                         @android.webkit.JavascriptInterface
-                        fun getAppVersion(): String = "1.0.4"
+                        fun getAppVersion(): String = "1.0.5"
                     },
                     "StreetSyncNative",
                 )

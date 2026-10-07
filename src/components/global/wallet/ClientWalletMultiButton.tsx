@@ -52,9 +52,11 @@ export const ClientWalletMultiButton = (props: any) => {
       );
       if (mwaWallet) {
         select(mwaWallet.adapter.name);
-        connect().catch((err) => {
-          console.debug("MWA direct connect error/rejected:", err);
-        });
+        setTimeout(() => {
+          connect().catch((err) => {
+            console.debug("MWA direct connect error/rejected:", err);
+          });
+        }, 50);
         return;
       }
       setVisible(true);

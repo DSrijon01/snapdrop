@@ -34,9 +34,27 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   private _publicKey: PublicKey | null = null;
   private _connecting = false;
   private _readyState: WalletReadyState = WalletReadyState.NotDetected;
+  private _mwaDelegate?: BaseMessageSignerWalletAdapter;
 
-  constructor() {
+  constructor(options?: { mwaDelegate?: BaseMessageSignerWalletAdapter }) {
     super();
+
+    if (options?.mwaDelegate) {
+      this._mwaDelegate = options.mwaDelegate;
+      this._readyState = options.mwaDelegate.readyState;
+      this._mwaDelegate.on("connect", (publicKey: PublicKey) => {
+        this._publicKey = publicKey;
+        this.emit("connect", publicKey);
+      });
+      this._mwaDelegate.on("disconnect", () => {
+        this._publicKey = null;
+        this.emit("disconnect");
+      });
+      this._mwaDelegate.on("error", (error: any) => {
+        this.emit("error", error);
+      });
+      return;
+    }
 
     if (typeof window !== "undefined") {
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
@@ -86,18 +104,22 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   }
 
   get publicKey(): PublicKey | null {
-    return this._publicKey;
+    return this._mwaDelegate ? this._mwaDelegate.publicKey : this._publicKey;
   }
 
   get connecting(): boolean {
-    return this._connecting;
+    return this._mwaDelegate ? this._mwaDelegate.connecting : this._connecting;
   }
 
   get readyState(): WalletReadyState {
-    return this._readyState;
+    return this._mwaDelegate ? this._mwaDelegate.readyState : this._readyState;
   }
 
   async connect(): Promise<void> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.connect();
+    }
+
     try {
       const stored = getStoredPhantomSession();
       if (stored && stored.publicKey) {
@@ -119,12 +141,20 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   }
 
   async disconnect(): Promise<void> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.disconnect();
+    }
+
     disconnectPhantomMobileSession();
     this._publicKey = null;
     this.emit("disconnect");
   }
 
   async signMessage(message: Uint8Array): Promise<Uint8Array> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.signMessage(message);
+    }
+
     if (!this.connected || !this._publicKey) {
       throw new Error("Wallet not connected");
     }
@@ -174,6 +204,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   }
 
   async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.signTransaction(transaction);
+    }
+
     if (!this.connected || !this._publicKey) {
       throw new Error("Wallet not connected");
     }
@@ -262,6 +296,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   }
 
   async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.signAllTransactions(transactions);
+    }
+
     if (!this.connected || !this._publicKey) {
       throw new Error("Wallet not connected");
     }
@@ -349,6 +387,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     connection: Connection,
     options: SendTransactionOptions = {}
   ): Promise<TransactionSignature> {
+    if (this._mwaDelegate) {
+      return this._mwaDelegate.sendTransaction(transaction, connection, options);
+    }
+
     if (!this.connected || !this._publicKey) {
       throw new Error("Wallet not connected");
     }
