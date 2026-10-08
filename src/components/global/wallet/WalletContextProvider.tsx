@@ -36,7 +36,10 @@ import toast from "react-hot-toast";
 import "@solana/wallet-adapter-react-ui/styles.css";
 
 import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
-import { processPhantomMobileRedirect } from "@/lib/wallet/phantomDeeplink";
+import {
+  processPhantomMobileRedirect,
+  getStoredPhantomSession,
+} from "@/lib/wallet/phantomDeeplink";
 import {
   PhantomMobileWalletAdapter,
   PhantomMobileWalletName,
@@ -55,7 +58,7 @@ const WalletExtensionWatcher: FC = () => {
   // 1. Auto-open modal after reload (desktop browser extensions only)
   useEffect(() => {
     if (typeof window === "undefined" || connected) return;
-    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) return;
+    if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp()) return;
 
     const autoOpen = sessionStorage.getItem("street_sync_auto_open_modal");
     if (autoOpen === "true") {
@@ -187,22 +190,76 @@ const WalletExtensionWatcher: FC = () => {
 };
 
 /**
- * Listens for mobile browser returns from Phantom / Solflare App deep-links.
- * Decrypts the connection payload, extracts the public key, and activates the session.
+ * Listens for mobile browser and standalone app returns from Phantom / Solflare deep links.
+ * Decrypts connection payload, auto-selects adapter, calls connect, and dismisses any
+ * open wallet selection modals so no duplicate/mock selection screens linger.
  */
 const PhantomMobileRedirectWatcher: FC = () => {
-  const { select, connect } = useWallet();
+  const { select, connect, wallet } = useWallet();
+  const { setVisible } = useWalletModal();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+
+    const activateConnectedWallet = (walletType?: string, pubKeyStr?: string) => {
+      // 1. Immediately dismiss any open wallet adapter modals so no duplicate/mock selection screen appears
+      setVisible(false);
+
+      // 2. Dispatch event to dismiss all custom modals (InstallWalletModal, SIWSModal)
+      window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+
+      // 3. Ensure localStorage has walletName set for WalletProvider autoConnect
+      const targetWalletName =
+        walletType === "solflare" ? "Solflare" : PhantomMobileWalletName;
+      try {
+        localStorage.setItem("walletName", JSON.stringify(targetWalletName));
+      } catch {}
+
+      // 4. Select the adapter
+      select(targetWalletName as any);
+
+      // 5. Connect the adapter immediately and in subsequent ticks to ensure WalletProvider syncs
+      const tryConnect = () => {
+        connect().catch((err) => {
+          console.debug("[PhantomMobileRedirectWatcher] connect note:", err);
+        });
+      };
+      tryConnect();
+      const t1 = setTimeout(tryConnect, 50);
+      const t2 = setTimeout(tryConnect, 150);
+      const t3 = setTimeout(tryConnect, 350);
+
+      // 6. Ensure SIWS auth syncs with the newly connected wallet
+      if (pubKeyStr) {
+        try {
+          localStorage.setItem(
+            "streetsync_solana_auth_user",
+            JSON.stringify({
+              uid: pubKeyStr,
+              walletAddress: pubKeyStr,
+              displayName: `${pubKeyStr.slice(0, 4)}..${pubKeyStr.slice(-4)}`,
+              isGuest: false,
+              authenticatedAt: Date.now(),
+            })
+          );
+          window.dispatchEvent(new Event("streetsync_auth_changed"));
+        } catch {}
+      }
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
+    };
+
+    // Check on initial load (in case of page reload or initial deep link URL)
     const res = processPhantomMobileRedirect();
     if (res.handled) {
       if (res.type === "connect" && res.publicKey) {
-        select(PhantomMobileWalletName);
-        // Ensure connection activates immediately
-        setTimeout(() => {
-          connect().catch(() => {});
-        }, 50);
+        const storedWalletType =
+          sessionStorage.getItem("mobile_wallet_type") || "phantom";
+        activateConnectedWallet(storedWalletType, res.publicKey);
 
         // Show avatar-based toast banner
         const shortKey = `${res.publicKey.slice(0, 4)}..${res.publicKey.slice(-4)}`;
@@ -237,13 +294,70 @@ const PhantomMobileRedirectWatcher: FC = () => {
               </button>
             </div>
           ),
-          { duration: 4000 }
+          { duration: 4000, id: "mobile-wallet-connected-toast" }
         );
       } else if (res.type === "error") {
         toast.error(res.error || "Connection cancelled.");
       }
+    } else {
+      // Also check if an active mobile session was already stored, ensure WalletProvider is selected & connected
+      const stored = getStoredPhantomSession();
+      if (stored && stored.publicKey && !wallet) {
+        const storedWalletType = stored.walletType || "phantom";
+        activateConnectedWallet(storedWalletType, stored.publicKey);
+      }
     }
-  }, [select, connect]);
+
+    // Listen for in-memory deep links returned to Android WebView via evaluateJavascript
+    const handleMobileConnectedEvent = (e: any) => {
+      const detail = e.detail;
+      const walletType =
+        detail?.walletType || sessionStorage.getItem("mobile_wallet_type") || "phantom";
+      activateConnectedWallet(walletType, detail?.publicKey);
+
+      if (detail?.publicKey) {
+        const shortKey = `${detail.publicKey.slice(0, 4)}..${detail.publicKey.slice(-4)}`;
+        toast.custom(
+          (t) => (
+            <div
+              className={`${
+                t.visible ? "animate-in fade-in zoom-in-95 duration-200" : "animate-out fade-out duration-150"
+              } max-w-sm w-full bg-card/95 backdrop-blur-md border border-border shadow-2xl rounded-2xl p-3 flex items-center gap-3 pointer-events-auto`}
+            >
+              <div className="w-10 h-10 rounded-xl bg-secondary/80 border border-border flex items-center justify-center p-1 relative shrink-0">
+                <img
+                  src={`https://api.dicebear.com/7.x/bottts/svg?seed=${detail.publicKey}&backgroundColor=transparent`}
+                  alt="Street Sync Bot"
+                  className="w-8 h-8 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                />
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse border-2 border-card" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black font-display uppercase tracking-wide text-foreground">
+                  Wallet Connected
+                </p>
+                <p className="text-[11px] text-muted-foreground font-mono truncate">
+                  {shortKey}
+                </p>
+              </div>
+              <button
+                onClick={() => toast.dismiss(t.id)}
+                className="text-muted-foreground hover:text-foreground p-1 rounded-lg hover:bg-muted transition-colors text-xs"
+              >
+                ✕
+              </button>
+            </div>
+          ),
+          { duration: 4000, id: "mobile-wallet-connected-toast" }
+        );
+      }
+    };
+
+    window.addEventListener("phantom_mobile_connected", handleMobileConnectedEvent);
+    return () => {
+      window.removeEventListener("phantom_mobile_connected", handleMobileConnectedEvent);
+    };
+  }, [select, connect, wallet, setVisible]);
 
   return null;
 };

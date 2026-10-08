@@ -21,6 +21,7 @@ import {
   initiatePhantomMobileSignAllTransactions,
   disconnectPhantomMobileSession,
 } from "./phantomDeeplink";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 export const PhantomMobileWalletName = "Phantom" as WalletName<"Phantom">;
 
@@ -58,12 +59,13 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
 
     if (typeof window !== "undefined") {
       const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      const isApp = isStandaloneApp();
       const hasInjected = Boolean(
         (window as any).phantom?.solana || (window as any).solana
       );
 
-      // On mobile without injected extension, Phantom is ready via native app deep links
-      if (isMobile && !hasInjected) {
+      // On mobile or standalone app without injected extension, Phantom is ready via native app deep links
+      if ((isMobile || isApp) && !hasInjected) {
         this._readyState = WalletReadyState.Installed;
       }
 
@@ -131,6 +133,9 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       if (this.connecting) return;
 
       this._connecting = true;
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+      }
       initiatePhantomMobileConnect();
     } catch (error: any) {
       this.emit("error", new WalletConnectionError(error?.message));

@@ -190,6 +190,17 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
     setPendingAction(null);
   }, []);
 
+  useEffect(() => {
+    const handleClose = () => {
+      closeSIWSModal();
+      setWalletModalVisible(false);
+    };
+    window.addEventListener("street_sync_close_all_modals", handleClose);
+    return () => {
+      window.removeEventListener("street_sync_close_all_modals", handleClose);
+    };
+  }, [closeSIWSModal, setWalletModalVisible]);
+
   const signIn = useCallback(async (): Promise<SignInWithSolanaResult | null> => {
     if (!publicKey) {
       setWalletModalVisible(true);

@@ -157,6 +157,9 @@ export function initiateMobileWalletConnect(
     cluster: "devnet",
   });
 
+  // Immediately dismiss any open wallet selection modals to prevent lingering screens
+  window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/connect"
@@ -515,6 +518,7 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
         const walletName = walletType === "solflare" ? "Solflare" : "Phantom";
         localStorage.setItem("walletName", JSON.stringify(walletName));
 
+        window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
         window.dispatchEvent(
           new CustomEvent("phantom_mobile_connected", { detail: sessionData })
         );

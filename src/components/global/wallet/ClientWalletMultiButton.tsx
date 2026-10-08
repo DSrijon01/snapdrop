@@ -9,6 +9,7 @@ import { InstallWalletModal } from "./InstallWalletModal";
 
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
+import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 
 const BaseWalletMultiButton = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -29,22 +30,49 @@ export const ClientWalletMultiButton = (props: any) => {
       setHasPendingInstall(Boolean(isPending));
 
       const session = getStoredPhantomSession();
-      setHasMobileSession(Boolean(session && session.publicKey));
+      const hasSession = Boolean(session && session.publicKey);
+      setHasMobileSession(hasSession);
+
+      // If mobile session exists in storage but wallet adapter is not yet connected, auto-connect
+      if (hasSession && !connected) {
+        select(PhantomMobileWalletName);
+        setTimeout(() => {
+          connect().catch(() => {});
+        }, 50);
+      }
 
       setIsStandalone(isStandaloneApp());
 
-      const handleConnect = () => setHasMobileSession(true);
+      const handleConnect = () => {
+        setHasMobileSession(true);
+        setShowInstallModal(false);
+        setVisible(false);
+      };
       const handleDisconnect = () => setHasMobileSession(false);
+      const handleCloseModals = () => {
+        setShowInstallModal(false);
+        setVisible(false);
+      };
+
       window.addEventListener("phantom_mobile_connected", handleConnect);
       window.addEventListener("phantom_mobile_disconnected", handleDisconnect);
+      window.addEventListener("street_sync_close_all_modals", handleCloseModals);
+
       return () => {
         window.removeEventListener("phantom_mobile_connected", handleConnect);
         window.removeEventListener("phantom_mobile_disconnected", handleDisconnect);
+        window.removeEventListener("street_sync_close_all_modals", handleCloseModals);
       };
     }
-  }, []);
+  }, [connected, select, connect, setVisible]);
 
   const handleClick = () => {
+    // If mobile session exists but disconnected, connect directly without showing any wallet selector
+    if (hasMobileSession && !connected) {
+      select(PhantomMobileWalletName);
+      connect().catch(() => {});
+      return;
+    }
     const isMobile = typeof window !== "undefined" && /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
     const hasInjected = typeof window !== "undefined" && Boolean(
       (window as any).solana ||

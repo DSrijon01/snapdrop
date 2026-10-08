@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                     val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
                     val js = """
                         (function() {
+                            window.dispatchEvent(new CustomEvent('street_sync_close_all_modals'));
                             if ('$fullPath' === 'sessions' && !window.location.pathname.includes('/sessions')) {
                                 window.history.pushState({}, document.title, '/sessions');
                                 window.dispatchEvent(new Event('popstate'));
@@ -158,6 +159,7 @@ class MainActivity : ComponentActivity() {
                     val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
                     val js = """
                         (function() {
+                            window.dispatchEvent(new CustomEvent('street_sync_close_all_modals'));
                             if (window.__handlePhantomDeepLink) {
                                 window.__handlePhantomDeepLink('$fullDeepLink');
                             } else {
@@ -247,7 +249,7 @@ fun WebShellScreen(
                         fun isNativeApp(): Boolean = true
 
                         @android.webkit.JavascriptInterface
-                        fun getAppVersion(): String = "1.0.6"
+                        fun getAppVersion(): String = "1.0.7"
                     },
                     "StreetSyncNative",
                 )

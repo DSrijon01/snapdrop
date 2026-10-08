@@ -41,8 +41,20 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
       if (isPending) {
         setInstallStarted(true);
       }
+
+      const handleCloseAll = () => {
+        onClose();
+      };
+
+      window.addEventListener("street_sync_close_all_modals", handleCloseAll);
+      window.addEventListener("phantom_mobile_connected", handleCloseAll);
+
+      return () => {
+        window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
+        window.removeEventListener("phantom_mobile_connected", handleCloseAll);
+      };
     }
-  }, [isOpen]);
+  }, [isOpen, onClose]);
 
   const handleOpenInPhantomBrowser = () => {
     if (typeof window === "undefined") return;
@@ -52,6 +64,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleOpenPhantomApp = () => {
     if (typeof window === "undefined") return;
+    window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
     initiatePhantomMobileConnect();
     onClose();
   };
