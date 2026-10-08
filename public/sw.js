@@ -1,4 +1,4 @@
-const CACHE_NAME = 'street-sync-cache-v1';
+const CACHE_NAME = 'street-sync-cache-v2';
 
 const STATIC_ASSETS = [
   './',
@@ -33,10 +33,11 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Do not cache API calls, Solana RPCs, Jupiter, or WebSockets
+  // Never cache API, Solana RPCs, Next.js build chunks, or WebSockets
   if (
     event.request.method !== 'GET' ||
     url.pathname.startsWith('/api') ||
+    url.pathname.startsWith('/_next/') ||
     url.hostname.includes('solana.com') ||
     url.hostname.includes('helius') ||
     url.hostname.includes('quicknode') ||

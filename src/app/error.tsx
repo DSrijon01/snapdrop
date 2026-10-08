@@ -19,6 +19,30 @@ export default function GlobalErrorPage({ error, reset }: ErrorPageProps) {
   useEffect(() => {
     // Log the error to an analytics service
     console.error("Client Exception Caught by Global Boundary:", error);
+
+    // Auto-recover from stale deployment chunks (Loading chunk [id] failed)
+    const errMsg = (error?.message || "").toLowerCase();
+    if (errMsg.includes("loading chunk") || errMsg.includes("chunkloaderror")) {
+      const reloadKey = "street_sync_last_chunk_reload";
+      const lastReload = parseInt(sessionStorage.getItem(reloadKey) || "0", 10);
+      const now = Date.now();
+      // Reload at most once per 15 seconds to prevent reload loops
+      if (now - lastReload > 15000) {
+        sessionStorage.setItem(reloadKey, String(now));
+        const win = typeof window !== "undefined" ? (window as any) : null;
+        if (win) {
+          if ("caches" in win && win.caches?.keys) {
+            win.caches.keys().then((names: string[]) => {
+              for (const name of names) win.caches.delete(name);
+            }).finally(() => {
+              win.location.reload();
+            });
+          } else {
+            win.location.reload();
+          }
+        }
+      }
+    }
   }, [error]);
 
   const handleLogoutAndLogin = async () => {
