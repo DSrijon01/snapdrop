@@ -41,13 +41,21 @@ function StreetSyncContent() {
       }
     };
 
+    const handleRedirectRoute = (e: any) => {
+      if (e?.detail?.route && typeof window !== "undefined") {
+        window.location.href = e.detail.route;
+      }
+    };
+
     handleGlobalResumption();
     window.addEventListener("switch_tab", handleSwitchTab);
+    window.addEventListener("redirect_route", handleRedirectRoute);
     window.addEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
     window.addEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
     window.addEventListener("phantom_mobile_signed", handleGlobalResumption);
     return () => {
       window.removeEventListener("switch_tab", handleSwitchTab);
+      window.removeEventListener("redirect_route", handleRedirectRoute);
       window.removeEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
       window.removeEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
       window.removeEventListener("phantom_mobile_signed", handleGlobalResumption);

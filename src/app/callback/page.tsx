@@ -31,7 +31,17 @@ export default function CallbackPage() {
         console.warn("[CallbackPage] Error parsing redirect:", e);
       }
 
-      const returnUrl = sessionStorage.getItem("phantom_mobile_return_url") || "/";
+      let returnUrl = localStorage.getItem("phantom_mobile_return_url") || sessionStorage.getItem("phantom_mobile_return_url") || "/";
+      try {
+        const rawPending = localStorage.getItem("street_sync_pending_mobile_action");
+        if (rawPending) {
+          const parsed = JSON.parse(rawPending);
+          if (parsed.type && String(parsed.type).startsWith("EPLAYS_")) {
+            returnUrl = "/e-plays";
+          }
+        }
+      } catch {}
+
       const cleanReturn = returnUrl.startsWith("http")
         ? new URL(returnUrl).pathname
         : returnUrl;

@@ -9,7 +9,10 @@ export type PendingActionType =
     | "NFT_LISTING" 
     | "TOKEN_BUY" 
     | "TOKEN_LISTING" 
-    | "TOKEN_SECONDARY_BUY";
+    | "TOKEN_SECONDARY_BUY"
+    | "EPLAYS_BUY"
+    | "EPLAYS_CLAIM"
+    | "EPLAYS_CLEANUP";
 
 export interface PendingAction {
     type: PendingActionType;
@@ -240,6 +243,106 @@ export function recordActionSuccess(type: PendingActionType, data: any, signatur
                 window.dispatchEvent(new Event("token_listings_updated"));
                 window.dispatchEvent(new Event("storage"));
                 toast.success(`Secondary token purchased! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "EPLAYS_BUY": {
+                const historyItem = {
+                    marketId: data.marketId,
+                    marketTitle: data.marketTitle,
+                    side: data.side,
+                    amount: data.amount,
+                    shares: data.shares,
+                    price: data.price,
+                    type: "BUY",
+                    signature: signature,
+                    date: Date.now(),
+                };
+                const existingHist = JSON.parse(localStorage.getItem("street_sync_prediction_history") || "[]");
+                localStorage.setItem("street_sync_prediction_history", JSON.stringify([historyItem, ...existingHist]));
+
+                // Also save to optimistic positions
+                const newPos = {
+                    id: data.userTokenAccount || `pos-${Date.now()}`,
+                    marketId: data.marketId,
+                    marketName: data.marketTitle,
+                    position: data.side === "YES" ? "Yes" : "No",
+                    shares: data.shares || data.amount,
+                    avgPrice: data.price,
+                    currentValue: data.amount,
+                    isResolved: false,
+                    isWinner: false,
+                    mintPubkey: data.mintPubkey || data.targetMint,
+                    userMintAccount: data.userTokenAccount,
+                    market: data.market,
+                    timestamp: Date.now(),
+                };
+                const existingPositions = JSON.parse(localStorage.getItem("street_sync_prediction_positions") || "[]");
+                localStorage.setItem("street_sync_prediction_positions", JSON.stringify([newPos, ...existingPositions]));
+
+                window.dispatchEvent(new Event("prediction_history_updated"));
+                window.dispatchEvent(new Event("prediction_markets_updated"));
+                window.dispatchEvent(new Event("eplays_updated"));
+                window.dispatchEvent(new Event("storage"));
+                window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: "/e-plays" } }));
+                toast.success(`Prediction shares bought! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "EPLAYS_CLAIM": {
+                const claimItem = {
+                    marketId: data.marketId,
+                    marketTitle: data.marketTitle,
+                    side: data.side,
+                    amount: data.amount,
+                    shares: data.shares,
+                    price: data.price,
+                    type: "CLAIM",
+                    signature: signature,
+                    date: Date.now(),
+                };
+                const existingHist = JSON.parse(localStorage.getItem("street_sync_prediction_history") || "[]");
+                localStorage.setItem("street_sync_prediction_history", JSON.stringify([claimItem, ...existingHist]));
+
+                // Remove from optimistic positions
+                const storedPos = JSON.parse(localStorage.getItem("street_sync_prediction_positions") || "[]");
+                const remainingPos = storedPos.filter((p: any) => p.id !== data.positionId && p.marketId !== data.marketId);
+                localStorage.setItem("street_sync_prediction_positions", JSON.stringify(remainingPos));
+
+                window.dispatchEvent(new Event("prediction_history_updated"));
+                window.dispatchEvent(new Event("prediction_markets_updated"));
+                window.dispatchEvent(new Event("eplays_updated"));
+                window.dispatchEvent(new Event("storage"));
+                window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: "/e-plays" } }));
+                toast.success(`Winnings claimed! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "EPLAYS_CLEANUP": {
+                const cleanItem = {
+                    marketId: data.marketId,
+                    marketTitle: data.marketTitle,
+                    side: data.side,
+                    amount: 0.002,
+                    shares: data.shares,
+                    price: data.price,
+                    type: "CLEANUP",
+                    signature: signature,
+                    date: Date.now(),
+                };
+                const existingHist = JSON.parse(localStorage.getItem("street_sync_prediction_history") || "[]");
+                localStorage.setItem("street_sync_prediction_history", JSON.stringify([cleanItem, ...existingHist]));
+
+                const storedPos = JSON.parse(localStorage.getItem("street_sync_prediction_positions") || "[]");
+                const remainingPos = storedPos.filter((p: any) => p.id !== data.positionId && p.marketId !== data.marketId);
+                localStorage.setItem("street_sync_prediction_positions", JSON.stringify(remainingPos));
+
+                window.dispatchEvent(new Event("prediction_history_updated"));
+                window.dispatchEvent(new Event("prediction_markets_updated"));
+                window.dispatchEvent(new Event("eplays_updated"));
+                window.dispatchEvent(new Event("storage"));
+                window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: "/e-plays" } }));
+                toast.success(`Position closed! Rent reclaimed. TX: ${signature.slice(0, 8)}...`);
                 break;
             }
         }

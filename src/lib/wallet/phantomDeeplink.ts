@@ -141,6 +141,9 @@ export function initiateMobileWalletConnect(
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+  try {
+    localStorage.setItem("phantom_mobile_return_url", currentUrl);
+  } catch {}
   sessionStorage.setItem("mobile_wallet_type", walletType);
 
   const appUrl = window.location.origin.startsWith("http")
@@ -200,6 +203,10 @@ export function initiatePhantomMobileSignMessage(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
+  try {
+    sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+    localStorage.setItem("phantom_mobile_return_url", currentUrl);
+  } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
   sessionStorage.setItem(PENDING_SIGN_KEY, bs58.encode(messageBytes));
 
@@ -250,6 +257,10 @@ export function initiatePhantomMobileSignTransaction(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
+  try {
+    sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+    localStorage.setItem("phantom_mobile_return_url", currentUrl);
+  } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
@@ -298,6 +309,10 @@ export function initiatePhantomMobileSignAllTransactions(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
+  try {
+    sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+    localStorage.setItem("phantom_mobile_return_url", currentUrl);
+  } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
@@ -348,6 +363,10 @@ export function initiatePhantomMobileSignAndSendTransaction(
   );
 
   const currentUrl = customRedirectUrl || window.location.href;
+  try {
+    sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
+    localStorage.setItem("phantom_mobile_return_url", currentUrl);
+  } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
