@@ -132,9 +132,15 @@ export default function EPlaysPage() {
     }
   ];
 
-  const fetchMarketsAndPositions = useCallback(async () => {
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchMarketsAndPositions = useCallback(async (silent: boolean = false) => {
     try {
-      setLoading(true);
+      if (!silent && !cachedEPlaysMarkets) {
+        setLoading(true);
+      } else {
+        setIsSyncing(true);
+      }
       
       const activeWallet = (anchorWallet && anchorWallet.publicKey)
         ? anchorWallet
@@ -360,6 +366,7 @@ export default function EPlaysPage() {
       console.error("Error updating predictions dashboard:", error);
     } finally {
       setLoading(false);
+      setIsSyncing(false);
     }
   }, [connection, publicKey, isDemo]);
 
@@ -390,7 +397,7 @@ export default function EPlaysPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const handleSync = async () => {
+    const handleSync = async (silent: boolean = false) => {
       if (!isMounted) return;
       if (!isInFlightActionActive()) {
         try {
@@ -399,36 +406,38 @@ export default function EPlaysPage() {
           console.warn("Background resumption in e-plays note:", e);
         }
       }
-      fetchMarketsAndPositions();
+      fetchMarketsAndPositions(silent);
       fetchUserSolBalance();
     };
 
-    // Initial check for mobile return
-    handleSync();
+    // Initial check for mobile return (silent if already cached)
+    handleSync(!!cachedEPlaysMarkets);
 
-    // 10s periodic heartbeat poll to refresh market state, odds, and pool changes
+    // Subtle 1-minute periodic heartbeat poll to refresh market state, odds, and pool changes
     const pollInterval = setInterval(() => {
-      handleSync();
-    }, 10000);
+      handleSync(true); // Always silent background sync so the screen never blinks or shows full page loader
+    }, 60000);
 
-    window.addEventListener('prediction_markets_updated', handleSync);
-    window.addEventListener('prediction_history_updated', handleSync);
-    window.addEventListener('eplays_updated', handleSync);
-    window.addEventListener('storage', handleSync);
-    window.addEventListener('phantom_mobile_tx_signed', handleSync);
-    window.addEventListener('phantom_mobile_tx_sent', handleSync);
-    window.addEventListener('phantom_mobile_signed', handleSync);
+    const handleEventSync = () => handleSync(false);
+
+    window.addEventListener('prediction_markets_updated', handleEventSync);
+    window.addEventListener('prediction_history_updated', handleEventSync);
+    window.addEventListener('eplays_updated', handleEventSync);
+    window.addEventListener('storage', handleEventSync);
+    window.addEventListener('phantom_mobile_tx_signed', handleEventSync);
+    window.addEventListener('phantom_mobile_tx_sent', handleEventSync);
+    window.addEventListener('phantom_mobile_signed', handleEventSync);
 
     return () => {
       isMounted = false;
       clearInterval(pollInterval);
-      window.removeEventListener('prediction_markets_updated', handleSync);
-      window.removeEventListener('prediction_history_updated', handleSync);
-      window.removeEventListener('eplays_updated', handleSync);
-      window.removeEventListener('storage', handleSync);
-      window.removeEventListener('phantom_mobile_tx_signed', handleSync);
-      window.removeEventListener('phantom_mobile_tx_sent', handleSync);
-      window.removeEventListener('phantom_mobile_signed', handleSync);
+      window.removeEventListener('prediction_markets_updated', handleEventSync);
+      window.removeEventListener('prediction_history_updated', handleEventSync);
+      window.removeEventListener('eplays_updated', handleEventSync);
+      window.removeEventListener('storage', handleEventSync);
+      window.removeEventListener('phantom_mobile_tx_signed', handleEventSync);
+      window.removeEventListener('phantom_mobile_tx_sent', handleEventSync);
+      window.removeEventListener('phantom_mobile_signed', handleEventSync);
     };
   }, [connection, fetchMarketsAndPositions, fetchUserSolBalance]);
 
@@ -893,8 +902,8 @@ export default function EPlaysPage() {
               Native SOL Pari-Mutuel Prediction Sandbox
             </p>
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 font-mono text-[10px] uppercase tracking-wider font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-              <span>Live Sync · 10s Odds</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${isSyncing ? 'bg-amber-400 animate-spin' : 'bg-emerald-400 animate-pulse'}`} />
+              <span>{isSyncing ? 'Syncing...' : 'Live Sync · 1m Odds'}</span>
             </div>
           </div>
         </div>
