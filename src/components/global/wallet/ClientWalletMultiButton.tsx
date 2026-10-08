@@ -26,8 +26,11 @@ export const ClientWalletMultiButton = (props: any) => {
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const isPending = sessionStorage.getItem("street_sync_install_pending");
-      setHasPendingInstall(Boolean(isPending));
+      let isPending = false;
+      try {
+        isPending = Boolean(sessionStorage.getItem("street_sync_install_pending"));
+      } catch {}
+      setHasPendingInstall(isPending);
 
       const session = getStoredPhantomSession();
       const hasSession = Boolean(session && session.publicKey);

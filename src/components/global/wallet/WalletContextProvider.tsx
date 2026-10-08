@@ -60,11 +60,16 @@ const WalletExtensionWatcher: FC = () => {
     if (typeof window === "undefined" || connected) return;
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp()) return;
 
-    const autoOpen = sessionStorage.getItem("street_sync_auto_open_modal");
-    if (autoOpen === "true") {
-      sessionStorage.removeItem("street_sync_auto_open_modal");
-      sessionStorage.removeItem("street_sync_install_pending");
+    let autoOpen: string | null = null;
+    try {
+      autoOpen = sessionStorage.getItem("street_sync_auto_open_modal");
+      if (autoOpen === "true") {
+        sessionStorage.removeItem("street_sync_auto_open_modal");
+        sessionStorage.removeItem("street_sync_install_pending");
+      }
+    } catch {}
 
+    if (autoOpen === "true") {
       const timer = setTimeout(() => {
         setVisible(true);
         toast.custom(
@@ -106,12 +111,17 @@ const WalletExtensionWatcher: FC = () => {
     if (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp()) return;
 
     const handleTabFocus = () => {
-      const isPending = sessionStorage.getItem("street_sync_install_pending");
+      let isPending = false;
+      try {
+        isPending = Boolean(sessionStorage.getItem("street_sync_install_pending"));
+      } catch {}
       if (!isPending) return;
 
       const hasSolana = Boolean((window as any).solana || (window as any).phantom || (window as any).solflare);
       if (hasSolana) {
-        sessionStorage.removeItem("street_sync_install_pending");
+        try {
+          sessionStorage.removeItem("street_sync_install_pending");
+        } catch {}
         setVisible(true);
         toast.custom(
           (t) => (
@@ -157,8 +167,10 @@ const WalletExtensionWatcher: FC = () => {
               <button
                 onClick={() => {
                   toast.dismiss(t.id);
-                  sessionStorage.setItem("street_sync_auto_open_modal", "true");
-                  sessionStorage.removeItem("street_sync_install_pending");
+                  try {
+                    sessionStorage.setItem("street_sync_auto_open_modal", "true");
+                    sessionStorage.removeItem("street_sync_install_pending");
+                  } catch {}
                   window.location.reload();
                 }}
                 className="px-3 py-1.5 bg-primary text-primary-foreground font-bold rounded-lg text-xs hover:bg-primary/90 transition-all shrink-0 ml-2 shadow-sm font-display uppercase tracking-wider"
@@ -257,8 +269,10 @@ const PhantomMobileRedirectWatcher: FC = () => {
     const res = processPhantomMobileRedirect();
     if (res.handled) {
       if (res.type === "connect" && res.publicKey) {
-        const storedWalletType =
-          sessionStorage.getItem("mobile_wallet_type") || "phantom";
+        let storedWalletType = "phantom";
+        try {
+          storedWalletType = sessionStorage.getItem("mobile_wallet_type") || "phantom";
+        } catch {}
         activateConnectedWallet(storedWalletType, res.publicKey);
 
         // Show avatar-based toast banner
@@ -311,8 +325,14 @@ const PhantomMobileRedirectWatcher: FC = () => {
     // Listen for in-memory deep links returned to Android WebView via evaluateJavascript
     const handleMobileConnectedEvent = (e: any) => {
       const detail = e.detail;
-      const walletType =
-        detail?.walletType || sessionStorage.getItem("mobile_wallet_type") || "phantom";
+      let walletType = detail?.walletType;
+      if (!walletType) {
+        try {
+          walletType = sessionStorage.getItem("mobile_wallet_type") || "phantom";
+        } catch {
+          walletType = "phantom";
+        }
+      }
       activateConnectedWallet(walletType, detail?.publicKey);
 
       if (detail?.publicKey) {
@@ -374,10 +394,13 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     [network]
   );
 
-  // Register Solana Mobile Wallet Standard (MWA) for mobile web and Solana Mobile WebShell
+  // Register Solana Mobile Wallet Standard (MWA) for mobile web and Solana Mobile WebShell (Android only)
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
+      const isAndroid = /Android/i.test(navigator.userAgent) || isStandaloneApp();
+      if (!isAndroid) return; // MWA standard is Android-only; avoid throwing on iOS Safari
+
       const origin = window.location.origin.startsWith("http")
         ? window.location.origin
         : "https://streetsync-ss.com";
@@ -420,34 +443,64 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
         typeof window !== "undefined" &&
         Boolean((window as any).phantom?.solana);
 
-      // Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
-      const mwaAdapter = new SolanaMobileWalletAdapter({
-        addressSelector: createDefaultAddressSelector(),
-        appIdentity: {
-          name: "Street Sync",
-          uri: origin,
-          icon: "/pwa-192x192.png",
-        },
-        authorizationResultCache: createDefaultAuthorizationResultCache(),
-        chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
-        onWalletNotFound: createMwaAdapterNotFoundHandler(),
-      });
+      const adapterList: any[] = [];
 
-      // On mobile browsers without desktop extension:
-      // Both Android and iOS use PhantomMobileWalletAdapter for 2-way universal deeplinks to Phantom app.
-      // mwaAdapter is registered separately for Solana Mobile Standard / Saga / Seed Vault devices.
-      const phantomAdapter =
-        isMobile && !hasInjectedPhantom
-          ? new PhantomMobileWalletAdapter()
-          : new PhantomWalletAdapter();
+      // 1. Native Solana Mobile Wallet Adapter (Saga, Seeker, Android MWA & Seed Vault apps)
+      // Strictly Android-only: avoid initializing MWA on iOS Safari where it can throw
+      if (isAndroid) {
+        try {
+          const mwaAdapter = new SolanaMobileWalletAdapter({
+            addressSelector: createDefaultAddressSelector(),
+            appIdentity: {
+              name: "Street Sync",
+              uri: origin,
+              icon: "/pwa-192x192.png",
+            },
+            authorizationResultCache: createDefaultAuthorizationResultCache(),
+            chain: network === WalletAdapterNetwork.Devnet ? "solana:devnet" : "solana:mainnet",
+            onWalletNotFound: createMwaAdapterNotFoundHandler(),
+          });
+          adapterList.push(mwaAdapter);
+        } catch (e) {
+          console.debug("[WalletContextProvider] MWA init error:", e);
+        }
+      }
 
-      return [
-        mwaAdapter,
-        phantomAdapter,
-        new SolflareWalletAdapter(),
-        new CoinbaseWalletAdapter(),
-        new TrustWalletAdapter(),
-      ];
+      // 2. Phantom Adapter:
+      // Mobile browsers without injected extension use PhantomMobileWalletAdapter for 2-way universal deeplinks.
+      // Desktop / injected browsers use PhantomWalletAdapter.
+      try {
+        const phantomAdapter =
+          isMobile && !hasInjectedPhantom
+            ? new PhantomMobileWalletAdapter()
+            : new PhantomWalletAdapter();
+        adapterList.push(phantomAdapter);
+      } catch (e) {
+        console.debug("[WalletContextProvider] Phantom adapter init error:", e);
+      }
+
+      // 3. Solflare
+      try {
+        adapterList.push(new SolflareWalletAdapter());
+      } catch (e) {
+        console.debug("[WalletContextProvider] Solflare adapter init error:", e);
+      }
+
+      // 4. Coinbase
+      try {
+        adapterList.push(new CoinbaseWalletAdapter());
+      } catch (e) {
+        console.debug("[WalletContextProvider] Coinbase adapter init error:", e);
+      }
+
+      // 5. Trust Wallet
+      try {
+        adapterList.push(new TrustWalletAdapter());
+      } catch (e) {
+        console.debug("[WalletContextProvider] Trust adapter init error:", e);
+      }
+
+      return adapterList;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [network]

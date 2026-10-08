@@ -31,8 +31,12 @@ export function ThemeProvider({
 
   useEffect(() => {
     // Safely retrieve the theme value on mount to prevent SSR/hydration mismatches
-    const stored = (localStorage.getItem(storageKey) as Theme) || defaultTheme;
-    setTheme(stored);
+    try {
+      const stored = (localStorage.getItem(storageKey) as Theme) || defaultTheme;
+      setTheme(stored);
+    } catch {
+      setTheme(defaultTheme);
+    }
   }, [storageKey, defaultTheme]);
 
   useEffect(() => {
@@ -46,7 +50,9 @@ export function ThemeProvider({
   const value = {
     theme,
     setTheme: (theme: Theme) => {
-      localStorage.setItem(storageKey, theme);
+      try {
+        localStorage.setItem(storageKey, theme);
+      } catch {}
       setTheme(theme);
     },
   };

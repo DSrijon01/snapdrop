@@ -94,4 +94,5 @@ Anchor.toml
 firebase-service-account*.json
 *service-account*.json
 
-
+# IDE
+.vscode/

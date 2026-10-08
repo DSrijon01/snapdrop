@@ -37,7 +37,10 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
       setIsAndroid(/Android/i.test(ua) || isStandaloneApp());
       setIsApp(isStandaloneApp());
 
-      const isPending = sessionStorage.getItem("street_sync_install_pending");
+      let isPending = false;
+      try {
+        isPending = Boolean(sessionStorage.getItem("street_sync_install_pending"));
+      } catch {}
       if (isPending) {
         setInstallStarted(true);
       }
@@ -99,7 +102,9 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
     }
 
     // Set pending installation flag
-    sessionStorage.setItem("street_sync_install_pending", "true");
+    try {
+      sessionStorage.setItem("street_sync_install_pending", "true");
+    } catch {}
     setInstallStarted(true);
 
     // Open Phantom website in a new tab
@@ -114,8 +119,10 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   const handleReloadAndConnect = () => {
     if (typeof window === "undefined") return;
     setIsReloading(true);
-    sessionStorage.setItem("street_sync_auto_open_modal", "true");
-    sessionStorage.removeItem("street_sync_install_pending");
+    try {
+      sessionStorage.setItem("street_sync_auto_open_modal", "true");
+      sessionStorage.removeItem("street_sync_install_pending");
+    } catch {}
     window.location.reload();
   };
 

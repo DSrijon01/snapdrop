@@ -66,7 +66,7 @@ export default function GlobalErrorPage({ error, reset }: ErrorPageProps) {
       }, 500);
     } catch (err) {
       console.error("Logout recovery failed:", err);
-      window.location.href = "/snapdrop/";
+      window.location.href = "/";
     }
   };
 

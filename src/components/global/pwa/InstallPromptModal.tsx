@@ -34,9 +34,12 @@ export function InstallPromptModal() {
     } catch {}
 
     // Check if already in standalone mode (already installed)
-    const isRunningStandalone =
-      window.matchMedia("(display-mode: standalone)").matches ||
-      (window.navigator as any).standalone === true;
+    let isRunningStandalone = false;
+    try {
+      isRunningStandalone =
+        (typeof window !== "undefined" && typeof window.matchMedia === "function" && window.matchMedia("(display-mode: standalone)").matches) ||
+        (typeof window !== "undefined" && (window.navigator as any)?.standalone === true);
+    } catch {}
     setIsStandalone(isRunningStandalone);
 
     // Detect mobile device (UserAgent or screen width < 768px)
