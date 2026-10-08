@@ -47,6 +47,17 @@ function StreetSyncContent() {
       }
     };
 
+    // Forward to /sessions if user is returning from a Sessions wallet action/SIWS
+    try {
+      const returnUrl = localStorage.getItem("phantom_mobile_return_url");
+      const pendingSiws = localStorage.getItem("street_sync_pending_siws");
+      if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {
+        localStorage.removeItem("phantom_mobile_return_url");
+        window.location.href = "/sessions";
+        return;
+      }
+    } catch {}
+
     handleGlobalResumption();
     window.addEventListener("switch_tab", handleSwitchTab);
     window.addEventListener("redirect_route", handleRedirectRoute);

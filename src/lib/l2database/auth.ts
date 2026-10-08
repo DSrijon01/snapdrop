@@ -41,9 +41,37 @@ export async function signInWithSolana(
 
   const messageBytes = new TextEncoder().encode(challengeMessage);
 
+  // Store pending SIWS intent so mobile deep-linking or page reloads can finalize session
+  if (typeof window !== "undefined") {
+    try {
+      const returnPath = window.location.pathname && window.location.pathname !== "/"
+        ? window.location.pathname
+        : "/sessions";
+      localStorage.setItem(
+        "street_sync_pending_siws",
+        JSON.stringify({
+          walletAddress,
+          challengeMessage,
+          timestamp,
+          returnUrl: returnPath,
+        })
+      );
+      localStorage.setItem("phantom_mobile_return_url", returnPath);
+      sessionStorage.setItem("phantom_mobile_return_url", returnPath);
+    } catch (e) {
+      console.warn("[signInWithSolana] Pending SIWS save note:", e);
+    }
+  }
+
   // 2. Request cryptographic signature from wallet
   const signatureBytes = await signMessage(messageBytes);
   const signatureBase58 = bs58.encode(signatureBytes);
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.removeItem("street_sync_pending_siws");
+    } catch {}
+  }
 
   // 3. Post to backend verification endpoint
   let data: any = null;
@@ -78,25 +106,29 @@ export async function signInWithSolana(
     );
   }
 
+  // Always record verified wallet session locally so user is never locked out of chat or posting
+  const saveLocalSession = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(
+        LOCAL_STORAGE_AUTH_KEY,
+        JSON.stringify({
+          uid: walletAddress,
+          walletAddress: walletAddress,
+          displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
+          isGuest: false,
+          authenticatedAt: Date.now(),
+          signature: signatureBase58,
+        })
+      );
+      window.dispatchEvent(new Event("streetsync_auth_changed"));
+    }
+  };
+
   // 4. Authenticate client session with Firebase Custom Token if available
   if (data && data.success && data.customToken) {
     try {
       const userCredential = await signInWithCustomToken(auth, data.customToken);
-
-      // Save active wallet address to local storage
-      if (typeof window !== "undefined") {
-        localStorage.setItem(
-          LOCAL_STORAGE_AUTH_KEY,
-          JSON.stringify({
-            uid: walletAddress,
-            walletAddress: walletAddress,
-            displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
-            isGuest: false,
-            authenticatedAt: Date.now(),
-          })
-        );
-        window.dispatchEvent(new Event("streetsync_auth_changed"));
-      }
+      saveLocalSession();
 
       return {
         user: userCredential.user,
@@ -110,7 +142,7 @@ export async function signInWithSolana(
     }
   }
 
-  // 5. Fallback for static hosting (GitHub Pages, etc.): Sign in via Firebase Anonymous Auth
+  // 5. Fallback for static hosting: Sign in via Firebase Anonymous Auth
   // and bind the user's verified Solana wallet address as their displayName
   try {
     const userCredential = await signInAnonymously(auth);
@@ -124,19 +156,7 @@ export async function signInWithSolana(
       }
     }
 
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        LOCAL_STORAGE_AUTH_KEY,
-        JSON.stringify({
-          uid: walletAddress,
-          walletAddress: walletAddress,
-          displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
-          isGuest: false,
-          authenticatedAt: Date.now(),
-        })
-      );
-      window.dispatchEvent(new Event("streetsync_auth_changed"));
-    }
+    saveLocalSession();
 
     return {
       user: userCredential.user,
@@ -149,25 +169,13 @@ export async function signInWithSolana(
     );
 
     // 6. Final sandbox/offline fallback: Local optimistic wallet session
+    saveLocalSession();
+
     const simulatedUser = {
       uid: walletAddress,
-      displayName: `User_${walletAddress.slice(0, 4)}`,
-      isAnonymous: true,
+      displayName: `${walletAddress.slice(0, 4)}..${walletAddress.slice(-4)}`,
+      isAnonymous: false,
     } as unknown as User;
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem(
-        LOCAL_STORAGE_AUTH_KEY,
-        JSON.stringify({
-          uid: walletAddress,
-          walletAddress: walletAddress,
-          displayName: `User_${walletAddress.slice(0, 4)}`,
-          isGuest: false,
-          authenticatedAt: Date.now(),
-        })
-      );
-      window.dispatchEvent(new Event("streetsync_auth_changed"));
-    }
 
     return {
       user: simulatedUser,

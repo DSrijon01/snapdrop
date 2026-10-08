@@ -98,14 +98,21 @@ class MainActivity : ComponentActivity() {
 
         if (scheme == "streetsync") {
             val query = uri.query
-            val path = uri.path?.removePrefix("/") ?: ""
+            val hostPart = uri.host?.takeIf { it.isNotBlank() } ?: ""
+            val pathPart = uri.path?.removePrefix("/") ?: ""
+            val fullPath = when {
+                hostPart.isNotBlank() && pathPart.isNotBlank() -> "$hostPart/$pathPart"
+                hostPart.isNotBlank() && hostPart != "callback" -> hostPart
+                hostPart == "callback" -> "callback"
+                else -> pathPart
+            }
             val baseHost = (BuildConfig.SOLANA_MOBILE_URL.trim().ifBlank { "https://streetsync-ss.com/" }).removeSuffix("/")
             val targetUrl = if (!query.isNullOrBlank()) {
-                "$baseHost/$path?$query"
+                if (fullPath.isNotBlank()) "$baseHost/$fullPath?$query" else "$baseHost/?$query"
             } else {
-                "$baseHost/$path"
+                if (fullPath.isNotBlank()) "$baseHost/$fullPath" else baseHost
             }
-            Log.i(TAG, "Routing streetsync deep link to WebView: $targetUrl")
+            Log.i(TAG, "Routing streetsync deep link to WebView: $targetUrl (fullPath: $fullPath)")
             webView.post {
                 val currentUrl = webView.url
                 // If WebView has an active page running, evaluate the deep link in-memory without page reload!
@@ -114,6 +121,10 @@ class MainActivity : ComponentActivity() {
                     val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
                     val js = """
                         (function() {
+                            if ('$fullPath' === 'sessions' && !window.location.pathname.includes('/sessions')) {
+                                window.history.pushState({}, document.title, '/sessions');
+                                window.dispatchEvent(new Event('popstate'));
+                            }
                             if (window.__handlePhantomDeepLink) {
                                 window.__handlePhantomDeepLink('$fullDeepLink');
                             } else {

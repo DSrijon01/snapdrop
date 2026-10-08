@@ -195,7 +195,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       }, 5 * 60 * 1000);
 
       try {
-        initiatePhantomMobileSignMessage(message);
+        const returnTarget = typeof window !== "undefined" && window.location.pathname.includes("sessions")
+          ? `${window.location.origin}/sessions`
+          : undefined;
+        initiatePhantomMobileSignMessage(message, returnTarget);
       } catch (err) {
         cleanup();
         reject(err);

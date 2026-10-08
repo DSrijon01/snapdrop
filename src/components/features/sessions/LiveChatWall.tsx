@@ -40,7 +40,8 @@ export function LiveChatWall({
   contextId,
 }: LiveChatWallProps) {
   const { publicKey } = useWallet();
-  const { isAuthenticated, requireAuth } = useSIWS();
+  const { user, isAuthenticated, requireAuth } = useSIWS();
+  const isUserAuthenticated = isAuthenticated || Boolean(publicKey);
   const [inputText, setInputText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -131,38 +132,43 @@ export function LiveChatWall({
     e.preventDefault();
     const text = inputText.trim();
     if (!text) return;
-    sendMessage(text);
 
-    // Push to Firebase Realtime Database
-    const authorName = publicKey
-      ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
-      : "You";
-    pushChatMessage(activeRoom.id, {
-      author: authorName,
-      avatarSeed: authorName,
-      content: text,
-      walletAddress: publicKey?.toBase58(),
-    }).catch((err) => {
-      console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
-    });
+    requireAuth(() => {
+      sendMessage(text);
 
-    setInputText("");
+      // Push to Firebase Realtime Database
+      const authorName = publicKey
+        ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
+        : user?.displayName || "You";
+      pushChatMessage(activeRoom.id, {
+        author: authorName,
+        avatarSeed: authorName,
+        content: text,
+        walletAddress: publicKey?.toBase58(),
+      }).catch((err) => {
+        console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
+      });
+
+      setInputText("");
+    }, "Sign In with Solana (SIWS) is required to chat.");
   };
 
   const handleQuickReaction = (reaction: string) => {
-    sendMessage(reaction);
+    requireAuth(() => {
+      sendMessage(reaction);
 
-    const authorName = publicKey
-      ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
-      : "You";
-    pushChatMessage(activeRoom.id, {
-      author: authorName,
-      avatarSeed: authorName,
-      content: reaction,
-      walletAddress: publicKey?.toBase58(),
-    }).catch((err) => {
-      console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
-    });
+      const authorName = publicKey
+        ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
+        : user?.displayName || "You";
+      pushChatMessage(activeRoom.id, {
+        author: authorName,
+        avatarSeed: authorName,
+        content: reaction,
+        walletAddress: publicKey?.toBase58(),
+      }).catch((err) => {
+        console.warn("[LiveChatWall] Firebase RTDB push fallback:", err);
+      });
+    }, "Sign In with Solana (SIWS) is required to send quick reactions.");
   };
 
   const getAuthorDisplay = (author: string) => {
@@ -490,7 +496,7 @@ export function LiveChatWall({
       </div>
 
       {/* Input Message Form or Dedicated SIWS Sign-In Gate */}
-      {!isAuthenticated ? (
+      {!isUserAuthenticated ? (
         <div className="p-2.5 sm:p-3 border-t border-border bg-gradient-to-r from-[#9945FF]/10 via-primary/10 to-[#14F195]/10 shrink-0">
           <button
             type="button"
@@ -500,7 +506,7 @@ export function LiveChatWall({
                 "Sign In with Solana (SIWS) is required to chat with the street."
               )
             }
-            className="w-full py-2 sm:py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#9945FF] via-primary to-[#14F195] hover:opacity-95 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 active:scale-98"
+            className="w-full py-2 sm:py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#9945FF] via-primary to-[#14F195] hover:opacity-95 text-white font-mono font-bold text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2 active:scale-98 cursor-pointer"
           >
             <Zap size={14} className="fill-white" />
             <span>Sign In with Solana to Chat</span>

@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { PlusCircle, Rocket, TrendingUp, TrendingDown, Clipboard, AlertCircle, Zap, ShieldCheck } from "lucide-react";
 import { Post, Position } from "./mockData";
 import { useSIWS } from "../l2database/SIWSContext";
+import { useWallet } from "@solana/wallet-adapter-react";
+import toast from "react-hot-toast";
 
 interface PostCreatorProps {
   onAddPost: (post: Omit<Post, "id" | "author" | "avatarSeed" | "createdAt" | "upvotes" | "comments">) => void;
@@ -10,7 +12,9 @@ interface PostCreatorProps {
 const FLAIRS = ["YOLO", "DD", "LOSS PORN", "GAIN PORN", "MEME", "DISCUSSION"] as const;
 
 export function PostCreator({ onAddPost }: PostCreatorProps) {
+  const { connected, publicKey } = useWallet();
   const { isAuthenticated, requireAuth } = useSIWS();
+  const isUserAuthenticated = isAuthenticated || Boolean(connected && publicKey);
   const [isOpen, setIsOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -65,6 +69,7 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
       setPosSize("");
       setPosLeverage("");
       setIsOpen(false);
+      toast.success("Post launched to Street Sync Sessions!");
     }, "Sign In with Solana (SIWS) is required to publish this post.");
   };
 
@@ -99,7 +104,7 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
             </span>
           </div>
           <span className="text-[10px] font-mono border border-border px-2.5 py-1 rounded-lg bg-card flex items-center gap-1.5 shadow-xs">
-            {isAuthenticated ? (
+            {isUserAuthenticated ? (
               <>
                 <ShieldCheck size={12} className="text-[#14F195]" />
                 <span className="text-foreground font-bold">POST</span>
@@ -342,13 +347,13 @@ export function PostCreator({ onAddPost }: PostCreatorProps) {
             </button>
             <button
               type="submit"
-              className={`px-6 py-2.5 rounded-xl text-sm font-black font-display uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg active:scale-98 ${
-                isAuthenticated
+              className={`px-6 py-2.5 rounded-xl text-sm font-black font-display uppercase tracking-widest transition-all flex items-center gap-2 shadow-lg active:scale-98 cursor-pointer ${
+                isUserAuthenticated
                   ? "bg-primary hover:bg-primary-hover text-primary-foreground shadow-primary/20 hover:scale-102"
                   : "bg-gradient-to-r from-[#9945FF] to-[#14F195] hover:opacity-95 text-white shadow-purple-500/20"
               }`}
             >
-              {isAuthenticated ? (
+              {isUserAuthenticated ? (
                 <>
                   <Rocket size={16} />
                   <span>Launch Post!</span>

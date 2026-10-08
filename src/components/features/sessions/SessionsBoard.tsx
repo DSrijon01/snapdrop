@@ -37,7 +37,7 @@ export function SessionsBoard() {
 
 function SessionsBoardContent() {
   const { publicKey } = useWallet();
-  const { openSIWSModal } = useSIWS();
+  const { openSIWSModal, user, isAuthenticated } = useSIWS();
 
   const [mounted, setMounted] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
@@ -207,10 +207,10 @@ function SessionsBoardContent() {
 
   // Actions
   const handleAddPost = (newPostData: Omit<Post, "id" | "author" | "avatarSeed" | "createdAt" | "upvotes" | "comments">) => {
-    const seed = publicKey ? publicKey.toString() : "degen-guest";
+    const seed = publicKey ? publicKey.toString() : (user?.displayName || "degen-guest");
     const authorName = publicKey 
       ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
-      : "Guest_Degen";
+      : (user?.displayName || "Guest_Degen");
 
     const newPost: Post = {
       id: `post-user-${Date.now()}`,
@@ -296,10 +296,10 @@ function SessionsBoardContent() {
   };
 
   const handleAddComment = (postId: string, content: string) => {
-    const seed = publicKey ? publicKey.toString() : "degen-guest";
+    const seed = publicKey ? publicKey.toString() : (user?.displayName || "degen-guest");
     const authorName = publicKey 
       ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
-      : "Guest_Degen";
+      : (user?.displayName || "Guest_Degen");
 
     const newComment: BoardComment = {
       id: `comment-user-${Date.now()}-${Math.random()}`,
@@ -330,10 +330,10 @@ function SessionsBoardContent() {
   };
 
   const handleSendChatMessage = (content: string) => {
-    const seed = publicKey ? publicKey.toString() : "degen-guest";
+    const seed = publicKey ? publicKey.toString() : (user?.displayName || "degen-guest");
     const authorName = publicKey 
       ? `User_${publicKey.toString().substring(0, 4).toUpperCase()}`
-      : "Guest_Degen";
+      : (user?.displayName || "Guest_Degen");
 
     const newChat: ChatMessage = {
       id: `chat-user-${Date.now()}`,

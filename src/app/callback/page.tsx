@@ -38,9 +38,42 @@ export default function CallbackPage() {
           const parsed = JSON.parse(rawPending);
           if (parsed.type && String(parsed.type).startsWith("EPLAYS_")) {
             returnUrl = "/e-plays";
+          } else if (parsed.type && String(parsed.type).startsWith("SESSION")) {
+            returnUrl = "/sessions";
           }
         }
       } catch {}
+
+      // Check for pending SIWS or Sessions intent
+      const pendingSiwsRaw = localStorage.getItem("street_sync_pending_siws");
+      if (pendingSiwsRaw || returnUrl.toLowerCase().includes("sessions")) {
+        returnUrl = "/sessions";
+        try {
+          if (pendingSiwsRaw) {
+            const pendingSiws = JSON.parse(pendingSiwsRaw);
+            const targetWallet = pendingSiws.walletAddress;
+            const sig = localStorage.getItem("street_sync_last_tx_signature");
+            if (targetWallet) {
+              localStorage.setItem(
+                "streetsync_solana_auth_user",
+                JSON.stringify({
+                  uid: targetWallet,
+                  walletAddress: targetWallet,
+                  displayName: `${targetWallet.slice(0, 4)}..${targetWallet.slice(-4)}`,
+                  isGuest: false,
+                  authenticatedAt: Date.now(),
+                  signature: sig || undefined,
+                })
+              );
+              localStorage.removeItem("street_sync_pending_siws");
+              window.dispatchEvent(new Event("streetsync_auth_changed"));
+              setStatus("Signed in with Solana! Returning to Sessions...");
+            }
+          }
+        } catch (siwsErr) {
+          console.warn("[CallbackPage] SIWS finalization note:", siwsErr);
+        }
+      }
 
       const cleanReturn = returnUrl.startsWith("http")
         ? new URL(returnUrl).pathname

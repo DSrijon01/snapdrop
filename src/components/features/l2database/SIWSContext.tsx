@@ -42,6 +42,107 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const [isSigning, setIsSigning] = useState(false);
 
+  // Auto-establish Web3 wallet identity when wallet is actively connected
+  useEffect(() => {
+    if (loading) return;
+    if (connected && publicKey) {
+      const pubkeyStr = publicKey.toBase58();
+      try {
+        const stored = localStorage.getItem("streetsync_solana_auth_user");
+        const parsed = stored ? JSON.parse(stored) : null;
+        if (!parsed || parsed.walletAddress !== pubkeyStr) {
+          localStorage.setItem(
+            "streetsync_solana_auth_user",
+            JSON.stringify({
+              uid: pubkeyStr,
+              walletAddress: pubkeyStr,
+              displayName: `${pubkeyStr.slice(0, 4)}..${pubkeyStr.slice(-4)}`,
+              isGuest: false,
+              authenticatedAt: Date.now(),
+            })
+          );
+          window.dispatchEvent(new Event("streetsync_auth_changed"));
+        }
+      } catch (err) {
+        console.warn("[SIWS] Auto-sync wallet session error:", err);
+      }
+    }
+  }, [connected, publicKey, loading]);
+
+  // Resumption handler for Mobile Wallet SIWS returns
+  useEffect(() => {
+    const checkAndCompleteMobileSIWS = (signatureFromEvent?: string) => {
+      try {
+        const pendingRaw = localStorage.getItem("street_sync_pending_siws");
+        if (!pendingRaw) return;
+
+        const pending = JSON.parse(pendingRaw);
+        // Valid for up to 15 minutes
+        if (Date.now() - pending.timestamp > 15 * 60 * 1000) {
+          localStorage.removeItem("street_sync_pending_siws");
+          return;
+        }
+
+        const sig =
+          signatureFromEvent ||
+          localStorage.getItem("street_sync_last_tx_signature");
+
+        const targetWallet = pending.walletAddress || (publicKey ? publicKey.toBase58() : null);
+        if (!targetWallet) return;
+
+        console.log("[SIWS] Finalizing pending mobile SIWS authentication for:", targetWallet);
+        localStorage.setItem(
+          "streetsync_solana_auth_user",
+          JSON.stringify({
+            uid: targetWallet,
+            walletAddress: targetWallet,
+            displayName: `${targetWallet.slice(0, 4)}..${targetWallet.slice(-4)}`,
+            isGuest: false,
+            authenticatedAt: Date.now(),
+            signature: sig || undefined,
+          })
+        );
+        localStorage.removeItem("street_sync_pending_siws");
+        window.dispatchEvent(new Event("streetsync_auth_changed"));
+
+        toast.success("Signed in with Solana (SIWS) successfully!", {
+          icon: "⚡",
+          style: {
+            borderRadius: "12px",
+            background: "#18181b",
+            color: "#fff",
+            border: "1px solid #27272a",
+          },
+        });
+
+        if (pendingAction) {
+          try {
+            pendingAction();
+          } catch (actErr) {
+            console.warn("[SIWS] Pending action execution note:", actErr);
+          }
+          setPendingAction(null);
+        }
+      } catch (err) {
+        console.warn("[SIWS] Error completing mobile SIWS:", err);
+      }
+    };
+
+    // Check on mount
+    checkAndCompleteMobileSIWS();
+
+    const handleSigned = (e: any) => {
+      checkAndCompleteMobileSIWS(e.detail);
+    };
+
+    window.addEventListener("phantom_mobile_signed", handleSigned);
+    window.addEventListener("phantom_mobile_connected", () => checkAndCompleteMobileSIWS());
+    return () => {
+      window.removeEventListener("phantom_mobile_signed", handleSigned);
+      window.removeEventListener("phantom_mobile_connected", () => checkAndCompleteMobileSIWS());
+    };
+  }, [publicKey, pendingAction]);
+
   // Invalidate session ONLY when an actively connected wallet explicitly differs from the authenticated wallet
   useEffect(() => {
     if (loading) return;
@@ -167,7 +268,24 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
   }, [loginAsGuest, pendingAction]);
 
   const requireAuth = useCallback((action: () => void, reason?: string) => {
-    if (isAuthenticated) {
+    const isWalletConnected = Boolean(connected && publicKey);
+    if (isAuthenticated || isWalletConnected) {
+      if (!isAuthenticated && publicKey) {
+        const pubkeyStr = publicKey.toBase58();
+        try {
+          localStorage.setItem(
+            "streetsync_solana_auth_user",
+            JSON.stringify({
+              uid: pubkeyStr,
+              walletAddress: pubkeyStr,
+              displayName: `${pubkeyStr.slice(0, 4)}..${pubkeyStr.slice(-4)}`,
+              isGuest: false,
+              authenticatedAt: Date.now(),
+            })
+          );
+          window.dispatchEvent(new Event("streetsync_auth_changed"));
+        } catch {}
+      }
       action();
     } else {
       openSIWSModal({
@@ -175,7 +293,7 @@ export function SIWSProvider({ children }: { children: React.ReactNode }) {
         onSuccess: action,
       });
     }
-  }, [isAuthenticated, openSIWSModal]);
+  }, [isAuthenticated, connected, publicKey, openSIWSModal]);
 
   return (
     <SIWSContext.Provider
