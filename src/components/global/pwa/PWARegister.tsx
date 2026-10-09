@@ -7,7 +7,7 @@ export function PWARegister() {
     if (typeof window === "undefined") return;
 
     // 1. Proactively purge legacy caches that may contain stale Next.js HTML documents
-    if ("caches" in window) {
+    if (typeof caches !== "undefined" && typeof caches.keys === "function") {
       caches.keys().then((keys) => {
         for (const key of keys) {
           if (key !== "street-sync-cache-v4") {
@@ -57,7 +57,7 @@ export function PWARegister() {
             sessionStorage.setItem(reloadKey, String(now));
           } catch {}
 
-          if ("caches" in window) {
+          if (typeof caches !== "undefined" && typeof caches.keys === "function") {
             caches.keys().then((names) => {
               return Promise.all(names.map((n) => caches.delete(n)));
             }).finally(() => {

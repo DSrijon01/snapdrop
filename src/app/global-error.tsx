@@ -35,20 +35,21 @@ export default function GlobalError({
         } catch {}
 
         if (typeof window !== "undefined") {
+          const win = window as any;
           // Unregister service workers and purge caches
           if ("serviceWorker" in navigator) {
             navigator.serviceWorker.getRegistrations().then((regs) => {
               for (const r of regs) r.unregister();
             });
           }
-          if ("caches" in window) {
-            window.caches.keys().then((names) => {
-              Promise.all(names.map((n) => window.caches.delete(n))).finally(() => {
-                window.location.reload();
+          if (typeof win.caches !== "undefined" && typeof win.caches.keys === "function") {
+            win.caches.keys().then((names: string[]) => {
+              Promise.all(names.map((n: string) => win.caches.delete(n))).finally(() => {
+                win.location.reload();
               });
             });
           } else {
-            window.location.reload();
+            win.location.reload();
           }
         }
       }
@@ -57,6 +58,7 @@ export default function GlobalError({
 
   const handleHardRefresh = () => {
     if (typeof window !== "undefined") {
+      const win = window as any;
       try {
         sessionStorage.clear();
       } catch {}
@@ -67,14 +69,14 @@ export default function GlobalError({
         });
       }
 
-      if ("caches" in window) {
-        window.caches.keys().then((names) => {
-          Promise.all(names.map((n) => window.caches.delete(n))).finally(() => {
-            window.location.href = "/";
+      if (typeof win.caches !== "undefined" && typeof win.caches.keys === "function") {
+        win.caches.keys().then((names: string[]) => {
+          Promise.all(names.map((n: string) => win.caches.delete(n))).finally(() => {
+            win.location.href = "/";
           });
         });
       } else {
-        window.location.href = "/";
+        win.location.href = "/";
       }
     }
   };
