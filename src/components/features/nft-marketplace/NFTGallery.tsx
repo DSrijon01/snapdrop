@@ -53,10 +53,10 @@ const generateRandomOwner = () => {
 
 // Mock data for display when no NFTs found or for preview
 const MOCK_NFTS = [
-    { name: "Cosmic Cube #001", image: "https://images.unsplash.com/photo-1634017839464-5c339ebe3cb4?w=400&h=400&fit=crop", ownerName: "CosmicTraveler", ownerAddress: "Cosm...9x1", mint: "MockMintAddress1" },
-    { name: "Neon Genesis", image: "https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?w=400&h=400&fit=crop", ownerName: "NeonKnight", ownerAddress: "Neon...7z2", mint: "MockMintAddress2" },
-    { name: "Abstract Thought", image: "https://images.unsplash.com/photo-1549490349-8643362247b5?w=400&h=400&fit=crop", ownerName: "AbstractArt", ownerAddress: "Abst...3y8", mint: "MockMintAddress3" },
-    { name: "Pixel Punk", image: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&h=400&fit=crop", ownerName: "PixelPunk", ownerAddress: "Pixe...1a9", mint: "MockMintAddress4" },
+    { name: "Ryuk's Covenant #001", image: "/nfts/southpark-deathnote-1.jpg", ownerName: "Cartman", ownerAddress: "Eric...9x1", mint: "MockMintAddress1" },
+    { name: "Detective L & Kyle #002", image: "/nfts/southpark-deathnote-2.jpg", ownerName: "DetectiveL", ownerAddress: "KylL...7z2", mint: "MockMintAddress2" },
+    { name: "Misa & Wendy #003", image: "/nfts/southpark-deathnote-3.jpg", ownerName: "MisaMisa", ownerAddress: "Misa...3y8", mint: "MockMintAddress3" },
+    { name: "Bus Stop Death Note #004", image: "/nfts/southpark-deathnote-4.jpg", ownerName: "StanMarsh", ownerAddress: "Stan...1a9", mint: "MockMintAddress4" },
 ];
 
 // Global in-memory cache for user's wallet NFTs to prevent redundant RPC fetches on tab switch
