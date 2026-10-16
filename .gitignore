@@ -54,6 +54,8 @@ scripts/
 Anchor.toml
 
 # Research paper temp files
+/PDF Analysis/
+/PDF analysis/
 /hashkey_whitepaper.pdf
 /hashkey_whitepaper.txt
 
