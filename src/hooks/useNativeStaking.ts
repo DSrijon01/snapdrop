@@ -37,6 +37,7 @@ export interface EpochDetails {
   slotIndex: number;
   slotsInEpoch: number;
   progressPercent: number;
+  estimatedRemainingTime: string;
 }
 
 export function useNativeStaking() {
@@ -62,11 +63,15 @@ export function useNativeStaking() {
 
       // Epoch Information
       const epoch = await withSolanaRetry(() => connection.getEpochInfo());
+      const remainingSlots = Math.max(0, epoch.slotsInEpoch - epoch.slotIndex);
+      const estTime = formatRemainingTime(remainingSlots);
+
       setEpochInfo({
         epoch: epoch.epoch,
         slotIndex: epoch.slotIndex,
         slotsInEpoch: epoch.slotsInEpoch,
         progressPercent: Number(((epoch.slotIndex / epoch.slotsInEpoch) * 100).toFixed(1)),
+        estimatedRemainingTime: estTime,
       });
 
       // Active Devnet Validators
@@ -436,4 +441,15 @@ export function useNativeStaking() {
 function formatValidatorName(votePubkey: string): string {
   const shortKey = `${votePubkey.slice(0, 4)}...${votePubkey.slice(-4)}`;
   return `Validator (${shortKey})`;
+}
+
+function formatRemainingTime(remainingSlots: number): string {
+  // Average slot time on Solana Devnet is ~0.45 seconds
+  const totalSeconds = Math.max(0, Math.floor(remainingSlots * 0.45));
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  if (hours > 0) {
+    return `~${hours}h ${minutes}m`;
+  }
+  return `~${minutes}m`;
 }

@@ -468,22 +468,45 @@ export function NativeStakingDashboard() {
                     <div className="flex flex-col gap-3 pt-1">
                       {account.status === "activating" ? (
                         <div className="space-y-3">
-                          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-start gap-2.5">
-                            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                            <div className="text-xs font-mono">
-                              <p className="text-amber-300 font-bold">
-                                Warming Up in Epoch #{epochInfo ? epochInfo.epoch : "..."} ({epochInfo?.progressPercent || 0}% complete)
-                              </p>
-                              <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">
-                                Under Solana consensus rules, a stake account must complete its activation epoch before it can be deactivated. Once this epoch reaches 100%, your stake will become <strong>Active</strong> and deactivation will unlock automatically.
-                              </p>
+                          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 space-y-3">
+                            <div className="flex items-center justify-between text-xs font-mono">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
+                                <span className="text-amber-300 font-bold uppercase tracking-wide">
+                                  Warmup Progress (Epoch #{epochInfo ? epochInfo.epoch : "..."})
+                                </span>
+                              </div>
+                              <span className="text-amber-400 font-bold text-sm">
+                                {epochInfo ? `${epochInfo.progressPercent}%` : "0%"}
+                              </span>
                             </div>
+
+                            {/* Warmup Progress Bar */}
+                            <div className="w-full bg-background/80 h-3 rounded-full overflow-hidden border border-amber-500/25 shadow-inner">
+                              <div
+                                className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full rounded-full transition-all duration-700 relative"
+                                style={{ width: `${Math.max(5, epochInfo?.progressPercent || 0)}%` }}
+                              >
+                                <div className="absolute inset-0 bg-white/25 animate-pulse" />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-0.5">
+                              <span>
+                                Time to Activation: <strong className="text-amber-300">{epochInfo?.estimatedRemainingTime || "calculating..."}</strong>
+                              </span>
+                              <span className="text-muted-foreground font-bold">Unlocks at 100%</span>
+                            </div>
+
+                            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed pt-2 border-t border-amber-500/15">
+                              * Solana consensus rule: New delegations must complete their initial activation epoch. Deactivation unlocks automatically once Epoch #{epochInfo ? epochInfo.epoch : ""} finishes.
+                            </p>
                           </div>
 
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between pt-1">
                             <span className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
                               <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                              <span>Warmup in progress</span>
+                              <span>Warming up to active state</span>
                             </span>
                             <button
                               type="button"
@@ -513,19 +536,42 @@ export function NativeStakingDashboard() {
                         </div>
                       ) : account.status === "deactivating" ? (
                         <div className="space-y-3">
-                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-3 flex items-start gap-2.5">
-                            <Clock className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
-                            <div className="text-xs font-mono">
-                              <p className="text-orange-300 font-bold">
-                                Cooling Down in Epoch #{epochInfo ? epochInfo.epoch : "..."} ({epochInfo?.progressPercent || 0}% complete)
-                              </p>
-                              <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">
-                                This stake is cooling down. Once Epoch #{epochInfo ? epochInfo.epoch : "..."} finishes, your full principal and rewards will become <strong>Inactive</strong> and ready to withdraw to your wallet.
-                              </p>
+                          <div className="bg-orange-500/10 border border-orange-500/25 rounded-2xl p-4 space-y-3">
+                            <div className="flex items-center justify-between text-xs font-mono">
+                              <div className="flex items-center gap-2">
+                                <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
+                                <span className="text-orange-300 font-bold uppercase tracking-wide">
+                                  Cooldown Progress (Epoch #{epochInfo ? epochInfo.epoch : "..."})
+                                </span>
+                              </div>
+                              <span className="text-orange-400 font-bold text-sm">
+                                {epochInfo ? `${epochInfo.progressPercent}%` : "0%"}
+                              </span>
                             </div>
+
+                            {/* Cooldown Progress Bar */}
+                            <div className="w-full bg-background/80 h-3 rounded-full overflow-hidden border border-orange-500/25 shadow-inner">
+                              <div
+                                className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 h-full rounded-full transition-all duration-700 relative"
+                                style={{ width: `${Math.max(5, epochInfo?.progressPercent || 0)}%` }}
+                              >
+                                <div className="absolute inset-0 bg-white/25 animate-pulse" />
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-0.5">
+                              <span>
+                                Time to Withdrawal: <strong className="text-orange-300">{epochInfo?.estimatedRemainingTime || "calculating..."}</strong>
+                              </span>
+                              <span className="text-muted-foreground font-bold">Unlocks at 100%</span>
+                            </div>
+
+                            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed pt-2 border-t border-orange-500/15">
+                              * Deactivation successfully broadcasted! At epoch boundary, your stake becomes Inactive and your full SOL + rewards will be unlocked for 1-click withdrawal.
+                            </p>
                           </div>
 
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between pt-1">
                             <span className="text-xs text-orange-400 font-mono">Cooldown in progress</span>
                             <span className="px-4 py-2 bg-muted/60 border border-border/80 text-muted-foreground rounded-xl text-xs font-bold uppercase font-mono cursor-not-allowed opacity-70">
                               In Cooldown
