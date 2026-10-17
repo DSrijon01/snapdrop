@@ -47,6 +47,7 @@ export function NativeStakingDashboard() {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"list" | "cards">("list");
+  const [mobileTab, setMobileTab] = useState<"stake" | "positions">("stake");
 
   // Set default validator once loaded
   useMemo(() => {
@@ -104,32 +105,32 @@ export function NativeStakingDashboard() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8">
-      {/* 1. Global Network & Epoch Stats Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-8">
+      {/* 1. Global Network & Epoch Stats Bar (2x2 grid on mobile, 4-col on desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Epoch Card */}
-        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-mono uppercase mb-2">
+        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-lg relative overflow-hidden">
+          <div className="flex items-center justify-between text-muted-foreground text-[10px] sm:text-xs font-mono uppercase mb-1 sm:mb-2">
             <span>Devnet Epoch</span>
-            <Clock className="w-4 h-4 text-primary" />
+            <Clock className="w-3.5 h-3.5 text-primary" />
           </div>
-          <div className="flex items-baseline justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black font-display text-foreground">
-                {epochInfo ? `#${epochInfo.epoch}` : "Loading..."}
+          <div className="flex items-baseline justify-between flex-wrap gap-1">
+            <div className="flex items-baseline gap-1.5 sm:gap-2">
+              <span className="text-lg sm:text-2xl font-black font-display text-foreground">
+                {epochInfo ? `#${epochInfo.epoch}` : "..."}
               </span>
-              <span className="text-xs font-mono text-emerald-400 font-bold">
+              <span className="text-[10px] sm:text-xs font-mono text-emerald-400 font-bold">
                 {epochInfo ? `${epochInfo.progressPercent}%` : ""}
               </span>
             </div>
             {epochInfo?.estimatedRemainingTime && (
-              <span className="text-[11px] font-mono text-primary font-semibold">
+              <span className="text-[9px] sm:text-[11px] font-mono text-primary font-semibold">
                 {epochInfo.estimatedRemainingTime} left
               </span>
             )}
           </div>
           {/* Progress bar */}
-          <div className="w-full bg-muted/40 h-1.5 rounded-full mt-3 overflow-hidden">
+          <div className="w-full bg-muted/40 h-1 sm:h-1.5 rounded-full mt-2 sm:mt-3 overflow-hidden">
             <div
               className="bg-primary h-full transition-all duration-500 rounded-full"
               style={{ width: `${epochInfo?.progressPercent || 0}%` }}
@@ -138,80 +139,110 @@ export function NativeStakingDashboard() {
         </div>
 
         {/* Active Validators */}
-        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-mono uppercase mb-2">
-            <span>Online Validators</span>
-            <Server className="w-4 h-4 text-purple-400" />
+        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-lg">
+          <div className="flex items-center justify-between text-muted-foreground text-[10px] sm:text-xs font-mono uppercase mb-1 sm:mb-2">
+            <span>Validators</span>
+            <Server className="w-3.5 h-3.5 text-purple-400" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black font-display text-foreground">
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-lg sm:text-2xl font-black font-display text-foreground">
               {validators.length}
             </span>
-            <span className="text-xs font-mono text-muted-foreground">Active Nodes</span>
+            <span className="text-[10px] sm:text-xs font-mono text-muted-foreground">Active Nodes</span>
           </div>
-          <p className="text-[11px] text-muted-foreground font-mono mt-3 truncate">
-            Securing Solana Devnet
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground font-mono mt-1 sm:mt-3 truncate">
+            Securing Devnet
           </p>
         </div>
 
         {/* User Balance */}
-        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-mono uppercase mb-2">
-            <span>Available Balance</span>
-            <Coins className="w-4 h-4 text-emerald-400" />
+        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-lg">
+          <div className="flex items-center justify-between text-muted-foreground text-[10px] sm:text-xs font-mono uppercase mb-1 sm:mb-2">
+            <span>Available</span>
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black font-display text-foreground">
-              {availableSol.toFixed(4)}
+            <span className="text-lg sm:text-2xl font-black font-display text-foreground">
+              {availableSol.toFixed(2)}
             </span>
-            <span className="text-xs font-mono text-primary font-bold">SOL</span>
+            <span className="text-[10px] sm:text-xs font-mono text-primary font-bold">SOL</span>
           </div>
-          <p className="text-[11px] text-muted-foreground font-mono mt-3">
-            Ready for delegation
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground font-mono mt-1 sm:mt-3">
+            Ready to stake
           </p>
         </div>
 
         {/* User Staked Total */}
-        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center justify-between text-muted-foreground text-xs font-mono uppercase mb-2">
-            <span>Your Staked SOL</span>
-            <ShieldCheck className="w-4 h-4 text-primary" />
+        <div className="bg-card/40 backdrop-blur-md border border-border/80 rounded-xl sm:rounded-2xl p-3 sm:p-5 shadow-lg">
+          <div className="flex items-center justify-between text-muted-foreground text-[10px] sm:text-xs font-mono uppercase mb-1 sm:mb-2">
+            <span>Your Staked</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-primary" />
           </div>
           <div className="flex items-baseline gap-1">
-            <span className="text-2xl font-black font-display text-foreground">
-              {totalUserStakedSol.toFixed(4)}
+            <span className="text-lg sm:text-2xl font-black font-display text-foreground">
+              {totalUserStakedSol.toFixed(2)}
             </span>
-            <span className="text-xs font-mono text-purple-400 font-bold">SOL</span>
+            <span className="text-[10px] sm:text-xs font-mono text-purple-400 font-bold">SOL</span>
           </div>
-          <p className="text-[11px] text-muted-foreground font-mono mt-3">
-            Across {stakeAccounts.length} stake account{stakeAccounts.length !== 1 ? "s" : ""}
+          <p className="text-[10px] sm:text-[11px] text-muted-foreground font-mono mt-1 sm:mt-3 truncate">
+            {stakeAccounts.length} position{stakeAccounts.length !== 1 ? "s" : ""}
           </p>
         </div>
       </div>
 
+      {/* Mobile Tab Switcher: Instant 1-tap toggle between Staking and Positions */}
+      <div className="flex lg:hidden w-full bg-muted/40 p-1 rounded-2xl border border-border/60">
+        <button
+          type="button"
+          onClick={() => setMobileTab("stake")}
+          className={`flex-1 py-2 text-xs font-mono font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === "stake"
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Zap className="w-3.5 h-3.5" />
+          <span>Delegate Stake</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("positions")}
+          className={`flex-1 py-2 text-xs font-mono font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+            mobileTab === "positions"
+              ? "bg-primary text-primary-foreground shadow-md"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          <Layers className="w-3.5 h-3.5" />
+          <span>My Positions ({stakeAccounts.length})</span>
+        </button>
+      </div>
+
       {/* 2. Main Delegation & Portfolio Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
         {/* Left Side: Delegate Stake Card (5 cols) */}
-        <div className="lg:col-span-5 bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl p-6 shadow-2xl relative overflow-hidden space-y-6">
+        <div className={`lg:col-span-5 bg-card/45 backdrop-blur-md border border-border/80 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-xl relative overflow-hidden space-y-4 sm:space-y-6 ${
+          mobileTab === "stake" ? "block" : "hidden lg:block"
+        }`}>
           <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
-                <Zap className="w-5 h-5 text-primary" />
+              <h2 className="text-lg sm:text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
+                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
                 Delegate Stake
               </h2>
-              <p className="text-xs text-muted-foreground font-mono mt-0.5">
+              <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-0.5">
                 Native Solana Stake Program delegation
               </p>
             </div>
             <button
               onClick={refreshData}
               disabled={loading}
-              className="p-2 rounded-xl border border-border/60 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
+              className="p-1.5 sm:p-2 rounded-xl border border-border/60 hover:bg-muted/40 text-muted-foreground hover:text-foreground transition-all"
               title="Refresh Network Data"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-primary" : ""}`} />
+              <RefreshCw className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${loading ? "animate-spin text-primary" : ""}`} />
             </button>
           </div>
 
@@ -375,14 +406,16 @@ export function NativeStakingDashboard() {
         </div>
 
         {/* Right Side: My Native Stake Positions (7 cols) */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className={`lg:col-span-7 space-y-4 sm:space-y-6 ${
+          mobileTab === "positions" ? "block" : "hidden lg:block"
+        }`}>
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
-                <Layers className="w-5 h-5 text-purple-400" />
+              <h2 className="text-lg sm:text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
+                <Layers className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
                 My Stake Accounts
               </h2>
-              <p className="text-xs text-muted-foreground font-mono mt-0.5">
+              <p className="text-[11px] sm:text-xs text-muted-foreground font-mono mt-0.5">
                 Active onchain positions managed by your wallet
               </p>
             </div>
@@ -468,8 +501,92 @@ export function NativeStakingDashboard() {
                 </div>
               )}
 
-              {/* Table */}
-              <div className="bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl overflow-hidden shadow-xl">
+              {/* Mobile Compact Cards List (sm:hidden) */}
+              <div className="block sm:hidden space-y-2.5">
+                {stakeAccounts.map((account) => {
+                  const pubkeyStr = account.pubkey.toBase58();
+                  const shortAccount = `${pubkeyStr.slice(0, 4)}...${pubkeyStr.slice(-4)}`;
+                  const isCopied = copiedKey === pubkeyStr;
+
+                  return (
+                    <div key={pubkeyStr} className="bg-card/45 backdrop-blur-md border border-border/80 rounded-2xl p-3.5 space-y-2.5 shadow-md">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-foreground text-xs font-mono">
+                          <span>{shortAccount}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleCopy(pubkeyStr)}
+                            className="p-1 hover:text-primary transition-colors text-muted-foreground"
+                            title="Copy"
+                          >
+                            {isCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                          </button>
+                          <a
+                            href={`https://explorer.solana.com/address/${pubkeyStr}?cluster=devnet`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="p-1 hover:text-primary transition-colors text-muted-foreground"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-foreground text-sm font-mono">
+                            {account.solBalance.toFixed(4)} <span className="text-primary text-[10px]">SOL</span>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between text-[11px] font-mono border-t border-border/40 pt-2">
+                        <div className="flex items-center gap-1.5">
+                          <StatusBadge status={account.status} />
+                          {(account.status === "activating" || account.status === "deactivating") && (
+                            <span className="text-[10px] text-amber-300 font-semibold">
+                              {epochInfo?.estimatedRemainingTime || "..."}
+                            </span>
+                          )}
+                        </div>
+
+                        <div>
+                          {account.status === "activating" ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-muted/50 border border-border/60 text-muted-foreground rounded-lg text-[10px] font-bold">
+                              <Lock className="w-3 h-3 text-amber-400" />
+                              <span>Locked</span>
+                            </span>
+                          ) : account.status === "active" ? (
+                            <button
+                              type="button"
+                              onClick={() => deactivateStake(account.pubkey)}
+                              disabled={actionLoading}
+                              className="px-3 py-1 bg-destructive/15 border border-destructive/30 text-destructive-foreground text-[10px] font-bold uppercase rounded-lg"
+                            >
+                              Deactivate
+                            </button>
+                          ) : account.status === "deactivating" ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-lg text-[10px] font-bold">
+                              <Clock className="w-3 h-3 animate-spin" />
+                              <span>Cooldown</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => withdrawStake(account.pubkey, account.lamports)}
+                              disabled={actionLoading}
+                              className="px-3 py-1 bg-emerald-500 text-black text-[10px] font-bold uppercase rounded-lg flex items-center gap-1"
+                            >
+                              <span>Withdraw</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop/Tablet Table View (hidden sm:block) */}
+              <div className="hidden sm:block bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl overflow-hidden shadow-xl">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs font-mono">
                     <thead className="bg-muted/40 border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider">
