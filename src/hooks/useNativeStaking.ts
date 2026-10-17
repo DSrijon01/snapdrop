@@ -38,6 +38,7 @@ export interface EpochDetails {
   slotsInEpoch: number;
   progressPercent: number;
   estimatedRemainingTime: string;
+  slotDurationSec: number;
 }
 
 export function useNativeStaking() {
@@ -64,7 +65,23 @@ export function useNativeStaking() {
       // Epoch Information
       const epoch = await withSolanaRetry(() => connection.getEpochInfo());
       const remainingSlots = Math.max(0, epoch.slotsInEpoch - epoch.slotIndex);
-      const estTime = formatRemainingTime(remainingSlots);
+
+      // Measure real slot duration from performance samples on cluster
+      let slotDurationSec = 0.4;
+      try {
+        const perfSamples = await connection.getRecentPerformanceSamples(4);
+        if (perfSamples && perfSamples.length > 0) {
+          const totalSecs = perfSamples.reduce((acc, s) => acc + s.samplePeriodSecs, 0);
+          const totalSlots = perfSamples.reduce((acc, s) => acc + s.numSlots, 0);
+          if (totalSlots > 0) {
+            slotDurationSec = totalSecs / totalSlots;
+          }
+        }
+      } catch (perfErr) {
+        console.warn("Could not fetch cluster performance samples, using default slot duration:", perfErr);
+      }
+
+      const estTime = formatRemainingTime(remainingSlots, slotDurationSec);
 
       setEpochInfo({
         epoch: epoch.epoch,
@@ -72,6 +89,7 @@ export function useNativeStaking() {
         slotsInEpoch: epoch.slotsInEpoch,
         progressPercent: Number(((epoch.slotIndex / epoch.slotsInEpoch) * 100).toFixed(1)),
         estimatedRemainingTime: estTime,
+        slotDurationSec,
       });
 
       // Active Devnet Validators
@@ -141,6 +159,7 @@ export function useNativeStaking() {
         accountsMap.set(item.pubkey.toBase58(), item);
       }
 
+      const currentEpoch = epochInfo?.epoch ?? (await withSolanaRetry(() => connection.getEpochInfo())).epoch;
       const parsedList: UserStakeAccount[] = [];
 
       for (const item of Array.from(accountsMap.values())) {
@@ -157,20 +176,38 @@ export function useNativeStaking() {
         const activationEpoch = delegation?.activationEpoch ? parseInt(delegation.activationEpoch) : undefined;
         const deactivationEpoch = delegation?.deactivationEpoch ? parseInt(delegation.deactivationEpoch) : undefined;
 
-        // Query status from stake activation API
+        // Derive consensus status directly from parsed stake delegation (matches Solana core runtime state machine)
         let status: UserStakeAccount["status"] = "inactive";
         let activeStake = 0;
 
-        try {
-          const activation = await connection.getStakeActivation(pubkey);
-          status = activation.state;
-          activeStake = activation.active / LAMPORTS_PER_SOL;
-        } catch {
-          if (voter) {
-            status = "active";
-            activeStake = lamports / LAMPORTS_PER_SOL;
-          } else {
+        if (!delegation || !voter || delegation.stake === "0") {
+          status = "inactive";
+        } else {
+          const actEpoch = activationEpoch !== undefined ? activationEpoch : -1;
+          const deactEpoch = deactivationEpoch !== undefined ? deactivationEpoch : -1;
+
+          if (actEpoch === deactEpoch) {
+            // Deactivated in the same epoch it was delegated: was never active, already inactive and ready to withdraw!
             status = "inactive";
+            activeStake = 0;
+          } else if (currentEpoch < actEpoch) {
+            status = "activating";
+            activeStake = 0;
+          } else if (currentEpoch === actEpoch) {
+            status = deactEpoch !== -1 && deactEpoch <= currentEpoch ? "inactive" : "activating";
+            activeStake = 0;
+          } else if (currentEpoch > actEpoch) {
+            if (deactEpoch === -1 || deactEpoch > currentEpoch) {
+              status = "active";
+              activeStake = Number(delegation.stake) / LAMPORTS_PER_SOL;
+            } else if (deactEpoch === currentEpoch) {
+              status = "deactivating";
+              activeStake = Number(delegation.stake) / LAMPORTS_PER_SOL;
+            } else {
+              // currentEpoch > deactEpoch
+              status = "inactive";
+              activeStake = 0;
+            }
           }
         }
 
@@ -443,11 +480,15 @@ function formatValidatorName(votePubkey: string): string {
   return `Validator (${shortKey})`;
 }
 
-function formatRemainingTime(remainingSlots: number): string {
-  // Average slot time on Solana Devnet is ~0.45 seconds
-  const totalSeconds = Math.max(0, Math.floor(remainingSlots * 0.45));
-  const hours = Math.floor(totalSeconds / 3600);
+function formatRemainingTime(remainingSlots: number, slotDurationSec: number = 0.4): string {
+  const totalSeconds = Math.max(0, Math.floor(remainingSlots * slotDurationSec));
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (days > 0) {
+    return `~${days}d ${hours}h ${minutes}m`;
+  }
   if (hours > 0) {
     return `~${hours}h ${minutes}m`;
   }

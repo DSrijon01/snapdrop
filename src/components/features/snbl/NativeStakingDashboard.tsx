@@ -106,13 +106,20 @@ export function NativeStakingDashboard() {
             <span>Devnet Epoch</span>
             <Clock className="w-4 h-4 text-primary" />
           </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-black font-display text-foreground">
-              {epochInfo ? `#${epochInfo.epoch}` : "Loading..."}
-            </span>
-            <span className="text-xs font-mono text-emerald-400">
-              {epochInfo ? `${epochInfo.progressPercent}%` : ""}
-            </span>
+          <div className="flex items-baseline justify-between">
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-black font-display text-foreground">
+                {epochInfo ? `#${epochInfo.epoch}` : "Loading..."}
+              </span>
+              <span className="text-xs font-mono text-emerald-400 font-bold">
+                {epochInfo ? `${epochInfo.progressPercent}%` : ""}
+              </span>
+            </div>
+            {epochInfo?.estimatedRemainingTime && (
+              <span className="text-[11px] font-mono text-primary font-semibold">
+                {epochInfo.estimatedRemainingTime} left
+              </span>
+            )}
           </div>
           {/* Progress bar */}
           <div className="w-full bg-muted/40 h-1.5 rounded-full mt-3 overflow-hidden">
@@ -579,17 +586,24 @@ export function NativeStakingDashboard() {
                           </div>
                         </div>
                       ) : (
-                        <div className="w-full flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground font-mono">
-                            Stake is inactive. Full SOL + Rent reserve ready to withdraw.
-                          </span>
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-0.5">
+                            <p className="text-xs font-bold text-emerald-300 font-mono flex items-center gap-1.5">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                              <span>Stake Inactive & Fully Unlocked</span>
+                            </p>
+                            <p className="text-[11px] text-muted-foreground font-mono">
+                              Principal + Rent Reserve ({account.solBalance.toFixed(4)} SOL) are ready to withdraw to your wallet.
+                            </p>
+                          </div>
                           <button
                             type="button"
                             onClick={() => withdrawStake(account.pubkey, account.lamports)}
                             disabled={actionLoading}
-                            className="px-5 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-400 rounded-xl text-xs font-bold uppercase font-mono transition-all disabled:opacity-50"
+                            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold uppercase font-mono rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
                           >
-                            Withdraw {account.solBalance.toFixed(4)} SOL
+                            <span>Withdraw {account.solBalance.toFixed(4)} SOL</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       )}
