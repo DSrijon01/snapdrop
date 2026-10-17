@@ -21,6 +21,8 @@ import {
   ChevronDown,
   Lock,
   Info,
+  List,
+  LayoutGrid,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -44,6 +46,7 @@ export function NativeStakingDashboard() {
   const [selectedValidator, setSelectedValidator] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
 
   // Set default validator once loaded
   useMemo(() => {
@@ -58,6 +61,10 @@ export function NativeStakingDashboard() {
 
   const totalUserStakedSol = useMemo(() => {
     return stakeAccounts.reduce((acc, curr) => acc + curr.solBalance, 0);
+  }, [stakeAccounts]);
+
+  const hasWarmingOrCooling = useMemo(() => {
+    return stakeAccounts.some((a) => a.status === "activating" || a.status === "deactivating");
   }, [stakeAccounts]);
 
   const availableSol = solBalance / LAMPORTS_PER_SOL;
@@ -379,9 +386,43 @@ export function NativeStakingDashboard() {
                 Active onchain positions managed by your wallet
               </p>
             </div>
-            <span className="text-xs font-mono font-bold bg-muted/40 border border-border/60 px-3 py-1 rounded-xl text-foreground">
-              {stakeAccounts.length} Account{stakeAccounts.length !== 1 ? "s" : ""}
-            </span>
+            <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              {stakeAccounts.length > 0 && (
+                <div className="flex bg-muted/40 p-1 rounded-xl border border-border/60">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("list")}
+                    className={`px-2 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
+                      viewMode === "list"
+                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Compact List View"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">List</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode("cards")}
+                    className={`px-2 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
+                      viewMode === "cards"
+                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                    title="Detailed Card View"
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Cards</span>
+                  </button>
+                </div>
+              )}
+
+              <span className="text-xs font-mono font-bold bg-muted/40 border border-border/60 px-3 py-1.5 rounded-xl text-foreground">
+                {stakeAccounts.length} Account{stakeAccounts.length !== 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
 
           {stakeAccounts.length === 0 ? (
@@ -399,8 +440,154 @@ export function NativeStakingDashboard() {
                 </p>
               </div>
             </div>
+          ) : viewMode === "list" ? (
+            /* Compact List / Table View */
+            <div className="space-y-4">
+              {/* Single Shared Epoch Progress Banner for all accounts */}
+              {hasWarmingOrCooling && (
+                <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
+                    <div>
+                      <p className="text-xs font-mono font-bold text-amber-300">
+                        Epoch #{epochInfo ? epochInfo.epoch : "..."} Progress: {epochInfo ? `${epochInfo.progressPercent}%` : "..."} ({epochInfo?.estimatedRemainingTime || "calculating..."} left)
+                      </p>
+                      <p className="text-[11px] font-mono text-muted-foreground mt-0.5">
+                        New delegations activate at 100%. Deactivations unlock for 1-click withdrawal.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-full sm:w-44 bg-background/80 h-2.5 rounded-full overflow-hidden border border-amber-500/25 shadow-inner shrink-0">
+                    <div
+                      className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full rounded-full transition-all duration-700 relative"
+                      style={{ width: `${Math.max(5, epochInfo?.progressPercent || 0)}%` }}
+                    >
+                      <div className="absolute inset-0 bg-white/25 animate-pulse" />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Table */}
+              <div className="bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead className="bg-muted/40 border-b border-border/60 text-muted-foreground uppercase text-[10px] tracking-wider">
+                      <tr>
+                        <th className="py-3 px-4">Account & Validator</th>
+                        <th className="py-3 px-4">Balance</th>
+                        <th className="py-3 px-4">Status & Timing</th>
+                        <th className="py-3 px-4 text-right">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border/40">
+                      {stakeAccounts.map((account) => {
+                        const pubkeyStr = account.pubkey.toBase58();
+                        const shortAccount = `${pubkeyStr.slice(0, 4)}...${pubkeyStr.slice(-4)}`;
+                        const isCopied = copiedKey === pubkeyStr;
+
+                        return (
+                          <tr key={pubkeyStr} className="hover:bg-muted/20 transition-colors">
+                            {/* Account & Validator */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-1.5 font-bold text-foreground">
+                                <span>{shortAccount}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy(pubkeyStr)}
+                                  className="p-1 hover:text-primary transition-colors text-muted-foreground"
+                                  title="Copy Stake Account"
+                                >
+                                  {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                                </button>
+                                <a
+                                  href={`https://explorer.solana.com/address/${pubkeyStr}?cluster=devnet`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 hover:text-primary transition-colors text-muted-foreground"
+                                  title="View on Solana Explorer"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </a>
+                              </div>
+                              <div className="text-[11px] text-muted-foreground truncate max-w-[150px] sm:max-w-[200px]">
+                                {account.voter ? `Node: ${account.voter.slice(0, 6)}...${account.voter.slice(-4)}` : "None (Inactive)"}
+                              </div>
+                            </td>
+
+                            {/* Balance */}
+                            <td className="py-3.5 px-4">
+                              <div className="font-bold text-foreground text-sm">
+                                {account.solBalance.toFixed(4)} <span className="text-primary text-xs">SOL</span>
+                              </div>
+                              <div className="text-[10px] text-muted-foreground">
+                                Active: {account.activeStake.toFixed(2)} SOL
+                              </div>
+                            </td>
+
+                            {/* Status & Timing */}
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <StatusBadge status={account.status} />
+                                {account.status === "activating" && (
+                                  <span className="text-[11px] text-amber-300 font-semibold hidden sm:inline">
+                                    {epochInfo?.estimatedRemainingTime || "..."} left
+                                  </span>
+                                )}
+                                {account.status === "deactivating" && (
+                                  <span className="text-[11px] text-orange-300 font-semibold hidden sm:inline">
+                                    {epochInfo?.estimatedRemainingTime || "..."} left
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Action */}
+                            <td className="py-3.5 px-4 text-right">
+                              {account.status === "activating" ? (
+                                <span
+                                  className="inline-flex items-center gap-1 px-3 py-1 bg-muted/50 border border-border/60 text-muted-foreground rounded-xl text-[11px] font-bold cursor-not-allowed opacity-80"
+                                  title="Cannot deactivate while activating. Available once Epoch finishes."
+                                >
+                                  <Lock className="w-3 h-3 text-amber-400" />
+                                  <span>Locked</span>
+                                </span>
+                              ) : account.status === "active" ? (
+                                <button
+                                  type="button"
+                                  onClick={() => deactivateStake(account.pubkey)}
+                                  disabled={actionLoading}
+                                  className="px-3.5 py-1.5 bg-destructive/15 hover:bg-destructive/25 border border-destructive/30 text-destructive-foreground hover:text-destructive rounded-xl text-xs font-bold uppercase transition-all disabled:opacity-50"
+                                >
+                                  Deactivate
+                                </button>
+                              ) : account.status === "deactivating" ? (
+                                <span className="inline-flex items-center gap-1 px-3 py-1 bg-orange-500/10 border border-orange-500/20 text-orange-400 rounded-xl text-[11px] font-bold">
+                                  <Clock className="w-3 h-3 animate-spin" />
+                                  <span>Cooldown</span>
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => withdrawStake(account.pubkey, account.lamports)}
+                                  disabled={actionLoading}
+                                  className="px-3.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl text-xs font-bold uppercase transition-all shadow-md shrink-0 disabled:opacity-50 inline-flex items-center gap-1"
+                                >
+                                  <span>Withdraw</span>
+                                  <ArrowRight className="w-3 h-3" />
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           ) : (
-            /* Stake Accounts List */
+            /* Stake Accounts Detailed Cards */
             <div className="space-y-4">
               {stakeAccounts.map((account) => {
                 const pubkeyStr = account.pubkey.toBase58();
