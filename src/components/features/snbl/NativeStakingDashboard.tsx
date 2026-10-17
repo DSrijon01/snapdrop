@@ -21,8 +21,6 @@ import {
   ChevronDown,
   Lock,
   Info,
-  List,
-  LayoutGrid,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -46,7 +44,6 @@ export function NativeStakingDashboard() {
   const [selectedValidator, setSelectedValidator] = useState<string>("");
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [viewMode, setViewMode] = useState<"list" | "cards">("list");
   const [mobileTab, setMobileTab] = useState<"stake" | "positions">("stake");
 
   // Set default validator once loaded
@@ -419,43 +416,9 @@ export function NativeStakingDashboard() {
                 Active onchain positions managed by your wallet
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {/* View Toggle */}
-              {stakeAccounts.length > 0 && (
-                <div className="flex bg-muted/40 p-1 rounded-xl border border-border/60">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("list")}
-                    className={`px-2 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
-                      viewMode === "list"
-                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Compact List View"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">List</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode("cards")}
-                    className={`px-2 py-1 rounded-lg text-xs font-mono transition-all flex items-center gap-1 ${
-                      viewMode === "cards"
-                        ? "bg-primary text-primary-foreground font-bold shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
-                    }`}
-                    title="Detailed Card View"
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">Cards</span>
-                  </button>
-                </div>
-              )}
-
-              <span className="text-xs font-mono font-bold bg-muted/40 border border-border/60 px-3 py-1.5 rounded-xl text-foreground">
-                {stakeAccounts.length} Account{stakeAccounts.length !== 1 ? "s" : ""}
-              </span>
-            </div>
+            <span className="text-xs font-mono font-bold bg-muted/40 border border-border/60 px-3 py-1.5 rounded-xl text-foreground">
+              {stakeAccounts.length} Account{stakeAccounts.length !== 1 ? "s" : ""}
+            </span>
           </div>
 
           {stakeAccounts.length === 0 ? (
@@ -473,8 +436,8 @@ export function NativeStakingDashboard() {
                 </p>
               </div>
             </div>
-          ) : viewMode === "list" ? (
-            /* Compact List / Table View */
+          ) : (
+            /* Compact List View */
             <div className="space-y-4">
               {/* Single Shared Epoch Progress Banner for all accounts */}
               {hasWarmingOrCooling && (
@@ -702,219 +665,6 @@ export function NativeStakingDashboard() {
                   </table>
                 </div>
               </div>
-            </div>
-          ) : (
-            /* Stake Accounts Detailed Cards */
-            <div className="space-y-4">
-              {stakeAccounts.map((account) => {
-                const pubkeyStr = account.pubkey.toBase58();
-                const shortAccount = `${pubkeyStr.slice(0, 4)}...${pubkeyStr.slice(-4)}`;
-                const isCopied = copiedKey === pubkeyStr;
-
-                return (
-                  <div
-                    key={pubkeyStr}
-                    className="bg-card/45 backdrop-blur-md border border-border/80 rounded-3xl p-6 shadow-xl space-y-5 hover:border-primary/40 transition-all"
-                  >
-                    {/* Header: Status and Balance */}
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-4">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <StatusBadge status={account.status} />
-                          <span className="text-xs font-mono text-muted-foreground">
-                            Account: <strong className="text-foreground">{shortAccount}</strong>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => handleCopy(pubkeyStr)}
-                            className="p-1 hover:text-primary transition-colors text-muted-foreground"
-                            title="Copy Stake Account Pubkey"
-                          >
-                            {isCopied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                          </button>
-                          <a
-                            href={`https://explorer.solana.com/address/${pubkeyStr}?cluster=devnet`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 hover:text-primary transition-colors text-muted-foreground"
-                            title="View on Solana Explorer"
-                          >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                          </a>
-                        </div>
-                        <p className="text-[11px] text-muted-foreground font-mono">
-                          Delegated to:{" "}
-                          <span className="text-foreground font-semibold">
-                            {account.voter ? `${account.voter.slice(0, 8)}...${account.voter.slice(-6)}` : "None (Inactive)"}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div className="text-right">
-                        <span className="text-[10px] font-mono text-muted-foreground uppercase block">
-                          Total Value
-                        </span>
-                        <div className="flex items-baseline gap-1 justify-end">
-                          <span className="text-2xl font-black font-mono text-foreground">
-                            {account.solBalance.toFixed(4)}
-                          </span>
-                          <span className="text-xs font-mono text-primary font-bold">SOL</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Stake Info Strip */}
-                    <div className="grid grid-cols-2 gap-3 text-xs font-mono bg-muted/20 border border-border/50 rounded-2xl p-3">
-                      <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase">Active Stake:</span>
-                        <span className="text-foreground font-bold">{account.activeStake.toFixed(4)} SOL</span>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground block text-[10px] uppercase">Status Phase:</span>
-                        <span className="text-foreground font-bold capitalize">{account.status}</span>
-                      </div>
-                    </div>
-
-                    {/* Action Controls */}
-                    <div className="flex flex-col gap-3 pt-1">
-                      {account.status === "activating" ? (
-                        <div className="space-y-3">
-                          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-4 space-y-3">
-                            <div className="flex items-center justify-between text-xs font-mono">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping" />
-                                <span className="text-amber-300 font-bold uppercase tracking-wide">
-                                  Warmup Progress (Epoch #{epochInfo ? epochInfo.epoch : "..."})
-                                </span>
-                              </div>
-                              <span className="text-amber-400 font-bold text-sm">
-                                {epochInfo ? `${epochInfo.progressPercent}%` : "0%"}
-                              </span>
-                            </div>
-
-                            {/* Warmup Progress Bar */}
-                            <div className="w-full bg-background/80 h-3 rounded-full overflow-hidden border border-amber-500/25 shadow-inner">
-                              <div
-                                className="bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 h-full rounded-full transition-all duration-700 relative"
-                                style={{ width: `${Math.max(5, epochInfo?.progressPercent || 0)}%` }}
-                              >
-                                <div className="absolute inset-0 bg-white/25 animate-pulse" />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-0.5">
-                              <span>
-                                Time to Activation: <strong className="text-amber-300">{epochInfo?.estimatedRemainingTime || "calculating..."}</strong>
-                              </span>
-                              <span className="text-muted-foreground font-bold">Unlocks at 100%</span>
-                            </div>
-
-                            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed pt-2 border-t border-amber-500/15">
-                              * Solana consensus rule: New delegations must complete their initial activation epoch. Deactivation unlocks automatically once Epoch #{epochInfo ? epochInfo.epoch : ""} finishes.
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
-                              <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                              <span>Warming up to active state</span>
-                            </span>
-                            <button
-                              type="button"
-                              disabled
-                              className="px-4 py-2 bg-muted/60 border border-border/80 text-muted-foreground rounded-xl text-xs font-bold uppercase font-mono cursor-not-allowed flex items-center gap-1.5 opacity-70"
-                              title="Cannot deactivate while activating. Available once the current epoch finishes."
-                            >
-                              <Lock className="w-3.5 h-3.5" />
-                              <span>Deactivation Locked (Warming Up)</span>
-                            </button>
-                          </div>
-                        </div>
-                      ) : account.status === "active" ? (
-                        <div className="w-full flex items-center justify-between">
-                          <span className="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                            <span>Active & earning network rewards</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => deactivateStake(account.pubkey)}
-                            disabled={actionLoading}
-                            className="px-4 py-2 bg-destructive/15 hover:bg-destructive/25 border border-destructive/30 text-destructive-foreground hover:text-destructive rounded-xl text-xs font-bold uppercase font-mono transition-all disabled:opacity-50"
-                          >
-                            Deactivate Stake
-                          </button>
-                        </div>
-                      ) : account.status === "deactivating" ? (
-                        <div className="space-y-3">
-                          <div className="bg-orange-500/10 border border-orange-500/25 rounded-2xl p-4 space-y-3">
-                            <div className="flex items-center justify-between text-xs font-mono">
-                              <div className="flex items-center gap-2">
-                                <span className="w-2.5 h-2.5 rounded-full bg-orange-400 animate-ping" />
-                                <span className="text-orange-300 font-bold uppercase tracking-wide">
-                                  Cooldown Progress (Epoch #{epochInfo ? epochInfo.epoch : "..."})
-                                </span>
-                              </div>
-                              <span className="text-orange-400 font-bold text-sm">
-                                {epochInfo ? `${epochInfo.progressPercent}%` : "0%"}
-                              </span>
-                            </div>
-
-                            {/* Cooldown Progress Bar */}
-                            <div className="w-full bg-background/80 h-3 rounded-full overflow-hidden border border-orange-500/25 shadow-inner">
-                              <div
-                                className="bg-gradient-to-r from-orange-500 via-amber-500 to-yellow-400 h-full rounded-full transition-all duration-700 relative"
-                                style={{ width: `${Math.max(5, epochInfo?.progressPercent || 0)}%` }}
-                              >
-                                <div className="absolute inset-0 bg-white/25 animate-pulse" />
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground pt-0.5">
-                              <span>
-                                Time to Withdrawal: <strong className="text-orange-300">{epochInfo?.estimatedRemainingTime || "calculating..."}</strong>
-                              </span>
-                              <span className="text-muted-foreground font-bold">Unlocks at 100%</span>
-                            </div>
-
-                            <p className="text-[11px] text-muted-foreground font-mono leading-relaxed pt-2 border-t border-orange-500/15">
-                              * Deactivation successfully broadcasted! At epoch boundary, your stake becomes Inactive and your full SOL + rewards will be unlocked for 1-click withdrawal.
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-1">
-                            <span className="text-xs text-orange-400 font-mono">Cooldown in progress</span>
-                            <span className="px-4 py-2 bg-muted/60 border border-border/80 text-muted-foreground rounded-xl text-xs font-bold uppercase font-mono cursor-not-allowed opacity-70">
-                              In Cooldown
-                            </span>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="space-y-0.5">
-                            <p className="text-xs font-bold text-emerald-300 font-mono flex items-center gap-1.5">
-                              <Check className="w-4 h-4 text-emerald-400" />
-                              <span>Stake Inactive & Fully Unlocked</span>
-                            </p>
-                            <p className="text-[11px] text-muted-foreground font-mono">
-                              Principal + Rent Reserve ({account.solBalance.toFixed(4)} SOL) are ready to withdraw to your wallet.
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => withdrawStake(account.pubkey, account.lamports)}
-                            disabled={actionLoading}
-                            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black font-bold uppercase font-mono rounded-xl text-xs transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 shrink-0 flex items-center gap-1.5"
-                          >
-                            <span>Withdraw {account.solBalance.toFixed(4)} SOL</span>
-                            <ArrowRight className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           )}
         </div>
