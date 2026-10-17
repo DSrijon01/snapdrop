@@ -292,6 +292,20 @@ export function useNativeStaking() {
       return;
     }
 
+    const targetAccount = stakeAccounts.find((a) => a.pubkey.equals(stakeAccountPubkey));
+    if (targetAccount?.status === "activating") {
+      toast.error(
+        `Stake is currently in the warmup phase for Epoch #${epochInfo?.epoch || ""}. Solana consensus requires completing this epoch before it can be deactivated.`,
+        { duration: 6000 }
+      );
+      return;
+    }
+
+    if (targetAccount?.status === "deactivating") {
+      toast.error("This stake account is already deactivating and cooling down until epoch end.");
+      return;
+    }
+
     const toastId = toast.loading("Deactivating stake account...");
     setActionLoading(true);
 
@@ -306,16 +320,42 @@ export function useNativeStaking() {
       });
       tx.add(deactivateIx);
 
-      const signature = await sendTransaction(tx, connection, {
-        preflightCommitment: "confirmed",
-      });
+      tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      tx.feePayer = publicKey;
+
+      let signature = "";
+      if (signTransaction) {
+        const signedTx = await signTransaction(tx);
+        signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+      } else {
+        signature = await sendTransaction(tx, connection, {
+          preflightCommitment: "confirmed",
+        });
+      }
+
       await connection.confirmTransaction(signature, "confirmed");
 
-      toast.success("Stake account successfully deactivated. It will become fully inactive at epoch end.", { id: toastId });
+      toast.success(
+        "Stake account successfully deactivated. It will become fully withdrawable at epoch end.",
+        { id: toastId }
+      );
       await fetchUserData();
     } catch (err: any) {
       console.error("Deactivate error:", err);
-      toast.error(`Deactivation failed: ${err.message || "Unknown error"}`, { id: toastId });
+      const errStr = (err?.message || "").toLowerCase();
+      if (errStr.includes("already deactivated") || errStr.includes("0x2")) {
+        toast.error("Stake account is already cooling down and waiting for epoch end.", { id: toastId });
+      } else if (errStr.includes("unexpected error") || errStr.includes("simulation failed") || errStr.includes("0x0")) {
+        toast.error(
+          `Deactivation rejected by Solana: stake is warming up in Epoch #${epochInfo?.epoch || ""}. Please wait until the next epoch boundary.`,
+          { id: toastId, duration: 6000 }
+        );
+      } else {
+        toast.error(`Deactivation failed: ${err.message || "Unknown error"}`, { id: toastId });
+      }
     } finally {
       setActionLoading(false);
     }
@@ -344,9 +384,22 @@ export function useNativeStaking() {
       });
       tx.add(withdrawIx);
 
-      const signature = await sendTransaction(tx, connection, {
-        preflightCommitment: "confirmed",
-      });
+      tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      tx.feePayer = publicKey;
+
+      let signature = "";
+      if (signTransaction) {
+        const signedTx = await signTransaction(tx);
+        signature = await connection.sendRawTransaction(signedTx.serialize(), {
+          skipPreflight: false,
+          preflightCommitment: "confirmed",
+        });
+      } else {
+        signature = await sendTransaction(tx, connection, {
+          preflightCommitment: "confirmed",
+        });
+      }
+
       await connection.confirmTransaction(signature, "confirmed");
 
       toast.success(

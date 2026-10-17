@@ -19,6 +19,8 @@ import {
   Server,
   Coins,
   ChevronDown,
+  Lock,
+  Info,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -463,13 +465,42 @@ export function NativeStakingDashboard() {
                     </div>
 
                     {/* Action Controls */}
-                    <div className="flex items-center justify-between gap-3 pt-1">
-                      {account.status === "active" || account.status === "activating" ? (
+                    <div className="flex flex-col gap-3 pt-1">
+                      {account.status === "activating" ? (
+                        <div className="space-y-3">
+                          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-3 flex items-start gap-2.5">
+                            <Info className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                            <div className="text-xs font-mono">
+                              <p className="text-amber-300 font-bold">
+                                Warming Up in Epoch #{epochInfo ? epochInfo.epoch : "..."} ({epochInfo?.progressPercent || 0}% complete)
+                              </p>
+                              <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">
+                                Under Solana consensus rules, a stake account must complete its activation epoch before it can be deactivated. Once this epoch reaches 100%, your stake will become <strong>Active</strong> and deactivation will unlock automatically.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground font-mono flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                              <span>Warmup in progress</span>
+                            </span>
+                            <button
+                              type="button"
+                              disabled
+                              className="px-4 py-2 bg-muted/60 border border-border/80 text-muted-foreground rounded-xl text-xs font-bold uppercase font-mono cursor-not-allowed flex items-center gap-1.5 opacity-70"
+                              title="Cannot deactivate while activating. Available once the current epoch finishes."
+                            >
+                              <Lock className="w-3.5 h-3.5" />
+                              <span>Deactivation Locked (Warming Up)</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : account.status === "active" ? (
                         <div className="w-full flex items-center justify-between">
-                          <span className="text-xs text-muted-foreground font-mono">
-                            {account.status === "active"
-                              ? "Earning network inflation rewards"
-                              : "Warming up: will activate at epoch boundary"}
+                          <span className="text-xs text-emerald-400 font-mono flex items-center gap-1.5">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span>Active & earning network rewards</span>
                           </span>
                           <button
                             type="button"
@@ -481,11 +512,25 @@ export function NativeStakingDashboard() {
                           </button>
                         </div>
                       ) : account.status === "deactivating" ? (
-                        <div className="w-full flex items-center justify-between">
-                          <span className="text-xs text-amber-400 font-mono">
-                            Cooling down: available to withdraw once epoch finishes
-                          </span>
-                          <span className="text-xs font-mono text-muted-foreground">In Cooldown</span>
+                        <div className="space-y-3">
+                          <div className="bg-orange-500/10 border border-orange-500/20 rounded-2xl p-3 flex items-start gap-2.5">
+                            <Clock className="w-4 h-4 text-orange-400 shrink-0 mt-0.5" />
+                            <div className="text-xs font-mono">
+                              <p className="text-orange-300 font-bold">
+                                Cooling Down in Epoch #{epochInfo ? epochInfo.epoch : "..."} ({epochInfo?.progressPercent || 0}% complete)
+                              </p>
+                              <p className="text-muted-foreground mt-0.5 text-[11px] leading-relaxed">
+                                This stake is cooling down. Once Epoch #{epochInfo ? epochInfo.epoch : "..."} finishes, your full principal and rewards will become <strong>Inactive</strong> and ready to withdraw to your wallet.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-orange-400 font-mono">Cooldown in progress</span>
+                            <span className="px-4 py-2 bg-muted/60 border border-border/80 text-muted-foreground rounded-xl text-xs font-bold uppercase font-mono cursor-not-allowed opacity-70">
+                              In Cooldown
+                            </span>
+                          </div>
                         </div>
                       ) : (
                         <div className="w-full flex items-center justify-between">
