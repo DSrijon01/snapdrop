@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Zap, ArrowRight } from "lucide-react";
-import { StakingDashboard } from "@/components/features/snbl/StakingDashboard";
+import { NativeStakingDashboard } from "@/components/features/snbl/NativeStakingDashboard";
 import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
 
 export default function SnblPage() {
@@ -19,7 +19,7 @@ export default function SnblPage() {
       </div>
 
       {/* Pro Tier Navigation Banner */}
-      <div className="w-full max-w-5xl mb-8 bg-gradient-to-r from-purple-950/40 via-card/50 to-primary/10 border border-purple-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-sm">
+      <div className="w-full max-w-6xl mb-8 bg-gradient-to-r from-purple-950/40 via-card/50 to-primary/10 border border-purple-500/30 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl backdrop-blur-sm">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-2xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400 shrink-0">
             <Zap className="w-6 h-6 text-primary animate-pulse" />
@@ -47,7 +47,7 @@ export default function SnblPage() {
         </Link>
       </div>
       
-      <StakingDashboard />
+      <NativeStakingDashboard />
     </div>
   );
 }
