@@ -26,7 +26,7 @@ import {
 import toast from "react-hot-toast";
 import { useStaking } from "@/hooks/useStaking";
 
-// Chapter 17 Invariants & Risk Parameters
+// Protocol Invariants & Risk Parameters
 const PROTOCOL_CONFIG = {
   marketId: "SS-LEND-DEVNET-0",
   ltvBps: 7500, // 75%
@@ -202,7 +202,7 @@ export function LendingBorrowingDashboard() {
       setWalletUsdc((prev) => prev + amt);
       setBorrowInput("");
       setActionLoading(false);
-      toast.success(`Borrowed ${amt.toFixed(2)} USDC via Chapter 17 Wad Accumulator!`);
+      toast.success(`Borrowed ${amt.toFixed(2)} USDC!`);
     }, 600);
   };
 
@@ -267,7 +267,7 @@ export function LendingBorrowingDashboard() {
 
   return (
     <div className="w-full space-y-8">
-      {/* 1. Protocol Architecture Banner (Chapter 17 Invariants) */}
+      {/* 1. Protocol Architecture Banner */}
       <div className="bg-gradient-to-r from-card/80 via-card/50 to-primary/5 border border-primary/25 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -275,7 +275,7 @@ export function LendingBorrowingDashboard() {
           <div className="space-y-2 max-w-2xl">
             <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-primary font-bold">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Chapter 17: Isolated Borrow-Lend Market ({PROTOCOL_CONFIG.marketId})</span>
+              <span>Isolated Borrow-Lend Market ({PROTOCOL_CONFIG.marketId})</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-black font-display uppercase tracking-tight text-foreground">
               Pro Liquidity Credit Line
@@ -710,13 +710,13 @@ export function LendingBorrowingDashboard() {
         </div>
       </div>
 
-      {/* 4. Chapter 17 Kinked Rate Visualizer */}
+      {/* 4. Dynamic Rate Curve Visualizer */}
       <div className="bg-card/40 border border-border/70 rounded-3xl p-6 backdrop-blur-xl space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div>
             <h3 className="text-lg font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-primary" />
-              <span>Kinked Interest Rate Curve (Chapter 17, Page 204)</span>
+              <span>Dynamic Interest Rate Curve</span>
             </h3>
             <p className="text-xs text-muted-foreground font-mono">
               Utilization: 0% → 80% (2% to 20% APR) | Above 80% Kink (Spikes up to 150% APR)
