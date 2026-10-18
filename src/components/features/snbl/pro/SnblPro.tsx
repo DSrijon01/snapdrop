@@ -3,11 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, PiggyBank, Award, Calculator, Vault, BarChart3 } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, PiggyBank, Award, Calculator, Vault, BarChart3, Coins } from "lucide-react";
 import Link from "next/link";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 import { StakingDashboard } from "../StakingDashboard";
+import { LendingBorrowingDashboard } from "./LendingBorrowingDashboard";
 
 // Mock yield curves
 const MOCK_PRO_STAKING_DATA = [
@@ -23,7 +24,8 @@ const MOCK_PRO_STAKING_DATA = [
 export function SnblPro() {
   const { hasAccess, openSubscriptionModal, loading } = useSubscription();
   const [isMounted, setIsMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"savings" | "analytics">("savings");
+  const [devAccessOverride, setDevAccessOverride] = useState(false);
+  const [activeTab, setActiveTab] = useState<"credit-line" | "savings" | "analytics">("credit-line");
 
   useEffect(() => {
     setIsMounted(true);
@@ -37,7 +39,7 @@ export function SnblPro() {
     );
   }
 
-  const access = hasAccess("snbl");
+  const access = devAccessOverride || hasAccess("snbl");
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">
@@ -124,9 +126,17 @@ export function SnblPro() {
                 >
                   Choose Plan & Unlock Pro
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setDevAccessOverride(true)}
+                  className="w-full py-3.5 bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary rounded-xl font-bold uppercase tracking-wider text-xs transition-all font-mono flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Preview Pro Dashboard (Dev Pass)</span>
+                </button>
                 <Link
                   href="/snbl"
-                  className="w-full py-4 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-all rounded-xl font-bold uppercase tracking-wider text-sm flex items-center justify-center gap-2"
+                  className="w-full py-3.5 bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground border border-border transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2"
                 >
                   Back to Native Staking
                 </Link>
@@ -169,7 +179,18 @@ export function SnblPro() {
               </div>
 
               {/* Navigation Tabs */}
-              <div className="flex items-center gap-3 border-b border-border/40 pb-3">
+              <div className="flex flex-wrap items-center gap-3 border-b border-border/40 pb-3">
+                <button
+                  onClick={() => setActiveTab("credit-line")}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                    activeTab === "credit-line"
+                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Coins className="w-4 h-4 text-cyan-400" />
+                  <span>Pro Credit Line (Borrow & Lend)</span>
+                </button>
                 <button
                   onClick={() => setActiveTab("savings")}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
@@ -178,8 +199,8 @@ export function SnblPro() {
                       : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Vault className="w-4 h-4" />
-                  <span>High-Yield Savings & Liquidity Vault (ssSOL)</span>
+                  <Vault className="w-4 h-4 text-purple-400" />
+                  <span>Liquid Staking Vault (ssSOL)</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("analytics")}
@@ -190,9 +211,12 @@ export function SnblPro() {
                   }`}
                 >
                   <BarChart3 className="w-4 h-4" />
-                  <span>Pro Analytics & Simulators</span>
+                  <span>Pro Analytics & Curves</span>
                 </button>
               </div>
+
+              {/* Tab 1: Pro Credit Line (Borrow & Lend) */}
+              {activeTab === "credit-line" && <LendingBorrowingDashboard />}
 
               {/* Tab 1: Savings & Staking Pool */}
               {activeTab === "savings" && (
