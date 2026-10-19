@@ -53,9 +53,11 @@ tests/
 scripts/
 Anchor.toml
 
-# Research paper temp files
+# Research paper temp files & Skills
 /PDF Analysis/
 /PDF analysis/
+/.agents/skills/
+.agents/skills/
 /hashkey_whitepaper.pdf
 /hashkey_whitepaper.txt
 
