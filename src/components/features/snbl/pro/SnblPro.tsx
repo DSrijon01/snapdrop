@@ -3,12 +3,13 @@
 import React, { useState, useEffect } from "react";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, PiggyBank, Award, Calculator, Vault, BarChart3, Coins } from "lucide-react";
+import { ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, PiggyBank, Award, Calculator, Vault, BarChart3, Coins, Building2 } from "lucide-react";
 import Link from "next/link";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 import { StakingDashboard } from "../StakingDashboard";
 import { LendingBorrowingDashboard } from "./LendingBorrowingDashboard";
+import { StockLendingDashboard } from "./StockLendingDashboard";
 
 // Mock yield curves
 const MOCK_PRO_STAKING_DATA = [
@@ -25,7 +26,7 @@ export function SnblPro() {
   const { hasAccess, openSubscriptionModal, loading } = useSubscription();
   const [isMounted, setIsMounted] = useState(false);
   const [devAccessOverride, setDevAccessOverride] = useState(false);
-  const [activeTab, setActiveTab] = useState<"credit-line" | "savings" | "analytics">("credit-line");
+  const [activeTab, setActiveTab] = useState<"credit-line" | "stocks" | "savings" | "analytics">("credit-line");
 
   useEffect(() => {
     setIsMounted(true);
@@ -189,7 +190,18 @@ export function SnblPro() {
                   }`}
                 >
                   <Coins className="w-4 h-4 text-cyan-400" />
-                  <span>Pro Credit Line (Borrow & Lend)</span>
+                  <span>Pro Credit Line (ssSOL)</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab("stocks")}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                    activeTab === "stocks"
+                      ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20 font-black"
+                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Building2 className="w-4 h-4 text-emerald-400" />
+                  <span>Borrow Against Stocks</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("savings")}
@@ -200,7 +212,7 @@ export function SnblPro() {
                   }`}
                 >
                   <Vault className="w-4 h-4 text-purple-400" />
-                  <span>Liquid Staking Vault (ssSOL)</span>
+                  <span>Liquid Staking Vault</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("analytics")}
@@ -215,8 +227,11 @@ export function SnblPro() {
                 </button>
               </div>
 
-              {/* Tab 1: Pro Credit Line (Borrow & Lend) */}
+              {/* Tab 1: Pro Credit Line (Borrow & Lend ssSOL) */}
               {activeTab === "credit-line" && <LendingBorrowingDashboard />}
+
+              {/* Tab 2: Borrow Against Tokenized Stocks */}
+              {activeTab === "stocks" && <StockLendingDashboard />}
 
               {/* Tab 1: Savings & Staking Pool */}
               {activeTab === "savings" && (
