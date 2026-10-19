@@ -8,8 +8,8 @@ import Link from "next/link";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { ProStatusBar } from "@/components/global/subscription/SubscriptionCountdown";
 import { StakingDashboard } from "../StakingDashboard";
-import { LendingBorrowingDashboard } from "./LendingBorrowingDashboard";
-import { StockLendingDashboard } from "./StockLendingDashboard";
+import { LendingBorrowingDashboard } from "./bnl";
+import { StockLendingDashboard } from "./sbl";
 
 // Mock yield curves
 const MOCK_PRO_STAKING_DATA = [
