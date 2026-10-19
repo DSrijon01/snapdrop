@@ -17,7 +17,8 @@ import { NFTStudio } from './NFTStudio';
 import { TreasuryNFTs } from './TreasuryNFTs';
 import { AdminPanel } from './AdminPanel';
 import { TreasuryAccountingDashboard } from './treasury/TreasuryAccountingDashboard';
-import { ShieldCheck, CircleDollarSign } from 'lucide-react';
+import { DefaultTreasuryDashboard } from './treasury/DefaultTreasuryDashboard';
+import { ShieldCheck, CircleDollarSign, Scale } from 'lucide-react';
 import { createConfirmedProvider, withSolanaRetry } from '@/utils/solanaRetry';
 import { resolveNftImageUrl, handleImageFallback } from '@/utils/nftImageResolver';
 // Admin Wallet Address
@@ -37,7 +38,7 @@ export const AdminDashboard: FC = () => {
     const [tokens, setTokens] = useState<TokenAccountInfo[]>([]);
     const [nfts, setNfts] = useState<TokenAccountInfo[]>([]);
     const [loading, setLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking' | 'treasury-accounting'>('treasury-accounting');
+    const [activeTab, setActiveTab] = useState<'tokens' | 'generator' | 'token2022' | 'nftstudio' | 'eplays' | 'eplays-resolve' | 'treasury-nfts' | 'snbl-staking' | 'treasury-accounting' | 'sbl-default-treasury'>('treasury-accounting');
 
     // Anchor Program Setup
     const provider = useMemo(() => {
@@ -280,6 +281,17 @@ export const AdminDashboard: FC = () => {
                     <span>Treasury & Accounting</span>
                 </button>
                 <button 
+                    onClick={() => setActiveTab('sbl-default-treasury')}
+                    className={`px-5 py-2 rounded-full font-bold uppercase transition-all flex items-center gap-2 text-xs tracking-wider shadow-sm ${
+                        activeTab === 'sbl-default-treasury' 
+                            ? 'bg-red-500 text-black ring-2 ring-red-400/40 font-black' 
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    <Scale className="w-4 h-4" />
+                    <span>SBL Default Treasury</span>
+                </button>
+                <button 
                     onClick={() => setActiveTab('tokens')}
                     className={`px-5 py-2 rounded-full font-bold uppercase transition-colors text-xs tracking-wider ${
                         activeTab === 'tokens' 
@@ -363,6 +375,8 @@ export const AdminDashboard: FC = () => {
 
             {activeTab === 'treasury-accounting' ? (
                 <TreasuryAccountingDashboard />
+            ) : activeTab === 'sbl-default-treasury' ? (
+                <DefaultTreasuryDashboard />
             ) : activeTab === 'tokens' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {loading ? (
