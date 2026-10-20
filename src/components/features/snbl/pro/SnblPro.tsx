@@ -185,12 +185,12 @@ export function SnblPro() {
                   onClick={() => setActiveTab("credit-line")}
                   className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
                     activeTab === "credit-line"
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                      ? "bg-purple-600 text-white shadow-md shadow-purple-600/25 font-black"
                       : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
                   }`}
                 >
-                  <Coins className="w-4 h-4 text-cyan-400" />
-                  <span>Pro Credit Line (ssSOL)</span>
+                  <Coins className="w-4 h-4 text-purple-300" />
+                  <span>Borrow Against Crypto (CBL)</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("stocks")}
@@ -201,7 +201,7 @@ export function SnblPro() {
                   }`}
                 >
                   <Building2 className="w-4 h-4 text-emerald-400" />
-                  <span>Borrow Against Stocks</span>
+                  <span>Borrow Against Stocks (SBL)</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("savings")}
