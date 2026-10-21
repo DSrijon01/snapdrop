@@ -157,7 +157,7 @@ const WalletExtensionWatcher: FC = () => {
           (t) => (
             <div className="flex items-center gap-3 py-1">
               <img
-                src="https://api.dicebear.com/7.x/bottts/svg?seed=EW9U&backgroundColor=transparent"
+                src="https://api.dicebear.com/7.x/bottts/svg?seed=CyberBot&backgroundColor=transparent"
                 alt="Street Sync Bot"
                 className="w-8 h-8 object-contain shrink-0"
               />

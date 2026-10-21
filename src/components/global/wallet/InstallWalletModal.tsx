@@ -164,7 +164,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
               <div className="flex items-center gap-3.5 pr-8">
                 <div className="w-12 h-12 rounded-2xl bg-secondary/80 border border-border shadow-sm flex items-center justify-center shrink-0 p-1.5 relative">
                   <img
-                    src="https://api.dicebear.com/7.x/bottts/svg?seed=EW9U&backgroundColor=transparent"
+                    src="https://api.dicebear.com/7.x/bottts/svg?seed=CyberBot&backgroundColor=transparent"
                     alt="Street Sync Bot"
                     className="w-9 h-9 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
                   />

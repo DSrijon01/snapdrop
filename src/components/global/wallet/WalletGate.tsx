@@ -6,10 +6,10 @@ import { ClientWalletMultiButton as WalletMultiButton } from "@/components/globa
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 
 const BOT_ITEMS = [
-  { word: "TRADE", seed: "EW9U" },
+  { word: "TRADE", seed: "CyberBot" },
   { word: "PREDICT", seed: "StreetSync" },
   { word: "MANAGE", seed: "Solana" },
-  { word: "SWAP", seed: "CyberBot" },
+  { word: "SWAP", seed: "EW9U" },
   { word: "NFTS", seed: "NeonRider" },
 ];
 
