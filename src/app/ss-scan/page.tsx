@@ -22,7 +22,6 @@ import {
   ArrowUpRight
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import toast from "react-hot-toast";
@@ -610,9 +609,8 @@ export default function SSScanPage() {
           </p>
         </div>
 
-        {/* Sync Controls & Sub Widget */}
+        {/* Sync Controls */}
         <div className="relative z-10 shrink-0 flex flex-row items-center gap-2.5 self-start md:self-center">
-          <ModuleSubscriptionWidget moduleId="ss-scan" />
           <button
             type="button"
             onClick={loadAllHistory}

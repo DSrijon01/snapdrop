@@ -1,7 +1,6 @@
 "use client";
 
 import { TradingTerminal } from "@/components/features/openclaw/TradingTerminal";
-import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
 
 export default function OpenclawPage() {
   return (
@@ -13,7 +12,6 @@ export default function OpenclawPage() {
             GPU-Accelerated Autonomous AI Agents & Execution System
           </p>
         </div>
-        <ModuleSubscriptionWidget moduleId="openclaw" />
       </div>
       
       <TradingTerminal />
