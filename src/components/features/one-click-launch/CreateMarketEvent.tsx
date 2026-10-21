@@ -34,6 +34,9 @@ interface DeployedMarketSummary {
     title: string;
     expiryTs: number;
     resolved: boolean;
+    totalYesShares: number;
+    totalNoShares: number;
+    totalPoolSol: number;
     tx?: string;
 }
 
@@ -88,27 +91,41 @@ export const CreateMarketEvent: FC<CreateMarketEventProps> = ({ onSwitchToResolv
             const all = await (program.account as any).marketState.all();
             const myMarkets: DeployedMarketSummary[] = all
                 .filter((acc: any) => acc.account.admin.toBase58() === publicKey.toBase58())
-                .map((acc: any) => ({
-                    pubkey: acc.publicKey.toBase58(),
-                    title: acc.account.title,
-                    expiryTs: acc.account.expiryTs?.toNumber ? acc.account.expiryTs.toNumber() : Number(acc.account.expiryTs || 0),
-                    resolved: acc.account.resolved,
-                }))
+                .map((acc: any) => {
+                    const yes = (acc.account.totalYesShares?.toNumber ? acc.account.totalYesShares.toNumber() : Number(acc.account.totalYesShares || 0)) / 1e9;
+                    const no = (acc.account.totalNoShares?.toNumber ? acc.account.totalNoShares.toNumber() : Number(acc.account.totalNoShares || 0)) / 1e9;
+                    return {
+                        pubkey: acc.publicKey.toBase58(),
+                        title: acc.account.title,
+                        expiryTs: acc.account.expiryTs?.toNumber ? acc.account.expiryTs.toNumber() : Number(acc.account.expiryTs || 0),
+                        resolved: acc.account.resolved,
+                        totalYesShares: yes,
+                        totalNoShares: no,
+                        totalPoolSol: yes + no,
+                    };
+                })
                 .reverse();
 
             // Also check localStorage custom demo markets
             const customStored = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
             const customForWallet = customStored
                 .filter((cm: any) => cm.adminKey === publicKey.toBase58() || isDemo)
-                .map((cm: any) => ({
-                    pubkey: cm.id,
-                    title: cm.title,
-                    expiryTs: cm.expiryTs || 0,
-                    resolved: cm.resolved || false,
-                }));
+                .map((cm: any) => {
+                    const yes = (cm.totalYesShares || 0) / 1e9;
+                    const no = (cm.totalNoShares || 0) / 1e9;
+                    return {
+                        pubkey: cm.id,
+                        title: cm.title,
+                        expiryTs: cm.expiryTs || 0,
+                        resolved: cm.resolved || false,
+                        totalYesShares: yes,
+                        totalNoShares: no,
+                        totalPoolSol: yes + no,
+                    };
+                });
 
-            // Merge unique by pubkey
-            const merged = [...customForWallet, ...myMarkets].filter(
+            // Merge unique by pubkey: prioritize on-chain first
+            const merged = [...myMarkets, ...customForWallet].filter(
                 (item, idx, self) => idx === self.findIndex(t => t.pubkey === item.pubkey || t.title === item.title)
             );
 
@@ -744,8 +761,15 @@ export const CreateMarketEvent: FC<CreateMarketEventProps> = ({ onSwitchToResolv
                                     <h4 className="text-sm font-bold truncate text-foreground">
                                         {market.title}
                                     </h4>
-                                    <div className="flex items-center gap-3 text-[11px] font-mono text-muted-foreground mt-0.5">
+                                    <div className="flex flex-wrap items-center gap-2 text-[11px] font-mono text-muted-foreground mt-0.5">
                                         <span>PDA: {market.pubkey.slice(0, 6)}...{market.pubkey.slice(-4)}</span>
+                                        <span>•</span>
+                                        <span className="font-bold text-foreground">
+                                            ◎ {market.totalPoolSol.toFixed(2)} Pooled
+                                            <span className="text-muted-foreground font-normal ml-1">
+                                                (◎ {market.totalYesShares.toFixed(2)} YES / ◎ {market.totalNoShares.toFixed(2)} NO)
+                                            </span>
+                                        </span>
                                         <span>•</span>
                                         <span className={market.resolved ? "text-amber-400 font-bold" : "text-emerald-400 font-bold"}>
                                             {market.resolved ? "Resolved" : "Active / Unresolved"}

@@ -100,8 +100,8 @@ export const ResolveMarketEvent: FC = () => {
                 console.warn("Could not read local custom markets:", storageErr);
             }
 
-            // Combine and deduplicate
-            const combined = [...customFormatted, ...onChainFormatted].filter(
+            // Combine and deduplicate: Prioritize on-chain state first so real devnet markets are never downgraded to custom demo
+            const combined = [...onChainFormatted, ...customFormatted].filter(
                 (m, idx, arr) => idx === arr.findIndex(t => t.pubkey.toBase58() === m.pubkey.toBase58() || t.title === m.title)
             );
 
@@ -147,15 +147,15 @@ export const ResolveMarketEvent: FC = () => {
         setStatus(null);
 
         try {
-            // 1. DEMO MODE OR CUSTOM LOCAL MARKET
-            if (isDemo || market.isCustom) {
+            // 1. DEMO MODE (Street Sync Demo mock wallet ONLY)
+            if (isDemo) {
                 toast.loading(`Resolving market as ${isYes ? 'YES' : 'NO'} in Demo Mode...`, { id: 'resolve-tx' });
                 
                 // Update local storage
                 try {
                     const stored = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
                     const updated = stored.map((item: any) => {
-                        if (item.id === marketPubkey.toBase58() || item.title === market.title) {
+                        if (item.id === marketPubkey.toBase58() || item.title === market.title || item.marketStatePubkey === marketPubkey.toBase58()) {
                             return { ...item, resolved: true, outcome: isYes };
                         }
                         return item;
@@ -180,7 +180,7 @@ export const ResolveMarketEvent: FC = () => {
                 return;
             }
 
-            // 2. ON-CHAIN SOLANA EXECUTION
+            // 2. ON-CHAIN SOLANA EXECUTION (Devnet / Mainnet)
             const provider = createConfirmedProvider(connection, anchorWallet!);
             const program = new Program(idl as Idl, provider);
 
@@ -249,6 +249,20 @@ export const ResolveMarketEvent: FC = () => {
                 tx: signature
             });
             
+            // Update local storage if market exists in custom cache
+            try {
+                const stored = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
+                const updated = stored.map((item: any) => {
+                    if (item.id === marketPubkey.toBase58() || item.title === market.title || item.marketStatePubkey === marketPubkey.toBase58()) {
+                        return { ...item, resolved: true, outcome: isYes };
+                    }
+                    return item;
+                });
+                localStorage.setItem('street_sync_custom_markets', JSON.stringify(updated));
+            } catch (e) {
+                console.error("Failed updating custom market in storage", e);
+            }
+
             // Dispatch update globally
             window.dispatchEvent(new CustomEvent('prediction_markets_updated', {
                 detail: { pubkey: marketPubkey.toBase58(), title: market.title, resolved: true, outcome: isYes }
@@ -258,6 +272,32 @@ export const ResolveMarketEvent: FC = () => {
             setMarkets(prev => prev.filter(m => m.pubkey.toBase58() !== marketPubkey.toBase58()));
 
         } catch (error: any) {
+            // If on-chain failed and it's a purely custom local market
+            if (market.isCustom) {
+                try {
+                    const stored = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
+                    const updated = stored.map((item: any) => {
+                        if (item.id === marketPubkey.toBase58() || item.title === market.title || item.marketStatePubkey === marketPubkey.toBase58()) {
+                            return { ...item, resolved: true, outcome: isYes };
+                        }
+                        return item;
+                    });
+                    localStorage.setItem('street_sync_custom_markets', JSON.stringify(updated));
+                    window.dispatchEvent(new CustomEvent('prediction_markets_updated', {
+                        detail: { pubkey: marketPubkey.toBase58(), title: market.title, resolved: true, outcome: isYes }
+                    }));
+                    toast.success(`Market resolved as ${isYes ? 'YES' : 'NO'}!`, { id: 'resolve-tx' });
+                    setStatus({ 
+                        type: 'success', 
+                        message: `Market "${market.title}" resolved locally as ${isYes ? 'YES (TRUE)' : 'NO (FALSE)'}!`
+                    });
+                    setMarkets(prev => prev.filter(m => m.pubkey.toBase58() !== marketPubkey.toBase58()));
+                    return;
+                } catch (e) {
+                    console.error("Failed fallback resolve:", e);
+                }
+            }
+
             console.error("Failed to resolve market:", error);
             toast.dismiss('resolve-tx');
             const msg = parseSolanaErrorMessage(error) || error?.message || "Unknown error occurred while resolving.";

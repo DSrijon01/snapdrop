@@ -33,6 +33,16 @@ type Position = {
 
 let cachedEPlaysMarkets: Market[] | null = null;
 
+function parseOutcome(val: any): boolean | null {
+  if (val === true || val === false) return val;
+  if (val && typeof val === 'object') {
+    if ('true' in val) return true;
+    if ('false' in val) return false;
+    if ('some' in val) return parseOutcome(val.some);
+  }
+  return null;
+}
+
 export default function EPlaysPage() {
   const { connection } = useConnection();
   const { publicKey, sendTransaction, wallet } = useWallet();
@@ -204,7 +214,8 @@ export default function EPlaysPage() {
       try {
         const storedCustom = JSON.parse(localStorage.getItem('street_sync_custom_markets') || '[]');
         for (const cm of storedCustom) {
-          if (!onChainMarkets.some(m => m.id === cm.id || m.title === cm.title)) {
+          const existing = onChainMarkets.find(m => m.id === cm.id || m.title === cm.title);
+          if (!existing) {
             onChainMarkets.unshift({
               id: cm.id,
               title: cm.title,
@@ -222,6 +233,12 @@ export default function EPlaysPage() {
               noMint: cm.noMint ? new PublicKey(cm.noMint) : PublicKey.default,
               vault: cm.vault ? new PublicKey(cm.vault) : PublicKey.default,
             });
+          } else {
+            // Keep resolved & outcome aligned if local storage recorded resolution
+            if (cm.resolved && !existing.resolved) {
+              existing.resolved = true;
+              existing.outcome = cm.outcome;
+            }
           }
         }
       } catch (storageErr) {
@@ -254,7 +271,8 @@ export default function EPlaysPage() {
               if (matchedMarket) {
                 const isYes = matchedMarket.yesMint.toBase58() === mint;
                 const avgPrice = isYes ? matchedMarket.yesPrice : matchedMarket.noPrice;
-                const isWinner = matchedMarket.resolved && (matchedMarket.outcome === isYes);
+                const outcomeBool = parseOutcome(matchedMarket.outcome);
+                const isWinner = matchedMarket.resolved && (outcomeBool === isYes);
 
                 const totalWinningShares = isYes ? matchedMarket.totalYesShares : matchedMarket.totalNoShares;
                 const totalPool = matchedMarket.totalYesShares + matchedMarket.totalNoShares;
@@ -292,7 +310,8 @@ export default function EPlaysPage() {
                 if (matchedMarket) {
                   const isYes = (sp.position || "").toLowerCase() === "yes";
                   const avgPrice = isYes ? matchedMarket.yesPrice : matchedMarket.noPrice;
-                  const isWinner = matchedMarket.resolved && (matchedMarket.outcome === isYes);
+                  const outcomeBool = parseOutcome(matchedMarket.outcome);
+                  const isWinner = matchedMarket.resolved && (outcomeBool === isYes);
                   const totalWinningShares = isYes ? matchedMarket.totalYesShares : matchedMarket.totalNoShares;
                   const totalPool = matchedMarket.totalYesShares + matchedMarket.totalNoShares;
                   const shares = Number(sp.shares || sp.amount || 0);
@@ -418,7 +437,10 @@ export default function EPlaysPage() {
       handleSync(true); // Always silent background sync so the screen never blinks or shows full page loader
     }, 60000);
 
-    const handleEventSync = () => handleSync(false);
+    const handleEventSync = () => {
+      cachedEPlaysMarkets = null;
+      handleSync(false);
+    };
 
     window.addEventListener('prediction_markets_updated', handleEventSync);
     window.addEventListener('prediction_history_updated', handleEventSync);
@@ -667,6 +689,11 @@ export default function EPlaysPage() {
       return;
     }
 
+    if (!publicKey || !anchorWallet) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setInFlightActionActive(true);
@@ -688,6 +715,11 @@ export default function EPlaysPage() {
 
       const PLATFORM_WALLET = new PublicKey("9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu");
 
+      let userMintAccount = pos.userMintAccount;
+      if (!userMintAccount || userMintAccount.equals(PublicKey.default)) {
+        userMintAccount = getAssociatedTokenAddressSync(pos.mintPubkey, publicKey);
+      }
+
       let signature = "";
       try {
         signature = await withSolanaRetry(async () => {
@@ -696,7 +728,7 @@ export default function EPlaysPage() {
                 .accounts({
                     claimer: publicKey,
                     marketState: pos.market.marketStatePubkey,
-                    userMintAccount: pos.userMintAccount,
+                    userMintAccount: userMintAccount,
                     mint: pos.mintPubkey,
                     platformWallet: PLATFORM_WALLET,
                     tokenProgram: TOKEN_PROGRAM_ID,
@@ -778,6 +810,11 @@ export default function EPlaysPage() {
       return;
     }
 
+    if (!publicKey || !anchorWallet) {
+      toast.error("Please connect your wallet first");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setInFlightActionActive(true);
@@ -796,6 +833,11 @@ export default function EPlaysPage() {
       const provider = createConfirmedProvider(connection, anchorWallet!);
       const program = new Program(idl as Idl, provider);
 
+      let userMintAccount = pos.userMintAccount;
+      if (!userMintAccount || userMintAccount.equals(PublicKey.default)) {
+        userMintAccount = getAssociatedTokenAddressSync(pos.mintPubkey, publicKey);
+      }
+
       let signature = "";
       try {
         signature = await withSolanaRetry(async () => {
@@ -804,7 +846,7 @@ export default function EPlaysPage() {
                 .accounts({
                     user: publicKey,
                     marketState: pos.market.marketStatePubkey,
-                    userMintAccount: pos.userMintAccount,
+                    userMintAccount: userMintAccount,
                     mint: pos.mintPubkey,
                     tokenProgram: TOKEN_PROGRAM_ID,
                 })
