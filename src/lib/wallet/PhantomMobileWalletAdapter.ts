@@ -19,6 +19,7 @@ import {
   initiatePhantomMobileSignMessage,
   initiatePhantomMobileSignTransaction,
   initiatePhantomMobileSignAllTransactions,
+  initiatePhantomMobileSignAndSendTransaction,
   disconnectPhantomMobileSession,
 } from "./phantomDeeplink";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
@@ -403,6 +404,11 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       throw new Error("Wallet not connected");
     }
 
+    const session = getStoredPhantomSession();
+    if (!session) {
+      throw new Error("Phantom Mobile session not found. Please reconnect your wallet.");
+    }
+
     const isVersioned = "version" in (transaction as any);
     if (isVersioned) {
       if (options.signers && options.signers.length > 0) {
@@ -424,16 +430,62 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       }
     }
 
-    const signedTx = await this.signTransaction(transaction);
-    const rawTx = signedTx.serialize();
+    let serializedBytes: Uint8Array;
+    try {
+      if (isVersioned) {
+        serializedBytes = (transaction as VersionedTransaction).serialize();
+      } else {
+        serializedBytes = (transaction as Transaction).serialize({
+          requireAllSignatures: false,
+          verifySignatures: false,
+        });
+      }
+    } catch (err: any) {
+      console.error("[PhantomMobileAdapter] Transaction serialization error:", err);
+      throw new Error(`Failed to serialize transaction: ${err?.message || err}`);
+    }
 
-    const signature = await connection.sendRawTransaction(rawTx, {
-      skipPreflight: options.skipPreflight ?? true,
-      preflightCommitment: options.preflightCommitment ?? "confirmed",
-      maxRetries: options.maxRetries ?? 5,
+    return new Promise<TransactionSignature>((resolve, reject) => {
+      let timeoutId: any = null;
+
+      const handleSent = (e: any) => {
+        cleanup();
+        if (e.detail?.signature) {
+          resolve(e.detail.signature);
+        } else {
+          reject(new Error("No transaction signature received from Phantom Mobile."));
+        }
+      };
+
+      const handleError = (e: any) => {
+        cleanup();
+        reject(new Error(e.detail?.error || "Transaction rejected by user in Phantom."));
+      };
+
+      const cleanup = () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        window.removeEventListener("phantom_mobile_tx_sent", handleSent);
+        window.removeEventListener("phantom_mobile_error", handleError);
+      };
+
+      window.addEventListener("phantom_mobile_tx_sent", handleSent);
+      window.addEventListener("phantom_mobile_error", handleError);
+
+      // 5-minute timeout window for mobile app-switch & approval
+      timeoutId = setTimeout(() => {
+        cleanup();
+        reject(new Error("Transaction timed out."));
+      }, 5 * 60 * 1000);
+
+      try {
+        initiatePhantomMobileSignAndSendTransaction(serializedBytes, undefined, {
+          skipPreflight: options.skipPreflight ?? true,
+        });
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
     });
-
-    return signature;
   }
 }
 

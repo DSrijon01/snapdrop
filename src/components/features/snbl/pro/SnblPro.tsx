@@ -28,6 +28,10 @@ export function SnblPro() {
   const [devAccessOverride, setDevAccessOverride] = useState(false);
   const [activeTab, setActiveTab] = useState<"credit-line" | "stocks" | "savings" | "analytics">("credit-line");
 
+  // Visibility toggles to keep UI clean and lean without deleting code
+  const SHOW_TOP_CARD = false;
+  const SHOW_LIQUID_STAKING_AND_ANALYTICS = false;
+
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -49,29 +53,29 @@ export function SnblPro() {
       <div className="absolute bottom-1/4 left-1/4 w-[30rem] h-[30rem] bg-purple-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <header className="w-full max-w-7xl px-6 pt-12 pb-8 flex items-center justify-between border-b border-border/40 relative z-10">
-        <div className="flex items-center gap-4">
+      <header className="w-full max-w-7xl px-4 sm:px-6 pt-6 sm:pt-12 pb-4 sm:pb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-border/40 relative z-10">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
           <Link
             href="/snbl"
-            className="flex items-center gap-2 text-sm font-mono tracking-widest font-bold uppercase text-muted-foreground hover:text-primary transition-colors group px-3 py-2 -ml-3 rounded-lg hover:bg-muted/50"
+            className="flex items-center gap-2 text-xs sm:text-sm font-mono tracking-widest font-bold uppercase text-muted-foreground hover:text-primary transition-colors group px-2 sm:px-3 py-1.5 -ml-2 rounded-lg hover:bg-muted/50 w-fit"
           >
-            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 group-hover:-translate-x-1 transition-transform" />
             <span>Go Back to Staking</span>
           </Link>
           <div>
-            <h1 className="text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
-              <Zap className="w-7 h-7 text-primary animate-pulse" />
+            <h1 className="text-2xl sm:text-3xl font-black font-display uppercase tracking-tight flex items-center gap-2">
+              <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-primary animate-pulse" />
               SS Staking Pro
             </h1>
-            <p className="text-muted-foreground text-xs uppercase tracking-wider font-mono mt-0.5">
-              High-yield savings pool, liquid ssSOL vault, & money market simulations
+            <p className="text-muted-foreground text-[11px] sm:text-xs uppercase tracking-wider font-mono mt-0.5">
+              Decentralized Money Markets • Crypto-Backed (CBL) & Securities-Backed (SBL) Lending
             </p>
           </div>
         </div>
       </header>
 
       {/* Main Content */}
-      <main className="w-full max-w-7xl px-6 py-6 flex-1 relative z-10">
+      <main className="w-full max-w-7xl px-4 sm:px-6 py-4 sm:py-6 flex-1 relative z-10">
         <ProStatusBar moduleId="snbl" />
         <AnimatePresence mode="wait">
           {!access ? (
@@ -98,24 +102,24 @@ export function SnblPro() {
 
               <div className="bg-muted/40 border border-border/60 rounded-2xl p-4 mb-6 text-left space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Subscribe to the SS Staking Pro tier starting from <strong>0.01 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
+                  Subscribe to the SS Staking Pro tier starting from <strong>0.01 SOL</strong> to unlock:
                 </p>
                 <ul className="space-y-2 text-xs font-mono uppercase text-foreground/80">
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>High-Yield Liquidity Savings Vault (ssSOL)</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <span>Crypto-Backed Lending (CBL) with Term Loans</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Boosted yield multiplier (+1.5x weight)</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                    <span>Securities-Backed Lending (SBL) Tokenized Equity Vaults</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Dynamic APR lockup yield projections</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <span>Token-2022 Synthetic USDSS Borrow Facilities</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
-                    <span>Upcoming Borrowing & Lending credit line</span>
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span>100% Retained Dividend Rights & Solvency Protections</span>
                   </li>
                 </ul>
               </div>
@@ -149,92 +153,103 @@ export function SnblPro() {
               key="authorized"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className="space-y-8"
+              className="space-y-6"
             >
-              {/* Top Banner */}
-              <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-                <div className="flex items-center gap-4 relative z-10">
-                  <div className="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center text-primary shrink-0">
-                    <Sparkles size={28} />
+              {/* Top Banner (Hidden to keep UI clean and lean) */}
+              {SHOW_TOP_CARD && (
+                <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="w-14 h-14 bg-primary/15 rounded-2xl flex items-center justify-center text-primary shrink-0">
+                      <Sparkles size={28} />
+                    </div>
+                    <div>
+                      <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground">
+                        SS Staking Pro Dashboard
+                      </h2>
+                      <p className="text-muted-foreground text-xs md:text-sm mt-1 max-w-xl">
+                        Access the High-Yield Liquidity Vault, simulate dynamic lockup curves, and prepare collateral for borrowing and lending.
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h2 className="text-xl md:text-2xl font-black font-display uppercase tracking-tight text-foreground">
-                      SS Staking Pro Dashboard
-                    </h2>
-                    <p className="text-muted-foreground text-xs md:text-sm mt-1 max-w-xl">
-                      Access the High-Yield Liquidity Vault, simulate dynamic lockup curves, and prepare collateral for borrowing and lending.
-                    </p>
+                  <div className="flex gap-3 relative z-10">
+                    <div className="bg-card/65 border border-border px-4 py-2.5 rounded-xl text-center">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase block">Boost Factor</span>
+                      <span className="text-lg font-black text-emerald-500 font-display">1.50x Weight</span>
+                    </div>
+                    <div className="bg-card/65 border border-border px-4 py-2.5 rounded-xl text-center">
+                      <span className="text-[10px] font-mono text-muted-foreground uppercase block">Max Reward Yield</span>
+                      <span className="text-lg font-black text-primary font-display">24.5% APR</span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-3 relative z-10">
-                  <div className="bg-card/65 border border-border px-4 py-2.5 rounded-xl text-center">
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase block">Boost Factor</span>
-                    <span className="text-lg font-black text-emerald-500 font-display">1.50x Weight</span>
-                  </div>
-                  <div className="bg-card/65 border border-border px-4 py-2.5 rounded-xl text-center">
-                    <span className="text-[10px] font-mono text-muted-foreground uppercase block">Max Reward Yield</span>
-                    <span className="text-lg font-black text-primary font-display">24.5% APR</span>
-                  </div>
-                </div>
-              </div>
+              )}
 
-              {/* Navigation Tabs */}
-              <div className="flex flex-wrap items-center gap-3 border-b border-border/40 pb-3">
+              {/* Navigation Tabs - Clean, Lean & Focused on Borrow & Lend */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 border-b border-border/40 pb-3">
+                {/* 1. Crypto Lending Tab (Primary Yellow) */}
                 <button
                   onClick={() => setActiveTab("credit-line")}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                  className={`flex items-center justify-center sm:justify-start gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all w-full sm:w-auto ${
                     activeTab === "credit-line"
-                      ? "bg-purple-600 text-white shadow-md shadow-purple-600/25 font-black"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-amber-400 text-black shadow-lg shadow-amber-400/25 font-black ring-2 ring-amber-300 border border-amber-300"
+                      : "bg-card/40 border border-border/60 hover:bg-amber-500/10 text-muted-foreground hover:text-amber-400"
                   }`}
                 >
-                  <Coins className="w-4 h-4 text-purple-300" />
+                  <Coins className={`w-4 h-4 ${activeTab === "credit-line" ? "text-black" : "text-amber-400"}`} />
                   <span>Borrow Against Crypto (CBL)</span>
                 </button>
+
+                {/* 2. Securities Lending Tab (Primary Blue) */}
                 <button
                   onClick={() => setActiveTab("stocks")}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                  className={`flex items-center justify-center sm:justify-start gap-2 px-4 sm:px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all w-full sm:w-auto ${
                     activeTab === "stocks"
-                      ? "bg-emerald-500 text-black shadow-md shadow-emerald-500/20 font-black"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      ? "bg-blue-600 text-white shadow-lg shadow-blue-500/25 font-black ring-2 ring-blue-400 border border-blue-400"
+                      : "bg-card/40 border border-border/60 hover:bg-blue-500/10 text-muted-foreground hover:text-blue-400"
                   }`}
                 >
-                  <Building2 className="w-4 h-4 text-emerald-400" />
+                  <Building2 className={`w-4 h-4 ${activeTab === "stocks" ? "text-white" : "text-blue-400"}`} />
                   <span>Borrow Against Stocks (SBL)</span>
                 </button>
-                <button
-                  onClick={() => setActiveTab("savings")}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
-                    activeTab === "savings"
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <Vault className="w-4 h-4 text-purple-400" />
-                  <span>Liquid Staking Vault</span>
-                </button>
-                <button
-                  onClick={() => setActiveTab("analytics")}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
-                    activeTab === "analytics"
-                      ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                      : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  <BarChart3 className="w-4 h-4" />
-                  <span>Pro Analytics & Curves</span>
-                </button>
+
+                {/* Liquid Staking & Analytics Tabs (Hidden to keep UI lean; fully preserved) */}
+                {SHOW_LIQUID_STAKING_AND_ANALYTICS && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab("savings")}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                        activeTab === "savings"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                          : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Vault className="w-4 h-4 text-purple-400" />
+                      <span>Liquid Staking Vault</span>
+                    </button>
+                    <button
+                      onClick={() => setActiveTab("analytics")}
+                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider font-mono transition-all ${
+                        activeTab === "analytics"
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                          : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <BarChart3 className="w-4 h-4" />
+                      <span>Pro Analytics & Curves</span>
+                    </button>
+                  </>
+                )}
               </div>
 
-              {/* Tab 1: Pro Credit Line (Borrow & Lend ssSOL) */}
+              {/* Tab 1: Borrow Against Crypto (CBL) */}
               {activeTab === "credit-line" && <LendingBorrowingDashboard />}
 
-              {/* Tab 2: Borrow Against Tokenized Stocks */}
+              {/* Tab 2: Borrow Against Tokenized Stocks (SBL) */}
               {activeTab === "stocks" && <StockLendingDashboard />}
 
-              {/* Tab 1: Savings & Staking Pool */}
-              {activeTab === "savings" && (
+              {/* Preserved Liquid Staking Pool */}
+              {SHOW_LIQUID_STAKING_AND_ANALYTICS && activeTab === "savings" && (
                 <div className="space-y-6">
                   <div className="bg-purple-950/20 border border-purple-500/20 rounded-2xl p-4 flex items-center justify-between text-xs text-muted-foreground font-mono">
                     <div className="flex items-center gap-2 text-purple-300">

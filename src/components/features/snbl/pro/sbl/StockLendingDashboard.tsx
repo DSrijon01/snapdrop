@@ -1,56 +1,41 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useWallet } from "@solana/wallet-adapter-react";
 import {
-  TrendingUp,
-  TrendingDown,
   ShieldCheck,
   AlertTriangle,
   Flame,
   ArrowRight,
-  Coins,
-  DollarSign,
+  Building2,
   Lock,
   Unlock,
-  Building2,
-  Calendar,
-  Clock,
+  DollarSign,
+  Coins,
   Sparkles,
-  Layers,
-  ChevronRight,
-  CheckCircle2,
-  Info,
-  RefreshCw,
   ExternalLink,
   Code2,
-  Cpu,
-  Wallet,
-  Zap,
+  Calendar,
+  CheckCircle2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { useSbl, SBL_PROGRAM_ID, DEFAULT_MARKET_ID } from "@/hooks/useSbl";
-import { useWallet } from "@solana/wallet-adapter-react";
+import { UsdssIcon } from "@/components/common/UsdssIcon";
+import { savePendingAction, clearPendingAction } from "@/utils/pendingTransactions";
 
-// Tokenized Collateral Assets (Equities + Major Currencies)
-export interface CollateralAsset {
+// Curated US Securities & Risk Parameters
+export interface StockAsset {
   symbol: string;
   name: string;
   price: number;
   change24h: number;
   ltvBps: number; // e.g. 6500 = 65%
   liquidationThresholdBps: number; // e.g. 7500 = 75%
-  baseAprBps: number; // e.g. 480 = 4.80%
-  marketCap: string;
-  peRatio?: string;
-  category: "Equity" | "Crypto";
-  tokenType: "Token-2022" | "SPL";
-  token2022Extensions: string[];
-  logoBg: string;
+  borrowAprBps: number; // e.g. 485 = 4.85%
+  category: "MegaCap" | "Tech" | "EV" | "Fintech";
 }
 
-export const SUPPORTED_COLLATERAL: Record<string, CollateralAsset> = {
-  // --- US Equities ---
+export const SUPPORTED_STOCKS: Record<string, StockAsset> = {
   NVDA: {
     symbol: "NVDA",
     name: "NVIDIA Corp.",
@@ -58,182 +43,86 @@ export const SUPPORTED_COLLATERAL: Record<string, CollateralAsset> = {
     change24h: 3.42,
     ltvBps: 6500, // 65% LTV
     liquidationThresholdBps: 7500,
-    baseAprBps: 485,
-    marketCap: "$3.15T",
-    peRatio: "68.2",
-    category: "Equity",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer", "DefaultAccountState"],
-    logoBg: "from-emerald-500/20 to-emerald-900/40 text-emerald-400 border-emerald-500/30",
+    borrowAprBps: 485,
+    category: "Tech",
   },
   AAPL: {
     symbol: "AAPL",
     name: "Apple Inc.",
     price: 173.5,
     change24h: 1.15,
-    ltvBps: 7000, // 70% LTV (Blue-chip)
+    ltvBps: 7000, // 70% LTV
     liquidationThresholdBps: 8000,
-    baseAprBps: 420,
-    marketCap: "$2.68T",
-    peRatio: "26.4",
-    category: "Equity",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer", "TransferHook"],
-    logoBg: "from-zinc-400/20 to-zinc-800/40 text-zinc-200 border-zinc-500/30",
+    borrowAprBps: 420,
+    category: "MegaCap",
   },
   TSLA: {
     symbol: "TSLA",
     name: "Tesla Inc.",
     price: 218.2,
     change24h: -2.35,
-    ltvBps: 6000, // 60% LTV (Higher Beta)
+    ltvBps: 6000, // 60% LTV
     liquidationThresholdBps: 7000,
-    baseAprBps: 540,
-    marketCap: "$695B",
-    peRatio: "42.8",
-    category: "Equity",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer", "DefaultAccountState"],
-    logoBg: "from-red-500/20 to-red-900/40 text-red-400 border-red-500/30",
+    borrowAprBps: 540,
+    category: "EV",
   },
   AMZN: {
     symbol: "AMZN",
     name: "Amazon.com Inc.",
     price: 178.1,
     change24h: 1.84,
-    ltvBps: 6500, // 65% LTV
+    ltvBps: 6500,
     liquidationThresholdBps: 7500,
-    baseAprBps: 460,
-    marketCap: "$1.85T",
-    peRatio: "38.9",
-    category: "Equity",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer"],
-    logoBg: "from-amber-500/20 to-amber-900/40 text-amber-400 border-amber-500/30",
+    borrowAprBps: 460,
+    category: "MegaCap",
   },
   COIN: {
     symbol: "COIN",
     name: "Coinbase Global",
     price: 224.5,
     change24h: 5.12,
-    ltvBps: 5500, // 55% LTV (Crypto Beta)
+    ltvBps: 5500,
     liquidationThresholdBps: 6500,
-    baseAprBps: 620,
-    marketCap: "$53.2B",
-    peRatio: "31.2",
-    category: "Equity",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer", "TransferHook"],
-    logoBg: "from-blue-500/20 to-blue-900/40 text-blue-400 border-blue-500/30",
-  },
-
-  // --- Major Currencies & Crypto ---
-  BTC: {
-    symbol: "BTC",
-    name: "Bitcoin",
-    price: 64250.0,
-    change24h: 2.14,
-    ltvBps: 7500, // 75% LTV
-    liquidationThresholdBps: 8500,
-    baseAprBps: 410,
-    marketCap: "$1.26T",
-    category: "Crypto",
-    tokenType: "SPL",
-    token2022Extensions: ["WrappedCustody"],
-    logoBg: "from-orange-500/20 to-orange-900/40 text-orange-400 border-orange-500/30",
-  },
-  BCH: {
-    symbol: "BCH",
-    name: "Bitcoin Cash",
-    price: 345.2,
-    change24h: -1.2,
-    ltvBps: 6000, // 60% LTV
-    liquidationThresholdBps: 7000,
-    baseAprBps: 580,
-    marketCap: "$6.8B",
-    category: "Crypto",
-    tokenType: "SPL",
-    token2022Extensions: ["WrappedCustody"],
-    logoBg: "from-emerald-600/20 to-teal-900/40 text-emerald-300 border-emerald-500/30",
-  },
-  BNB: {
-    symbol: "BNB",
-    name: "Binance Coin",
-    price: 582.4,
-    change24h: 0.85,
-    ltvBps: 7000, // 70% LTV
-    liquidationThresholdBps: 8000,
-    baseAprBps: 490,
-    marketCap: "$87.4B",
-    category: "Crypto",
-    tokenType: "Token-2022",
-    token2022Extensions: ["PermanentDelegate", "MetadataPointer"],
-    logoBg: "from-yellow-500/20 to-yellow-900/40 text-yellow-400 border-yellow-500/30",
-  },
-  SOL: {
-    symbol: "SOL",
-    name: "Solana",
-    price: 152.8,
-    change24h: 4.35,
-    ltvBps: 7500, // 75% LTV
-    liquidationThresholdBps: 8500,
-    baseAprBps: 450,
-    marketCap: "$71.2B",
-    category: "Crypto",
-    tokenType: "Token-2022",
-    token2022Extensions: ["MetadataPointer", "InterestBearingConfig"],
-    logoBg: "from-purple-500/20 to-purple-900/40 text-purple-400 border-purple-500/30",
+    borrowAprBps: 620,
+    category: "Fintech",
   },
 };
 
 export function StockLendingDashboard() {
   const { connected, publicKey } = useWallet();
   const {
-    program,
-    loading: sblLoading,
-    obligationPda,
+    programId,
+    currentSlot,
+    isRpcConnected,
     isObligationCreated,
     initObligation,
-    programId,
+    loading: sblLoading,
   } = useSbl();
 
-  // Collateral Filter: all | equities | crypto
-  const [filterCategory, setFilterCategory] = useState<"all" | "Equity" | "Crypto">("all");
+  // Selected Stock Asset
+  const [selectedStockKey, setSelectedStockKey] = useState<string>("NVDA");
+  const selectedStock = SUPPORTED_STOCKS[selectedStockKey] || SUPPORTED_STOCKS.NVDA;
 
-  // Selected Collateral Asset
-  const [selectedAssetKey, setSelectedAssetKey] = useState<string>("NVDA");
-  const selectedAsset = SUPPORTED_COLLATERAL[selectedAssetKey] || SUPPORTED_COLLATERAL.NVDA;
-
-  // Local Wallet Balances (Tokens owned by user)
+  // Local Wallet Balances
   const [walletBalances, setWalletBalances] = useState<Record<string, number>>({
     NVDA: 15.0,
     AAPL: 25.0,
     TSLA: 10.0,
     AMZN: 12.0,
     COIN: 8.0,
-    BTC: 0.25,
-    BCH: 4.5,
-    BNB: 3.0,
-    SOL: 24.5,
   });
 
-  // Wallet Synthetic USDSS Cash (Minted via Token-2022)
   const [walletUsdss, setWalletUsdss] = useState<number>(2500.0);
 
   // User Obligation Pledged Collateral
   const [pledgedCollateral, setPledgedCollateral] = useState<Record<string, number>>({
-    NVDA: 10.0, // 10 * 128.40 = $1,284.00
-    AAPL: 5.0, // 5 * 173.50 = $867.50
+    NVDA: 10.0,
+    AAPL: 5.0,
     TSLA: 0.0,
     AMZN: 0.0,
     COIN: 0.0,
-    BTC: 0.05, // 0.05 * 64,250 = $3,212.50
-    BCH: 0.0,
-    BNB: 0.0,
-    SOL: 10.0, // 10 * 152.80 = $1,528.00
   });
 
-  // Borrowed Debt in Synthetic USDSS (Token-2022)
   const [borrowedDebtUsdss, setBorrowedDebtUsdss] = useState<number>(1450.0);
 
   // Action Tabs
@@ -241,32 +130,23 @@ export function StockLendingDashboard() {
   const [borrowSubAction, setBorrowSubAction] = useState<"borrow" | "repay">("borrow");
 
   // Inputs
-  const [collateralAmountInput, setCollateralAmountInput] = useState<string>("");
+  const [stockAmountInput, setStockAmountInput] = useState<string>("");
   const [usdssAmountInput, setUsdssAmountInput] = useState<string>("");
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [showExtensionMatrix, setShowExtensionMatrix] = useState<boolean>(false);
 
-  // Filtered Assets
-  const filteredAssets = useMemo(() => {
-    return Object.values(SUPPORTED_COLLATERAL).filter((asset) => {
-      if (filterCategory === "all") return true;
-      return asset.category === filterCategory;
-    });
-  }, [filterCategory]);
-
-  // Compute Total Pledged Collateral Value & Max Allowed Borrow Limit
+  // Calculations
   const { totalPledgedValueUsd, maxBorrowLimitUsd, liquidationThresholdValueUsd } = useMemo(() => {
     let totalValue = 0;
     let maxBorrow = 0;
     let liqThreshold = 0;
 
     Object.entries(pledgedCollateral).forEach(([symbol, amount]) => {
-      const asset = SUPPORTED_COLLATERAL[symbol];
-      if (asset && amount > 0) {
-        const val = amount * asset.price;
+      const stock = SUPPORTED_STOCKS[symbol];
+      if (stock && amount > 0) {
+        const val = amount * stock.price;
         totalValue += val;
-        maxBorrow += val * (asset.ltvBps / 10000);
-        liqThreshold += val * (asset.liquidationThresholdBps / 10000);
+        maxBorrow += val * (stock.ltvBps / 10000);
+        liqThreshold += val * (stock.liquidationThresholdBps / 10000);
       }
     });
 
@@ -277,17 +157,19 @@ export function StockLendingDashboard() {
     };
   }, [pledgedCollateral]);
 
-  // Remaining Borrow Power in USDSS
   const remainingBorrowPowerUsdss = Math.max(0, maxBorrowLimitUsd - borrowedDebtUsdss);
 
-  // Health Factor: (Liquidation Threshold Value) / (Borrowed Debt)
+  // How much USDSS is minted per 1 share of selected stock
+  const stockUsdssPerUnit = useMemo(() => {
+    return selectedStock.price * (selectedStock.ltvBps / 10000);
+  }, [selectedStock]);
+
   const healthFactor = useMemo(() => {
     if (borrowedDebtUsdss <= 0) return 999.0;
     if (totalPledgedValueUsd <= 0) return 0.0;
     return liquidationThresholdValueUsd / borrowedDebtUsdss;
   }, [liquidationThresholdValueUsd, borrowedDebtUsdss, totalPledgedValueUsd]);
 
-  // Drop-to-liquidation buffer: percentage portfolio can drop before HF hits 1.00
   const liquidationDropBuffer = useMemo(() => {
     if (borrowedDebtUsdss <= 0 || liquidationThresholdValueUsd <= 0) return 100.0;
     const diff = liquidationThresholdValueUsd - borrowedDebtUsdss;
@@ -295,97 +177,95 @@ export function StockLendingDashboard() {
     return (diff / liquidationThresholdValueUsd) * 100;
   }, [liquidationThresholdValueUsd, borrowedDebtUsdss]);
 
-  // Variable Interest Rate Calculator (Solana Book Chapter 17 Kinked Curve Model)
-  // Utilization U = borrowedDebt / maxBorrowLimit
-  const { currentUtilizationBps, currentBorrowApr } = useMemo(() => {
-    if (maxBorrowLimitUsd <= 0) {
-      return { currentUtilizationBps: 0, currentBorrowApr: 2.0 };
-    }
+  // Dynamic borrow APR based on utilization
+  const currentBorrowApr = useMemo(() => {
+    if (maxBorrowLimitUsd <= 0) return 4.5;
     const util = Math.min(1.0, borrowedDebtUsdss / maxBorrowLimitUsd);
-    const utilBps = Math.round(util * 10000);
-
-    // Kink at 80% (8000 bps)
-    const baseRate = 2.0; // 2% base
-    const optimalRate = 8.5; // 8.5% at 80% utilization
-    const maxRate = 25.0; // 25% at 100% utilization
-
-    let apr = baseRate;
-    if (utilBps <= 8000) {
-      apr = baseRate + (util / 0.8) * (optimalRate - baseRate);
-    } else {
-      const excess = (util - 0.8) / 0.2;
-      apr = optimalRate + excess * (maxRate - optimalRate);
-    }
-
-    return {
-      currentUtilizationBps: utilBps,
-      currentBorrowApr: apr,
-    };
+    return 4.0 + util * 4.0;
   }, [borrowedDebtUsdss, maxBorrowLimitUsd]);
 
-  // Actions
-  const handleDepositCollateral = () => {
-    const amt = parseFloat(collateralAmountInput);
+  // Interest Payback Clause & Auto-Lock State
+  const accruedInterestUsdss = useMemo(() => {
+    if (borrowedDebtUsdss <= 0) return 0;
+    // Standard 30-day term accrued interest on drawn USDSS
+    return (borrowedDebtUsdss * (currentBorrowApr / 100) * (30 / 365));
+  }, [borrowedDebtUsdss, currentBorrowApr]);
+
+  const totalPaybackAmountUsdss = useMemo(() => {
+    return borrowedDebtUsdss + accruedInterestUsdss;
+  }, [borrowedDebtUsdss, accruedInterestUsdss]);
+
+  const isAutoLocked = borrowedDebtUsdss > 0;
+
+  // Handlers
+  const handleDepositStock = () => {
+    const amt = parseFloat(stockAmountInput);
     if (isNaN(amt) || amt <= 0) {
-      toast.error("Please enter a valid collateral amount");
+      toast.error("Enter a valid share amount");
       return;
     }
-    const available = walletBalances[selectedAssetKey] || 0;
+    const available = walletBalances[selectedStockKey] || 0;
     if (amt > available) {
-      toast.error(`Insufficient ${selectedAssetKey} balance in wallet`);
+      toast.error(`Insufficient ${selectedStockKey} in wallet`);
       return;
     }
 
     setIsProcessing(true);
     setTimeout(() => {
-      setWalletBalances((prev) => ({ ...prev, [selectedAssetKey]: prev[selectedAssetKey] - amt }));
-      setPledgedCollateral((prev) => ({ ...prev, [selectedAssetKey]: (prev[selectedAssetKey] || 0) + amt }));
-      setCollateralAmountInput("");
+      setWalletBalances((prev) => ({ ...prev, [selectedStockKey]: prev[selectedStockKey] - amt }));
+      setPledgedCollateral((prev) => ({ ...prev, [selectedStockKey]: (prev[selectedStockKey] || 0) + amt }));
+      setStockAmountInput("");
       setIsProcessing(false);
-      toast.success(`Successfully deposited ${amt} ${selectedAssetKey} into SBL Collateral Vault!`);
-    }, 600);
+      toast.success(`Deposited ${amt} ${selectedStockKey} shares as collateral`);
+    }, 500);
   };
 
-  const handleWithdrawCollateral = () => {
-    const amt = parseFloat(collateralAmountInput);
-    if (isNaN(amt) || amt <= 0) {
-      toast.error("Please enter a valid amount");
-      return;
-    }
-    const currentPledged = pledgedCollateral[selectedAssetKey] || 0;
-    if (amt > currentPledged) {
-      toast.error(`Cannot withdraw more than pledged balance`);
+  const handleWithdrawStock = () => {
+    if (isAutoLocked) {
+      toast.error(
+        `Collateral is AUTO-LOCKED! Outstanding USDSS debt + interest (${totalPaybackAmountUsdss.toFixed(2)} USDSS) must be repaid first.`
+      );
       return;
     }
 
-    // Check post-withdrawal solvency
-    const lostValue = amt * selectedAsset.price;
-    const lostThreshold = lostValue * (selectedAsset.liquidationThresholdBps / 10000);
+    const amt = parseFloat(stockAmountInput);
+    if (isNaN(amt) || amt <= 0) {
+      toast.error("Enter a valid amount");
+      return;
+    }
+    const currentPledged = pledgedCollateral[selectedStockKey] || 0;
+    if (amt > currentPledged) {
+      toast.error("Cannot withdraw more than pledged balance");
+      return;
+    }
+
+    const lostVal = amt * selectedStock.price;
+    const lostThreshold = lostVal * (selectedStock.liquidationThresholdBps / 10000);
     const newThreshold = liquidationThresholdValueUsd - lostThreshold;
 
     if (borrowedDebtUsdss > 0 && newThreshold < borrowedDebtUsdss) {
-      toast.error("Withdrawal rejected: Would drop Health Factor below liquidation threshold!");
+      toast.error("Withdrawal would breach liquidation threshold!");
       return;
     }
 
     setIsProcessing(true);
     setTimeout(() => {
-      setPledgedCollateral((prev) => ({ ...prev, [selectedAssetKey]: prev[selectedAssetKey] - amt }));
-      setWalletBalances((prev) => ({ ...prev, [selectedAssetKey]: (prev[selectedAssetKey] || 0) + amt }));
-      setCollateralAmountInput("");
+      setPledgedCollateral((prev) => ({ ...prev, [selectedStockKey]: prev[selectedStockKey] - amt }));
+      setWalletBalances((prev) => ({ ...prev, [selectedStockKey]: (prev[selectedStockKey] || 0) + amt }));
+      setStockAmountInput("");
       setIsProcessing(false);
-      toast.success(`Released ${amt} ${selectedAssetKey} back to your wallet!`);
-    }, 600);
+      toast.success(`Withdrew ${amt} ${selectedStockKey} shares`);
+    }, 500);
   };
 
   const handleBorrowUsdss = () => {
     const amt = parseFloat(usdssAmountInput);
     if (isNaN(amt) || amt <= 0) {
-      toast.error("Enter a valid USDSS borrow amount");
+      toast.error("Enter a valid USDSS amount");
       return;
     }
     if (amt > remainingBorrowPowerUsdss) {
-      toast.error("Requested borrow exceeds available collateral-backed credit limit!");
+      toast.error("Borrow exceeds available stock credit line");
       return;
     }
 
@@ -395,471 +275,339 @@ export function StockLendingDashboard() {
       setWalletUsdss((prev) => prev + amt);
       setUsdssAmountInput("");
       setIsProcessing(false);
-      toast.success(`Minted ${amt.toFixed(2)} USDSS (Token-2022) to wallet against stock & crypto collateral!`);
-    }, 600);
+      toast.success(`Minted ${amt.toFixed(2)} USDSS against your stock portfolio! Collateral is now Auto-Locked until repayment.`);
+    }, 500);
   };
 
   const handleRepayUsdss = () => {
     const amt = parseFloat(usdssAmountInput);
     if (isNaN(amt) || amt <= 0) {
-      toast.error("Enter a valid repayment amount");
+      toast.error("Enter a valid amount");
       return;
     }
     if (amt > walletUsdss) {
-      toast.error("Insufficient USDSS in wallet");
+      toast.error("Insufficient USDSS balance in wallet");
       return;
     }
 
     setIsProcessing(true);
     setTimeout(() => {
-      const repayAmount = Math.min(amt, borrowedDebtUsdss);
-      setWalletUsdss((prev) => prev - repayAmount);
-      setBorrowedDebtUsdss((prev) => Math.max(0, prev - repayAmount));
+      const totalDue = totalPaybackAmountUsdss;
+      const repayAmount = Math.min(amt, totalDue);
+      setWalletUsdss((prev) => Math.max(0, prev - repayAmount));
+
+      // First pay interest, remainder pays down principal
+      const interestPaid = Math.min(repayAmount, accruedInterestUsdss);
+      const principalPaid = repayAmount - interestPaid;
+      setBorrowedDebtUsdss((prev) => Math.max(0, prev - principalPaid));
       setUsdssAmountInput("");
       setIsProcessing(false);
-      toast.success(`Repaid & burned ${repayAmount.toFixed(2)} USDSS debt! Solvency increased.`);
-    }, 600);
+
+      if (principalPaid >= borrowedDebtUsdss) {
+        toast.success(`Repaid ${repayAmount.toFixed(2)} USDSS in full (${interestPaid.toFixed(2)} interest + ${principalPaid.toFixed(2)} principal). Collateral UNLOCKED!`);
+      } else {
+        toast.success(`Repaid ${repayAmount.toFixed(2)} USDSS (${interestPaid.toFixed(2)} interest + ${principalPaid.toFixed(2)} principal). Remaining debt: ${(borrowedDebtUsdss - principalPaid).toFixed(2)} USDSS.`);
+      }
+    }, 500);
   };
 
-  const handleAirdropAssets = () => {
+  const handleFaucetStocks = () => {
     setWalletBalances((prev) => ({
       ...prev,
       NVDA: prev.NVDA + 10.0,
       AAPL: prev.AAPL + 10.0,
       TSLA: prev.TSLA + 5.0,
-      BTC: prev.BTC + 0.1,
-      BCH: prev.BCH + 2.0,
-      BNB: prev.BNB + 2.0,
-      SOL: prev.SOL + 10.0,
+      AMZN: prev.AMZN + 5.0,
+      COIN: prev.COIN + 5.0,
     }));
-    toast.success("Airdropped test Stocks (NVDA, AAPL, TSLA) & Currencies (BTC, BCH, BNB, SOL)!");
+    toast.success("Faucet test shares added to wallet");
   };
 
   return (
-    <div className="w-full space-y-8">
-      {/* 1. Devnet Protocol Header & Status Banner */}
-      <div className="bg-gradient-to-r from-card/90 via-card/60 to-emerald-500/10 border border-emerald-500/30 rounded-3xl p-6 md:p-8 backdrop-blur-xl relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-0 left-1/3 w-72 h-72 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="w-full space-y-6">
+      {/* 1. Clean Securities Header (Blue Theme) */}
+      <div className="bg-gradient-to-r from-card/90 via-card/50 to-blue-500/10 border border-blue-500/30 rounded-3xl p-6 backdrop-blur-xl relative overflow-hidden shadow-xl">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-mono uppercase tracking-wider font-bold">
-              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <span>Solana Devnet Live</span>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono uppercase font-black bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+                Securities Lending
               </span>
-              <span className="px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                Token-2022 USDSS Synthetic Engine
-              </span>
-              <span className="px-2.5 py-1 rounded-full bg-purple-500/15 text-purple-400 border border-purple-500/30">
-                Multi-Collateral (Stock + Crypto)
+              <span className="text-xs font-mono text-muted-foreground">
+                Institutional Equity Vaults & Synthetic USDSS
               </span>
             </div>
-
-            <h2 className="text-2xl md:text-3xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-3">
-              <Building2 className="w-8 h-8 text-emerald-400" />
-              <span>Securities-Backed Lending (SBL)</span>
+            <h2 className="text-2xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
+              <Building2 className="w-6 h-6 text-blue-400" />
+              <span>Borrow Against Stocks</span>
             </h2>
-
-            <p className="text-sm text-muted-foreground font-mono leading-relaxed">
-              Pledge your tokenized equities (<strong className="text-emerald-400">NVDA, AAPL, TSLA, AMZN, COIN</strong>) and premier crypto currencies (<strong className="text-orange-400">BTC, BCH, BNB, SOL</strong>) to mint synthetic <strong className="text-cyan-400">USDSS</strong> without triggering capital gains taxes or forfeiting corporate voting and dividends.
-            </p>
           </div>
 
-          {/* Quick Metrics & Actions */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="bg-background/80 border border-border/80 px-4 py-2.5 rounded-2xl">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase block font-bold">Borrow Token</span>
-              <span className="text-lg font-black font-display text-cyan-400 flex items-center gap-1">
-                <Sparkles className="w-4 h-4" />
-                <span>USDSS (Token-2022)</span>
-              </span>
-            </div>
-
-            <div className="bg-background/80 border border-border/80 px-4 py-2.5 rounded-2xl">
-              <span className="text-[10px] font-mono text-muted-foreground uppercase block font-bold">Variable APR (Piecewise)</span>
-              <span className="text-lg font-black font-display text-emerald-400">
+          <div className="flex items-center gap-3">
+            <div className="bg-background/80 border border-border/80 px-4 py-2 rounded-2xl text-right">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase block font-bold">Borrow APR</span>
+              <span className="text-sm font-black font-display text-blue-400">
                 {currentBorrowApr.toFixed(2)}%
               </span>
             </div>
 
             <button
-              onClick={handleAirdropAssets}
+              onClick={handleFaucetStocks}
               type="button"
-              className="px-4 py-3 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
-              title="Add test stocks & tokens to wallet"
+              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl text-xs font-mono uppercase tracking-wider transition-all flex items-center gap-1.5 shadow-md shadow-blue-500/20 hover:scale-[1.02] active:scale-[0.98]"
             >
               <Coins className="w-4 h-4" />
-              <span>Faucet Test Collateral</span>
+              <span>Faucet</span>
             </button>
           </div>
         </div>
 
-        {/* On-Chain Program Info Bar */}
-        <div className="mt-6 pt-4 border-t border-border/50 flex flex-wrap items-center justify-between text-xs font-mono text-muted-foreground gap-3">
+        {/* Functional Connection & Minimal status strip */}
+        <div className="mt-4 pt-3 border-t border-border/40 flex flex-wrap items-center justify-between text-xs font-mono text-muted-foreground gap-2">
           <div className="flex flex-wrap items-center gap-3">
-            <span className="text-foreground/90 flex items-center gap-1.5 font-bold">
-              <Code2 className="w-4 h-4 text-emerald-400" />
+            {/* Functional Devnet RPC Connection Indicator */}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-bold text-[11px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Solana Devnet {currentSlot ? `(#${currentSlot})` : "Live"}</span>
+            </div>
+
+            <div className="flex items-center gap-1.5 text-foreground/80">
+              <span className="text-muted-foreground">Wallet:</span>
+              <strong className="text-blue-400">
+                {connected && publicKey
+                  ? `${publicKey.toBase58().slice(0, 4)}...${publicKey.toBase58().slice(-4)}`
+                  : "Ready / Local"}
+              </strong>
+            </div>
+
+            <span className="text-border">|</span>
+
+            <span className="text-foreground/90 font-bold flex items-center gap-1">
+              <Code2 className="w-3.5 h-3.5 text-blue-400" />
               Program:
             </span>
             <a
               href={`https://explorer.solana.com/address/${programId.toBase58()}?cluster=devnet`}
               target="_blank"
               rel="noreferrer"
-              className="text-emerald-400 hover:underline flex items-center gap-1 font-bold"
+              className="text-blue-400 hover:underline flex items-center gap-1"
             >
               <span>{programId.toBase58().slice(0, 4)}...{programId.toBase58().slice(-4)}</span>
               <ExternalLink className="w-3 h-3" />
             </a>
-            <span className="text-border">|</span>
-            <span className="text-muted-foreground">Market ID: <strong className="text-foreground">{DEFAULT_MARKET_ID}</strong></span>
-            <span className="text-border">|</span>
-            <span className="text-muted-foreground">
-              Obligation:{" "}
-              {connected ? (
-                <strong className={isObligationCreated ? "text-emerald-400" : "text-amber-400"}>
-                  {isObligationCreated ? "Active On-Chain" : "Ready to Initialize"}
-                </strong>
-              ) : (
-                <span className="text-muted-foreground">Connect Wallet</span>
-              )}
-            </span>
-          </div>
 
-          {connected && !isObligationCreated && (
-            <button
-              onClick={initObligation}
-              disabled={sblLoading}
-              type="button"
-              className="px-3 py-1.5 bg-primary/20 hover:bg-primary/30 border border-primary/40 text-primary font-bold rounded-xl text-xs font-mono uppercase flex items-center gap-1.5 transition-all"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>{sblLoading ? "Initializing..." : "Init Obligation on Devnet"}</span>
-            </button>
-          )}
+            <span className="text-border">|</span>
+            <span>Market: <strong className="text-foreground">{DEFAULT_MARKET_ID}</strong></span>
+          </div>
 
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowExtensionMatrix(!showExtensionMatrix)}
-              type="button"
-              className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline flex items-center gap-1"
-            >
-              <Cpu className="w-3.5 h-3.5" />
-              <span>{showExtensionMatrix ? "Hide Token-2022 Architecture" : "View Token-2022 Architecture"}</span>
-            </button>
+            {isObligationCreated ? (
+              <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-black uppercase flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>Obligation Active</span>
+              </span>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-0.5 rounded-md bg-blue-500/15 text-blue-400 border border-blue-500/30 text-[10px] font-black uppercase">
+                  Obligation: Ready to Initialize
+                </span>
+                <button
+                  type="button"
+                  onClick={initObligation}
+                  disabled={sblLoading || !connected}
+                  className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg text-[10px] font-black font-mono uppercase tracking-wider transition-all shadow-sm shadow-blue-500/20"
+                >
+                  {sblLoading ? "Initializing..." : "Init Obligation On Devnet"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 2. Token-2022 Extension Architecture Drawer (Connecting One-Click Launch extensions) */}
-      <AnimatePresence>
-        {showExtensionMatrix && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden"
-          >
-            <div className="bg-card/70 border border-cyan-500/30 rounded-3xl p-6 backdrop-blur-xl shadow-xl space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Cpu className="w-5 h-5 text-cyan-400" />
-                  <h3 className="text-base font-black font-display uppercase tracking-wider text-foreground">
-                    Token-2022 Extensions Architecture (Solana Chapter 17 & One-Click Launch)
-                  </h3>
-                </div>
-                <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30">
-                  SPL Token-2022 Standard
-                </span>
+      {/* 2. User Collateralized Equities & Stock to USDSS Conversion Engine */}
+      <div className="space-y-4">
+        {/* Equities to USDSS Conversion Rate Banner */}
+        <div className="bg-gradient-to-r from-blue-600/15 via-card/70 to-card/90 border border-blue-500/40 rounded-3xl p-5 backdrop-blur-xl shadow-lg relative overflow-hidden">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center shrink-0">
+                <UsdssIcon className="w-8 h-8" size={32} />
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-                {/* USDSS Extensions */}
-                <div className="bg-background/80 border border-border/80 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center justify-between text-cyan-400 font-bold border-b border-border/50 pb-2">
-                    <span>USDSS (Synthetic Dollar)</span>
-                    <span className="text-[10px] bg-cyan-500/10 px-1.5 py-0.5 rounded">Mint Program</span>
-                  </div>
-                  <ul className="space-y-1.5 text-muted-foreground">
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                      <span><strong>InterestBearingConfig:</strong> Automatically reflects variable debt APY & synthetic dollar savings rate directly on mint balances.</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                      <span><strong>MetadataPointer:</strong> Embeds immutable name, ticker, and verification URI directly on-chain.</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-cyan-400 shrink-0 mt-0.5" />
-                      <span><strong>PermanentDelegate:</strong> Bound to SBL Market PDA for automated debt burning during liquidations.</span>
-                    </li>
-                  </ul>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-mono uppercase tracking-wider font-bold text-blue-400">
+                    Stock Collateral Conversion Rate
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-blue-500/20 text-blue-300 border border-blue-400/30">
+                    {selectedStock.ltvBps / 100}% LTV
+                  </span>
                 </div>
-
-                {/* Equities Extensions */}
-                <div className="bg-background/80 border border-border/80 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center justify-between text-emerald-400 font-bold border-b border-border/50 pb-2">
-                    <span>Equities (NVDA, AAPL, TSLA)</span>
-                    <span className="text-[10px] bg-emerald-500/10 px-1.5 py-0.5 rounded">Securities Standards</span>
-                  </div>
-                  <ul className="space-y-1.5 text-muted-foreground">
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span><strong>PermanentDelegate:</strong> Executes corporate actions like stock splits (e.g. 10-for-1 NVDA) and dividend credits seamlessly.</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span><strong>DefaultAccountState:</strong> Enforces compliance/KYC accreditation checks before unfreezing user accounts.</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
-                      <span><strong>TransferHook:</strong> Cross-checks NYSE/NASDAQ market sessions and halts trading during volatility curbs.</span>
-                    </li>
-                  </ul>
+                <div className="text-xl md:text-2xl font-black font-display text-foreground flex items-center gap-2 mt-0.5">
+                  <span>1 {selectedStock.symbol} (${selectedStock.price.toFixed(2)})</span>
+                  <ArrowRight className="w-5 h-5 text-blue-400 shrink-0" />
+                  <span className="text-blue-400 flex items-center gap-1.5">
+                    <UsdssIcon className="w-6 h-6 inline-block" size={24} />
+                    {stockUsdssPerUnit.toFixed(2)} USDSS
+                  </span>
                 </div>
-
-                {/* Crypto Collateral */}
-                <div className="bg-background/80 border border-border/80 rounded-2xl p-4 space-y-2">
-                  <div className="flex items-center justify-between text-orange-400 font-bold border-b border-border/50 pb-2">
-                    <span>Currencies (BTC, BCH, BNB, SOL)</span>
-                    <span className="text-[10px] bg-orange-500/10 px-1.5 py-0.5 rounded">Native & Wrapped</span>
-                  </div>
-                  <ul className="space-y-1.5 text-muted-foreground">
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
-                      <span><strong>Multi-Reserve Vaults:</strong> Isolated PDA vaults per mint (<code className="text-xs">b"sbl_reserve", market, mint</code>).</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
-                      <span><strong>Pyth Price Oracles:</strong> Sub-second high-confidence price feeds validating collateral valuation.</span>
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-orange-400 shrink-0 mt-0.5" />
-                      <span><strong>Wad Arithmetic:</strong> 10^18 Wad precision preventing rounding loss on high-value tokens like BTC.</span>
-                    </li>
-                  </ul>
-                </div>
+                <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                  For each 1 share of {selectedStock.name} pledged, you can draw <strong>{stockUsdssPerUnit.toFixed(2)} USDSS</strong> while retaining all voting rights and dividends.
+                </p>
               </div>
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* 3. Portfolio & Health Factor HUD */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Health Factor */}
-        <div className="bg-card/40 border border-border/70 rounded-3xl p-5 backdrop-blur-md flex flex-col justify-between">
-          <div>
-            <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold mb-2">
-              <span>Health Factor</span>
-              {healthFactor >= 1.3 ? (
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              ) : healthFactor >= 1.0 ? (
-                <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <div className="bg-background/80 border border-border/80 px-4 py-2.5 rounded-2xl text-right shrink-0">
+              <span className="text-[10px] font-mono text-muted-foreground uppercase block font-bold">
+                Borrow Rate (Piecewise Kinked)
+              </span>
+              <span className="text-base font-black font-display text-blue-400">
+                {currentBorrowApr.toFixed(2)}% APR
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* User-Specific Positions & Invariant Clauses */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Card A: Specific User Collateralized Equities */}
+          <div className="bg-card/45 border border-border/80 rounded-2xl p-4 backdrop-blur-md space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold">
+              <span>Your Collateralized</span>
+              <Building2 className="w-4 h-4 text-blue-400" />
+            </div>
+            <div>
+              <div className="text-2xl font-black font-display text-blue-400">
+                ${totalPledgedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </div>
+              <p className="text-xs font-mono text-foreground font-bold mt-0.5">
+                Total Equity Collateral Value
+              </p>
+              <div className="text-[10px] font-mono text-muted-foreground mt-1.5 pt-1.5 border-t border-border/40 truncate">
+                {Object.entries(pledgedCollateral)
+                  .filter(([_, q]) => q > 0)
+                  .map(([s, q]) => `${q} ${s}`)
+                  .join(", ") || "No shares pledged"}
+              </div>
+            </div>
+          </div>
+
+          {/* Card B: Specific User USDSS Position */}
+          <div className="bg-card/45 border border-border/80 rounded-2xl p-4 backdrop-blur-md space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold">
+              <span>Your USDSS Facility</span>
+              <UsdssIcon className="w-4 h-4" size={16} />
+            </div>
+            <div>
+              <div className="text-2xl font-black font-display text-cyan-400 flex items-center gap-1.5">
+                <UsdssIcon className="w-5 h-5 inline-block" size={20} />
+                <span>{borrowedDebtUsdss.toFixed(2)} USDSS</span>
+              </div>
+              <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                Available to Draw: <strong className="text-foreground">{remainingBorrowPowerUsdss.toFixed(2)} USDSS</strong>
+              </p>
+              <div className="text-[10px] font-mono text-muted-foreground mt-1.5 pt-1.5 border-t border-border/40 flex justify-between">
+                <span>Wallet: {walletUsdss.toFixed(2)} USDSS</span>
+                <span className="text-blue-400 font-bold">Max Limit: ${maxBorrowLimitUsd.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card C: Payback Clause & Custodial Lock */}
+          <div className="bg-card/45 border border-border/80 rounded-2xl p-4 backdrop-blur-md space-y-2">
+            <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold">
+              <span>Payback Clause & Custodial Lock</span>
+              {isAutoLocked ? (
+                <Lock className="w-4 h-4 text-blue-400 animate-pulse" />
               ) : (
-                <Flame className="w-4 h-4 text-destructive animate-pulse" />
+                <Unlock className="w-4 h-4 text-emerald-400" />
               )}
             </div>
-            <div className="flex items-baseline gap-2">
-              <span
-                className={`text-3xl font-black font-display tracking-tight ${
-                  healthFactor >= 1.3
-                    ? "text-emerald-400"
-                    : healthFactor >= 1.0
-                    ? "text-amber-400"
-                    : "text-destructive"
-                }`}
-              >
-                {healthFactor > 50 ? "∞ Safe" : healthFactor.toFixed(2)}
-              </span>
-              <span className="text-xs font-mono text-muted-foreground">
-                {healthFactor >= 1.3 ? "Well Guarded" : healthFactor >= 1.0 ? "Moderate" : "Danger"}
-              </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`px-2.5 py-1 rounded-xl text-xs font-mono font-black uppercase flex items-center gap-1.5 ${
+                    isAutoLocked
+                      ? "bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                      : "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  }`}
+                >
+                  {isAutoLocked ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5" />
+                      <span>Equities Auto-Locked</span>
+                    </>
+                  ) : (
+                    <>
+                      <Unlock className="w-3.5 h-3.5" />
+                      <span>Equities Unlocked</span>
+                    </>
+                  )}
+                </span>
+                <span className="text-xs font-mono text-muted-foreground">
+                  {currentBorrowApr.toFixed(2)}% APR
+                </span>
+              </div>
+              <p className="text-[11px] font-mono text-muted-foreground mt-1.5 leading-snug">
+                {isAutoLocked ? (
+                  <span>
+                    Pay back <strong className="text-foreground">{totalPaybackAmountUsdss.toFixed(2)} USDSS</strong> (principal + {accruedInterestUsdss.toFixed(2)} interest) to release your pledged shares.
+                  </span>
+                ) : (
+                  <span>No outstanding debt. Deposited equity shares are unlocked and withdrawable at any time.</span>
+                )}
+              </p>
             </div>
-          </div>
-
-          <div className="w-full bg-background/80 h-2 rounded-full overflow-hidden border border-border/40 mt-4">
-            <div
-              className={`h-full transition-all duration-500 ${
-                healthFactor >= 1.3
-                  ? "bg-emerald-400"
-                  : healthFactor >= 1.0
-                  ? "bg-amber-400"
-                  : "bg-destructive"
-              }`}
-              style={{ width: `${Math.min(100, (healthFactor / 2.0) * 100)}%` }}
-            />
-          </div>
-          <p className="text-[10px] font-mono text-muted-foreground mt-2">
-            Safety Buffer: Portfolio can drop <strong className="text-emerald-400">{liquidationDropBuffer.toFixed(1)}%</strong> before liquidation
-          </p>
-        </div>
-
-        {/* Total Collateral Value */}
-        <div className="bg-card/40 border border-border/70 rounded-3xl p-5 backdrop-blur-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold mb-2">
-            <span>Pledged Collateral</span>
-            <Lock className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div>
-            <div className="text-2xl font-black font-display text-emerald-400">
-              ${totalPledgedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="text-xs font-mono text-muted-foreground mt-0.5 truncate">
-              {Object.entries(pledgedCollateral)
-                .filter(([_, q]) => q > 0)
-                .map(([sym, q]) => `${q} ${sym}`)
-                .join(", ") || "No collateral pledged"}
-            </div>
-          </div>
-          <div className="text-[10px] font-mono text-emerald-400 mt-3 flex items-center gap-1">
-            <Sparkles className="w-3 h-3" />
-            <span>Multi-asset isolated vault</span>
-          </div>
-        </div>
-
-        {/* Current Borrowed USDSS Debt */}
-        <div className="bg-card/40 border border-border/70 rounded-3xl p-5 backdrop-blur-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold mb-2">
-            <span>Borrowed Debt (USDSS)</span>
-            <DollarSign className="w-4 h-4 text-cyan-400" />
-          </div>
-          <div>
-            <div className="text-2xl font-black font-display text-cyan-400">
-              {borrowedDebtUsdss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDSS
-            </div>
-            <div className="text-xs font-mono text-muted-foreground mt-0.5">
-              Interest APR: ~{currentBorrowApr.toFixed(2)}%
-            </div>
-          </div>
-          <div className="text-[10px] font-mono text-muted-foreground mt-3 flex justify-between">
-            <span>Wallet USDSS:</span>
-            <strong className="text-foreground">{walletUsdss.toFixed(2)} USDSS</strong>
-          </div>
-        </div>
-
-        {/* Available Borrow Capacity */}
-        <div className="bg-card/40 border border-border/70 rounded-3xl p-5 backdrop-blur-md flex flex-col justify-between">
-          <div className="flex items-center justify-between text-xs font-mono uppercase text-muted-foreground font-bold mb-2">
-            <span>Borrowing Headroom</span>
-            <Coins className="w-4 h-4 text-primary" />
-          </div>
-          <div>
-            <div className="text-2xl font-black font-display text-primary">
-              {remainingBorrowPowerUsdss.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDSS
-            </div>
-            <div className="text-xs font-mono text-muted-foreground mt-0.5">
-              Max Facility Limit: ${maxBorrowLimitUsd.toFixed(2)}
-            </div>
-          </div>
-          <div className="text-[10px] font-mono text-muted-foreground mt-3 flex justify-between">
-            <span>Utilization:</span>
-            <strong className="text-primary">{(currentUtilizationBps / 100).toFixed(1)}% (Kink @ 80%)</strong>
           </div>
         </div>
       </div>
 
-      {/* 4. Collateral Selection Hub & Filter */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-black font-display uppercase tracking-wider text-muted-foreground">
-              Select Collateral Asset
-            </h3>
-            <span className="text-xs font-mono text-muted-foreground">
-              Choose US stocks or major currencies to pledge into your SBL facility
-            </span>
-          </div>
+      {/* 3. Stock Asset Selector (Clean Cards) */}
+      <div className="space-y-2">
+        <span className="text-xs font-bold font-mono uppercase tracking-wider text-muted-foreground">
+          Select Stock Collateral
+        </span>
 
-          {/* Category Filter Tabs */}
-          <div className="flex bg-muted/60 p-1 rounded-2xl border border-border/70 self-start sm:self-auto">
-            <button
-              type="button"
-              onClick={() => setFilterCategory("all")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono uppercase transition-all ${
-                filterCategory === "all"
-                  ? "bg-card text-foreground shadow font-black"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              All Assets ({Object.keys(SUPPORTED_COLLATERAL).length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterCategory("Equity")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono uppercase transition-all ${
-                filterCategory === "Equity"
-                  ? "bg-emerald-500 text-black shadow font-black"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              US Equities (5)
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilterCategory("Crypto")}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold font-mono uppercase transition-all ${
-                filterCategory === "Crypto"
-                  ? "bg-orange-500 text-black shadow font-black"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Currencies & Crypto (4)
-            </button>
-          </div>
-        </div>
-
-        {/* Collateral Cards Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {filteredAssets.map((asset) => {
-            const isSelected = selectedAssetKey === asset.symbol;
-            const walletQty = walletBalances[asset.symbol] || 0;
-            const pledgedQty = pledgedCollateral[asset.symbol] || 0;
+          {Object.values(SUPPORTED_STOCKS).map((stock) => {
+            const isSelected = selectedStockKey === stock.symbol;
+            const walletQty = walletBalances[stock.symbol] || 0;
+            const pledgedQty = pledgedCollateral[stock.symbol] || 0;
 
             return (
               <button
-                key={asset.symbol}
+                key={stock.symbol}
                 type="button"
-                onClick={() => setSelectedAssetKey(asset.symbol)}
-                className={`p-4 rounded-2xl border text-left transition-all relative overflow-hidden flex flex-col justify-between ${
+                onClick={() => setSelectedStockKey(stock.symbol)}
+                className={`p-3.5 rounded-2xl border text-left transition-all ${
                   isSelected
-                    ? "bg-card border-emerald-500 shadow-lg shadow-emerald-500/10 scale-[1.02]"
-                    : "bg-card/40 border-border/70 hover:bg-card/70 hover:border-border"
+                    ? "bg-blue-600/10 border-blue-500 shadow-md shadow-blue-500/10"
+                    : "bg-card/40 border-border/60 hover:bg-card/80"
                 }`}
               >
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-black font-display text-base text-foreground flex items-center gap-1.5">
-                      <span>{asset.symbol}</span>
-                      <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-                        {asset.category === "Equity" ? "Stock" : "Crypto"}
-                      </span>
-                    </span>
-                    <span
-                      className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md ${
-                        asset.change24h >= 0 ? "bg-emerald-500/15 text-emerald-400" : "bg-red-500/15 text-red-400"
-                      }`}
-                    >
-                      {asset.change24h >= 0 ? "+" : ""}
-                      {asset.change24h}%
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-lg font-black font-display text-foreground">
-                      ${asset.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <div className="flex items-center justify-between text-[11px] font-mono text-muted-foreground">
-                      <span>LTV: {asset.ltvBps / 100}%</span>
-                      <span>APR: {(asset.baseAprBps / 100).toFixed(2)}%</span>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className={`font-black font-display text-base ${isSelected ? "text-blue-400" : "text-foreground"}`}>
+                    {stock.symbol}
+                  </span>
+                  <span
+                    className={`text-[10px] font-mono font-bold ${
+                      stock.change24h >= 0 ? "text-emerald-400" : "text-red-400"
+                    }`}
+                  >
+                    {stock.change24h >= 0 ? "+" : ""}{stock.change24h}%
+                  </span>
                 </div>
 
-                <div className="mt-3 pt-2.5 border-t border-border/50 text-[10px] font-mono text-muted-foreground flex justify-between">
-                  <span>Pledged: <strong className="text-emerald-400">{pledgedQty}</strong></span>
-                  <span>Wallet: <strong className="text-foreground">{walletQty}</strong></span>
+                <div className="text-base font-black font-display text-foreground">
+                  ${stock.price.toFixed(2)}
+                </div>
+
+                <div className="mt-2.5 pt-2 border-t border-border/40 text-[10px] font-mono text-muted-foreground flex justify-between">
+                  <span>Pledged: {pledgedQty}</span>
+                  <span>Bal: {walletQty}</span>
                 </div>
               </button>
             );
@@ -867,30 +615,24 @@ export function StockLendingDashboard() {
         </div>
       </div>
 
-      {/* 5. Dual Operation Hub (Collateral Vault vs Mint/Repay USDSS) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Panel A: Collateral Management (Stock or Crypto) */}
-        <div className="bg-card/50 border border-border/80 rounded-3xl p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between space-y-6">
+      {/* 4. Clean Action Hub (Deposit vs Borrow) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Panel A: Stock Collateral */}
+        <div className="bg-card/50 border border-border/80 rounded-2xl p-5 backdrop-blur-xl shadow-lg flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <div>
-                <h3 className="text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
-                  <Lock className="w-5 h-5 text-emerald-400" />
-                  <span>{selectedAsset.symbol} Collateral Vault</span>
-                </h3>
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  Deposit tokenized {selectedAsset.category === "Equity" ? "shares" : "tokens"} or withdraw pledged assets
-                </p>
-              </div>
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <span className="font-bold text-sm font-display uppercase tracking-wide text-foreground flex items-center gap-1.5">
+                <Lock className="w-4 h-4 text-blue-400" />
+                <span>{selectedStock.symbol} Equity</span>
+              </span>
 
-              {/* Sub-action Switcher */}
-              <div className="flex bg-muted/60 p-1 rounded-xl border border-border/70">
+              <div className="flex bg-muted/60 p-0.5 rounded-lg border border-border/60">
                 <button
                   type="button"
                   onClick={() => setCollateralSubAction("deposit")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono uppercase transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-bold font-mono uppercase transition-all ${
                     collateralSubAction === "deposit"
-                      ? "bg-emerald-500 text-black shadow font-black"
+                      ? "bg-blue-600 text-white font-black"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -899,9 +641,9 @@ export function StockLendingDashboard() {
                 <button
                   type="button"
                   onClick={() => setCollateralSubAction("withdraw")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono uppercase transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-bold font-mono uppercase transition-all ${
                     collateralSubAction === "withdraw"
-                      ? "bg-emerald-500 text-black shadow font-black"
+                      ? "bg-blue-600 text-white font-black"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -910,124 +652,99 @@ export function StockLendingDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-muted-foreground">
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between text-xs font-mono text-muted-foreground">
+                <span>{collateralSubAction === "deposit" ? "Wallet Shares:" : "Pledged Shares:"}</span>
+                <span className="font-bold text-blue-400">
                   {collateralSubAction === "deposit"
-                    ? `Wallet ${selectedAsset.symbol} Balance:`
-                    : `Pledged in Obligation:`}
-                </span>
-                <span className="font-bold text-emerald-400">
-                  {collateralSubAction === "deposit"
-                    ? `${(walletBalances[selectedAssetKey] || 0)} ${selectedAsset.symbol}`
-                    : `${(pledgedCollateral[selectedAssetKey] || 0)} ${selectedAsset.symbol}`}
+                    ? `${walletBalances[selectedStockKey] || 0} ${selectedStock.symbol}`
+                    : `${pledgedCollateral[selectedStockKey] || 0} ${selectedStock.symbol}`}
                 </span>
               </div>
 
               <div className="relative">
                 <input
                   type="number"
-                  value={collateralAmountInput}
-                  onChange={(e) => setCollateralAmountInput(e.target.value)}
+                  value={stockAmountInput}
+                  onChange={(e) => setStockAmountInput(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-background border border-input rounded-2xl px-4 py-4 text-2xl font-bold font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400/50"
+                  className="w-full bg-background border border-input rounded-xl px-3 py-3 text-lg font-bold font-mono focus:ring-2 focus:ring-blue-400/50"
                   disabled={isProcessing}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <span className="text-sm font-bold text-muted-foreground font-mono">{selectedAsset.symbol}</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCollateralAmountInput(
-                        collateralSubAction === "deposit"
-                          ? (walletBalances[selectedAssetKey] || 0).toString()
-                          : (pledgedCollateral[selectedAssetKey] || 0).toString()
-                      )
-                    }
-                    className="text-xs bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 px-2.5 py-1 rounded-lg font-bold font-mono uppercase"
-                  >
-                    MAX
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setStockAmountInput(
+                      collateralSubAction === "deposit"
+                        ? (walletBalances[selectedStockKey] || 0).toString()
+                        : (pledgedCollateral[selectedStockKey] || 0).toString()
+                    )
+                  }
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs bg-blue-500/15 text-blue-400 px-2 py-0.5 rounded font-mono font-bold"
+                >
+                  MAX
+                </button>
               </div>
 
-              {/* Simulation Breakdown */}
-              <div className="bg-muted/30 border border-border/60 rounded-2xl p-4 text-xs font-mono space-y-2">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Valuation @ Spot (${selectedAsset.price.toLocaleString()}):</span>
-                  <span className="font-bold text-foreground">
-                    ${((parseFloat(collateralAmountInput) || 0) * selectedAsset.price).toFixed(2)} USD
+              {isAutoLocked && collateralSubAction === "withdraw" && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl flex items-center gap-2 text-xs font-mono text-amber-300">
+                  <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                  <span>
+                    Auto-Lock active: Shares locked in escrow while {totalPaybackAmountUsdss.toFixed(2)} USDSS debt remains.
                   </span>
                 </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Borrow Headroom Impact ({selectedAsset.ltvBps / 100}% LTV):</span>
-                  <span className="font-bold text-emerald-400">
-                    {collateralSubAction === "deposit" ? "+" : "-"}$
-                    {(
-                      (parseFloat(collateralAmountInput) || 0) *
-                      selectedAsset.price *
-                      (selectedAsset.ltvBps / 10000)
-                    ).toFixed(2)}{" "}
-                    USDSS
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Token Standard:</span>
-                  <span className="font-bold text-cyan-400">
-                    {selectedAsset.tokenType} ({selectedAsset.token2022Extensions.join(", ")})
-                  </span>
-                </div>
+              )}
+
+              <div className="flex justify-between text-xs font-mono text-muted-foreground pt-1">
+                <span>Value: ${((parseFloat(stockAmountInput) || 0) * selectedStock.price).toFixed(2)}</span>
+                <span className="text-emerald-400">
+                  {collateralSubAction === "deposit" ? "+" : "-"}$
+                  {(
+                    (parseFloat(stockAmountInput) || 0) *
+                    selectedStock.price *
+                    (selectedStock.ltvBps / 10000)
+                  ).toFixed(2)}{" "}
+                  Limit
+                </span>
               </div>
             </div>
           </div>
 
-          <div>
-            {collateralSubAction === "deposit" ? (
-              <button
-                type="button"
-                onClick={handleDepositCollateral}
-                disabled={isProcessing || !collateralAmountInput || parseFloat(collateralAmountInput) <= 0}
-                className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-black font-bold font-mono uppercase text-sm tracking-wider rounded-2xl transition-all shadow-lg shadow-emerald-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <span>Deposit {selectedAsset.symbol} Collateral</span>
-                <Lock className="w-4 h-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleWithdrawCollateral}
-                disabled={isProcessing || !collateralAmountInput || parseFloat(collateralAmountInput) <= 0}
-                className="w-full py-4 bg-muted hover:bg-muted/80 text-foreground border border-border font-bold font-mono uppercase text-sm tracking-wider rounded-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <span>Withdraw {selectedAsset.symbol} to Wallet</span>
-                <Unlock className="w-4 h-4" />
-              </button>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={collateralSubAction === "deposit" ? handleDepositStock : handleWithdrawStock}
+            disabled={
+              isProcessing ||
+              !stockAmountInput ||
+              parseFloat(stockAmountInput) <= 0 ||
+              (collateralSubAction === "withdraw" && isAutoLocked)
+            }
+            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black font-mono uppercase text-xs tracking-wider rounded-xl transition-all shadow-md shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {collateralSubAction === "deposit"
+              ? `Deposit ${selectedStock.symbol}`
+              : isAutoLocked
+              ? `Locked: Pay USDSS Debt First`
+              : `Withdraw ${selectedStock.symbol}`}
+          </button>
         </div>
 
-        {/* Panel B: Mint / Repay USDSS (Synthetic Dollar via Token-2022) */}
-        <div className="bg-card/50 border border-border/80 rounded-3xl p-6 backdrop-blur-xl shadow-xl flex flex-col justify-between space-y-6">
+        {/* Panel B: USDSS Draw / Repay */}
+        <div className="bg-card/50 border border-border/80 rounded-2xl p-5 backdrop-blur-xl shadow-lg flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between border-b border-border/50 pb-4">
-              <div>
-                <h3 className="text-xl font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-cyan-400" />
-                  <span>Borrow & Repay (USDSS)</span>
-                </h3>
-                <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                  Mint synthetic USDSS against collateral or burn debt to redeem equity
-                </p>
-              </div>
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <span className="font-bold text-sm font-display uppercase tracking-wide text-foreground flex items-center gap-2">
+                <UsdssIcon size={20} />
+                <span>Stock Credit Line (USDSS)</span>
+              </span>
 
-              {/* Sub-action Switcher */}
-              <div className="flex bg-muted/60 p-1 rounded-xl border border-border/70">
+              <div className="flex bg-muted/60 p-0.5 rounded-lg border border-border/60">
                 <button
                   type="button"
                   onClick={() => setBorrowSubAction("borrow")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono uppercase transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-bold font-mono uppercase transition-all ${
                     borrowSubAction === "borrow"
-                      ? "bg-cyan-500 text-black shadow font-black"
+                      ? "bg-cyan-500 text-black font-black"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -1036,9 +753,9 @@ export function StockLendingDashboard() {
                 <button
                   type="button"
                   onClick={() => setBorrowSubAction("repay")}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-mono uppercase transition-all ${
+                  className={`px-3 py-1 rounded-md text-xs font-bold font-mono uppercase transition-all ${
                     borrowSubAction === "repay"
-                      ? "bg-cyan-500 text-black shadow font-black"
+                      ? "bg-cyan-500 text-black font-black"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -1047,11 +764,9 @@ export function StockLendingDashboard() {
               </div>
             </div>
 
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between text-xs font-mono">
-                <span className="text-muted-foreground">
-                  {borrowSubAction === "borrow" ? "Available to Borrow:" : "Wallet USDSS Balance:"}
-                </span>
+            <div className="mt-4 space-y-3">
+              <div className="flex justify-between text-xs font-mono text-muted-foreground">
+                <span>{borrowSubAction === "borrow" ? "Borrow Headroom:" : "Wallet USDSS:"}</span>
                 <span className="font-bold text-cyan-400">
                   {borrowSubAction === "borrow"
                     ? `${remainingBorrowPowerUsdss.toFixed(2)} USDSS`
@@ -1065,136 +780,60 @@ export function StockLendingDashboard() {
                   value={usdssAmountInput}
                   onChange={(e) => setUsdssAmountInput(e.target.value)}
                   placeholder="0.00"
-                  className="w-full bg-background border border-input rounded-2xl px-4 py-4 text-2xl font-bold font-mono focus:outline-none focus:ring-2 focus:ring-cyan-400/50"
+                  className="w-full bg-background border border-input rounded-xl px-3 py-3 text-lg font-bold font-mono focus:ring-2 focus:ring-cyan-400/50"
                   disabled={isProcessing}
                 />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                  <span className="text-sm font-bold text-muted-foreground font-mono">USDSS</span>
-                  {borrowSubAction === "borrow" ? (
-                    <button
-                      type="button"
-                      onClick={() => setUsdssAmountInput(remainingBorrowPowerUsdss.toFixed(2))}
-                      className="text-xs bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 px-2.5 py-1 rounded-lg font-bold font-mono uppercase"
-                    >
-                      MAX
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setUsdssAmountInput(Math.min(walletUsdss, borrowedDebtUsdss).toFixed(2))}
-                      className="text-xs bg-cyan-500/10 text-cyan-400 hover:bg-cyan-500/20 px-2.5 py-1 rounded-lg font-bold font-mono uppercase"
-                    >
-                      MAX DEBT
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Simulation Breakdown */}
-              <div className="bg-muted/30 border border-border/60 rounded-2xl p-4 text-xs font-mono space-y-2">
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Interest Rate (Piecewise Kinked):</span>
-                  <span className="font-bold text-foreground">{currentBorrowApr.toFixed(2)}% APR</span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Projected Health Factor:</span>
-                  <span className="font-bold text-emerald-400">
-                    {borrowSubAction === "borrow" && parseFloat(usdssAmountInput) > 0
-                      ? (
-                          liquidationThresholdValueUsd /
-                          (borrowedDebtUsdss + parseFloat(usdssAmountInput))
-                        ).toFixed(2)
-                      : healthFactor > 50
-                      ? "∞ Safe"
-                      : healthFactor.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-muted-foreground">
-                  <span>Mint Standard:</span>
-                  <span className="font-bold text-cyan-400">SPL Token-2022 (Synthetic Dollar)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            {borrowSubAction === "borrow" ? (
-              <button
-                type="button"
-                onClick={handleBorrowUsdss}
-                disabled={isProcessing || !usdssAmountInput || parseFloat(usdssAmountInput) <= 0}
-                className="w-full py-4 bg-cyan-500 hover:bg-cyan-400 text-black font-bold font-mono uppercase text-sm tracking-wider rounded-2xl transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <span>Draw USDSS Loan (Mint)</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            ) : (
-              <div className="flex gap-2">
                 <button
                   type="button"
-                  onClick={handleRepayUsdss}
-                  disabled={isProcessing || !usdssAmountInput || parseFloat(usdssAmountInput) <= 0}
-                  className="flex-1 py-4 bg-primary hover:bg-primary/90 text-primary-foreground font-bold font-mono uppercase text-sm tracking-wider rounded-2xl transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() =>
+                    setUsdssAmountInput(
+                      borrowSubAction === "borrow"
+                        ? remainingBorrowPowerUsdss.toFixed(2)
+                        : Math.min(walletUsdss, totalPaybackAmountUsdss).toFixed(2)
+                    )
+                  }
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs bg-cyan-500/15 text-cyan-400 px-2 py-0.5 rounded font-mono font-bold"
                 >
-                  Repay Specified Amount
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const toRepay = Math.min(walletUsdss, borrowedDebtUsdss);
-                    if (toRepay <= 0) return;
-                    setWalletUsdss((prev) => prev - toRepay);
-                    setBorrowedDebtUsdss((prev) => prev - toRepay);
-                    toast.success(`Settled ${toRepay.toFixed(2)} USDSS debt!`);
-                  }}
-                  disabled={isProcessing || borrowedDebtUsdss <= 0}
-                  className="px-4 py-4 bg-muted hover:bg-muted/80 text-foreground font-bold font-mono uppercase text-xs rounded-2xl border border-border"
-                >
-                  Repay All
+                  MAX
                 </button>
               </div>
-            )}
-          </div>
-        </div>
-      </div>
 
-      {/* 6. Protocol Safety & Invariants */}
-      <div className="bg-card/40 border border-border/70 rounded-3xl p-6 backdrop-blur-xl space-y-4">
-        <h3 className="text-base font-black font-display uppercase tracking-tight text-foreground flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-emerald-400" />
-          <span>SBL Invariant & Solvency Protections</span>
-        </h3>
+              {borrowSubAction === "repay" && borrowedDebtUsdss > 0 && (
+                <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl space-y-1.5 text-xs font-mono">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Principal Debt:</span>
+                    <span className="font-bold text-foreground">{borrowedDebtUsdss.toFixed(2)} USDSS</span>
+                  </div>
+                  <div className="flex justify-between text-amber-400">
+                    <span>Accrued Interest (30d @ {currentBorrowApr.toFixed(2)}%):</span>
+                    <span className="font-bold">+{accruedInterestUsdss.toFixed(2)} USDSS</span>
+                  </div>
+                  <div className="flex justify-between border-t border-border/40 pt-1 font-bold text-foreground">
+                    <span>Total Payback Required:</span>
+                    <span className="text-cyan-400">{totalPaybackAmountUsdss.toFixed(2)} USDSS</span>
+                  </div>
+                  <div className="text-[10px] text-amber-300 flex items-center gap-1 pt-1">
+                    <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                    <span>Collateral will auto-unlock once total payback is settled.</span>
+                  </div>
+                </div>
+              )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
-          <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-foreground font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Overnight Gap Risk Shield</span>
+              <div className="flex justify-between text-xs font-mono text-muted-foreground pt-1">
+                <span>Rate: {currentBorrowApr.toFixed(2)}% APR</span>
+                <span className="text-foreground">LTV: {selectedStock.ltvBps / 100}%</span>
+              </div>
             </div>
-            <p className="text-muted-foreground leading-relaxed">
-              Equities carry market-close jump risk. LTVs are dialed conservative (55%–70%) with a mandatory 10% liquidation buffer so overnight gap-downs don't cause undercollateralized debt.
-            </p>
           </div>
 
-          <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-foreground font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>100% Dividend & Yield Pass-Through</span>
-            </div>
-            <p className="text-muted-foreground leading-relaxed">
-              Quarterly dividends paid out by companies (e.g. Apple, NVIDIA) or staking yield on SOL are automatically credited to the depositor's obligation account without manual claiming.
-            </p>
-          </div>
-
-          <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 space-y-1.5">
-            <div className="flex items-center gap-2 text-foreground font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              <span>Token-2022 USDSS Synthetic Mechanics</span>
-            </div>
-            <p className="text-muted-foreground leading-relaxed">
-              Much like <strong className="text-emerald-400">ssSOL</strong> in SNBL staking, borrowers receive liquid <strong className="text-cyan-400">USDSS</strong> which can be swapped, staked, or provided as liquidity across Solana DeFi while underlying stock ownership remains untouched.
-            </p>
-          </div>
+          <button
+            type="button"
+            onClick={borrowSubAction === "borrow" ? handleBorrowUsdss : handleRepayUsdss}
+            disabled={isProcessing || !usdssAmountInput || parseFloat(usdssAmountInput) <= 0}
+            className="w-full py-3 bg-cyan-500 hover:bg-cyan-400 text-black font-black font-mono uppercase text-xs tracking-wider rounded-xl transition-all shadow-md shadow-cyan-500/20 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {borrowSubAction === "borrow" ? "Draw USDSS Loan" : "Repay USDSS"}
+          </button>
         </div>
       </div>
     </div>

@@ -40,6 +40,11 @@ export default function CallbackPage() {
             returnUrl = "/e-plays";
           } else if (parsed.type && String(parsed.type).startsWith("SESSION")) {
             returnUrl = "/sessions";
+          } else if (parsed.type && String(parsed.type).startsWith("SNBL_")) {
+            returnUrl =
+              parsed.type.includes("CBL") || parsed.type.includes("SBL") || parsed.type.includes("PRO")
+                ? "/snbl/snbl-pro"
+                : "/snbl";
           }
         }
       } catch {}

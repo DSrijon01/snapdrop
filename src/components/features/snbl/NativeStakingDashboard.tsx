@@ -102,7 +102,7 @@ export function NativeStakingDashboard() {
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-8">
+    <div className="w-full max-w-6xl mx-auto space-y-4 sm:space-y-6">
       {/* 1. Global Network & Epoch Stats Bar (2x2 grid on mobile, 4-col on desktop) */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
         {/* Epoch Card */}

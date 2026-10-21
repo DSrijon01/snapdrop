@@ -7,6 +7,9 @@ import toast from "react-hot-toast";
 import bs58 from "bs58";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
+import { savePendingAction } from "@/utils/pendingTransactions";
+import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 const MERCHANT_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
 
@@ -306,11 +309,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     handlePendingMobileSubscription();
     window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
     window.addEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
+    const handleSubUpdated = () => {
+      loadSubscriptions();
+    };
+    window.addEventListener("subscription_updated", handleSubUpdated);
+
     return () => {
       window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
       window.removeEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
+      window.removeEventListener("subscription_updated", handleSubUpdated);
     };
-  }, [connection]);
+  }, [connection, loadSubscriptions]);
 
   // Subscribe function with selected plan
   const subscribe = async (moduleId: string, planId: SubscriptionPlanId = "30days"): Promise<boolean> => {
@@ -395,12 +404,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         timestamp: Date.now(),
       };
       safeLocalStorageSet("street_sync_pending_subscription", JSON.stringify(pendingSub));
+      savePendingAction("SUBSCRIPTION_BUY", pendingSub);
 
       toast.loading("Awaiting wallet approval in Phantom...", { id: toastId });
 
       let signature: string;
-      if (signTransaction) {
-        // Preferred path: Request wallet signature only, then broadcast via dedicated Helius Devnet RPC.
+      const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
+      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+
+      if (isPhantomMobile) {
+        // Mobile path: execute signAndSendTransaction in Phantom so transaction is broadcast immediately
+        signature = await sendTransaction(transaction, connection, {
+          skipPreflight: true,
+          preflightCommitment: "confirmed",
+        });
+      } else if (signTransaction) {
+        // Desktop browser extension path: sign and broadcast via dedicated Helius Devnet RPC
         const signedTx = await signTransaction(transaction);
         try {
           signature = await withSolanaRetry(async () => {
@@ -445,6 +464,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       localStorage.removeItem("street_sync_pending_subscription");
       localStorage.removeItem("street_sync_last_signed_tx");
       localStorage.removeItem("street_sync_last_tx_signature");
+      window.dispatchEvent(new Event("storage"));
+      window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
 
       toast.dismiss(toastId);
       toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]} (${selectedPlan.name})!`);

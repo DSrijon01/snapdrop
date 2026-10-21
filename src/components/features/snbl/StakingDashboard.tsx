@@ -40,10 +40,9 @@ export function StakingDashboard() {
   const projectedSolAmount = unstakeAmount ? (parseFloat(unstakeAmount) * exchangeRate).toFixed(4) : "0.0000";
 
   return (
-    <div className="w-full max-w-5xl mx-auto mt-8 space-y-6">
-      
+    <div className="w-full max-w-5xl mx-auto mt-6 space-y-6">
       {/* Liquid Staking Header */}
-      <div className="bg-gradient-to-r from-primary/20 via-background to-background border border-primary/20 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden shadow-2xl">
+      <div className="bg-gradient-to-r from-primary/20 via-background to-background border border-primary/20 rounded-3xl p-6 sm:p-8 backdrop-blur-sm relative overflow-hidden shadow-2xl">
         <div className="absolute right-0 top-0 opacity-10">
           <Droplets className="w-48 h-48 -mr-10 -mt-10" />
         </div>

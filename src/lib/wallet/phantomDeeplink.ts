@@ -99,6 +99,12 @@ export function getMobileRedirectLink(customRedirectUrl?: string): string {
       return "streetsync://callback";
     }
   }
+  try {
+    const urlObj = new URL(currentUrl);
+    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
+      return `https://streetsync-ss.com${urlObj.pathname}`;
+    }
+  } catch {}
   return currentUrl.split("#")[0].split("?")[0];
 }
 
@@ -110,11 +116,16 @@ export function getMobileRedirectLink(customRedirectUrl?: string): string {
 export function openInPhantomBrowser(targetUrl?: string): void {
   if (typeof window === "undefined") return;
   const current = targetUrl || window.location.href;
-  const appOrigin = window.location.origin.startsWith("http")
-    ? window.location.origin
-    : "https://streetsync-ss.com";
+  let resolvedUrl = current;
+  try {
+    const urlObj = new URL(current);
+    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
+      resolvedUrl = `https://streetsync-ss.com${urlObj.pathname}${urlObj.search}`;
+    }
+  } catch {}
 
-  const browseUrl = `https://phantom.com/ul/browse/${encodeURIComponent(current)}?ref=${encodeURIComponent(appOrigin)}`;
+  const appOrigin = "https://streetsync-ss.com";
+  const browseUrl = `https://phantom.com/ul/browse/${encodeURIComponent(resolvedUrl)}?ref=${encodeURIComponent(appOrigin)}`;
   window.location.href = browseUrl;
 }
 
@@ -393,6 +404,24 @@ export function initiatePhantomMobileSignAndSendTransaction(
  * Decrypts payload, sets session and walletName immediately so autoConnect works seamlessly,
  * dispatches appropriate events, and strips query parameters from URL.
  */
+let lastProcessedResult: {
+  handled: boolean;
+  type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
+  publicKey?: string;
+  signature?: string;
+  transaction?: string;
+  transactions?: string[];
+  error?: string;
+} | null = null;
+
+export function getLastProcessedResult() {
+  return lastProcessedResult;
+}
+
+export function clearLastProcessedResult() {
+  lastProcessedResult = null;
+}
+
 export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
   handled: boolean;
   type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
@@ -424,6 +453,14 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
   const dataStr = urlParams.get("data");
   const errorCode = urlParams.get("errorCode");
   const errorMessage = urlParams.get("errorMessage");
+
+  if (!customUrlOrQuery && !phantomPubKeyStr && !nonceStr && !dataStr && !errorCode && !errorMessage) {
+    if (lastProcessedResult) {
+      const res = lastProcessedResult;
+      lastProcessedResult = null;
+      return res;
+    }
+  }
 
   // Clean URL parameters helper
   const cleanUrl = () => {
@@ -523,11 +560,12 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           new CustomEvent("phantom_mobile_connected", { detail: sessionData })
         );
 
-        return {
+        lastProcessedResult = {
           handled: true,
           type: "connect",
           publicKey: payload.public_key,
         };
+        return lastProcessedResult;
       }
 
       // 2. Sign Transaction Response
@@ -541,11 +579,12 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        return {
+        lastProcessedResult = {
           handled: true,
           type: "signTransaction",
           transaction: payload.transaction,
         };
+        return lastProcessedResult;
       }
 
       // 3. Sign All Transactions Response
@@ -561,11 +600,12 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        return {
+        lastProcessedResult = {
           handled: true,
           type: "signAllTransactions",
           transactions: payload.transactions,
         };
+        return lastProcessedResult;
       }
 
       // 4. Sign Message or SignAndSend Signature Response
@@ -582,11 +622,12 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        return {
+        lastProcessedResult = {
           handled: true,
           type: "signature",
           signature: payload.signature,
         };
+        return lastProcessedResult;
       }
     } catch (parseErr: any) {
       cleanUrl();

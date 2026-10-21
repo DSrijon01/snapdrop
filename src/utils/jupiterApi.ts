@@ -144,7 +144,7 @@ export async function simulateJupiterSwap(
   // Extract distinct AMM labels in the route plan (e.g. Kipseli, Orca, Raydium)
   const routeSteps = quote.routePlan && quote.routePlan.length > 0
     ? quote.routePlan.map((r) => r.swapInfo.label)
-    : ["Jupiter Smart Router"];
+    : ["Direct Route"];
 
   // Generate realistic Solana tx signature format
   const characters = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";

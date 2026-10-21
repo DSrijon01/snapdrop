@@ -12,7 +12,18 @@ export type PendingActionType =
     | "TOKEN_SECONDARY_BUY"
     | "EPLAYS_BUY"
     | "EPLAYS_CLAIM"
-    | "EPLAYS_CLEANUP";
+    | "EPLAYS_CLEANUP"
+    | "SUBSCRIPTION_BUY"
+    | "SNBL_STAKE"
+    | "SNBL_UNSTAKE"
+    | "SNBL_DEACTIVATE"
+    | "SNBL_WITHDRAW"
+    | "SNBL_CBL_DEPOSIT"
+    | "SNBL_CBL_BORROW"
+    | "SNBL_CBL_REPAY"
+    | "SNBL_SBL_DEPOSIT"
+    | "SNBL_SBL_BORROW"
+    | "SNBL_SBL_REPAY";
 
 export interface PendingAction {
     type: PendingActionType;
@@ -71,6 +82,7 @@ export function clearPendingAction() {
     try {
         localStorage.removeItem(PENDING_ACTION_KEY);
         localStorage.removeItem("street_sync_pending_nft_buy");
+        localStorage.removeItem("street_sync_pending_subscription");
         localStorage.removeItem("street_sync_last_signed_tx");
         localStorage.removeItem("street_sync_last_tx_signature");
     } catch (e) {
@@ -345,6 +357,76 @@ export function recordActionSuccess(type: PendingActionType, data: any, signatur
                 toast.success(`Position closed! Rent reclaimed. TX: ${signature.slice(0, 8)}...`);
                 break;
             }
+
+            case "SUBSCRIPTION_BUY": {
+                const subDetails = {
+                    moduleId: data.moduleId,
+                    isSubscribed: true,
+                    expiresAt: data.expiresAt,
+                    isCancelled: false,
+                    txSignature: signature,
+                    planId: data.planId,
+                };
+                try {
+                    localStorage.setItem(
+                        `street_sync_sub_${data.walletKey}_${data.moduleId}`,
+                        JSON.stringify(subDetails)
+                    );
+                } catch (e) {
+                    console.warn("[PendingTransactions] Storage warning on subscription write:", e);
+                }
+                localStorage.removeItem("street_sync_pending_subscription");
+                window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Successfully Subscribed to ${data.planName || "Pro"}! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "SNBL_UNSTAKE": {
+                window.dispatchEvent(new Event("stake_accounts_updated"));
+                window.dispatchEvent(new Event("snbl_updated"));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Unstaked successfully! Received Native SOL. TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "SNBL_DEACTIVATE": {
+                window.dispatchEvent(new Event("stake_accounts_updated"));
+                window.dispatchEvent(new Event("snbl_updated"));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Stake account deactivated! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "SNBL_WITHDRAW": {
+                window.dispatchEvent(new Event("stake_accounts_updated"));
+                window.dispatchEvent(new Event("snbl_updated"));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Withdrawn SOL to your wallet! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "SNBL_STAKE": {
+                window.dispatchEvent(new Event("stake_accounts_updated"));
+                window.dispatchEvent(new Event("snbl_updated"));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Staked successfully! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
+
+            case "SNBL_CBL_DEPOSIT":
+            case "SNBL_CBL_BORROW":
+            case "SNBL_CBL_REPAY":
+            case "SNBL_SBL_DEPOSIT":
+            case "SNBL_SBL_BORROW":
+            case "SNBL_SBL_REPAY": {
+                window.dispatchEvent(new Event("cbl_updated"));
+                window.dispatchEvent(new Event("sbl_updated"));
+                window.dispatchEvent(new Event("snbl_updated"));
+                window.dispatchEvent(new Event("storage"));
+                toast.success(`Action confirmed on Devnet! TX: ${signature.slice(0, 8)}...`);
+                break;
+            }
         }
     } catch (err) {
         console.error("[PendingTransactions] Failed to record action success:", err);
@@ -372,7 +454,7 @@ export async function resumePendingTransactions(connection: Connection): Promise
     const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
     const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
 
-    if (!pending || (!signedTxStr && !txSigStr)) {
+    if (!signedTxStr && !txSigStr) {
         return false;
     }
 
@@ -409,10 +491,31 @@ export async function resumePendingTransactions(connection: Connection): Promise
                 if (
                     sendErrStr.includes("already been processed") ||
                     sendErrStr.includes("0x0") ||
-                    sendErrStr.includes("duplicate") ||
-                    extractedSig
+                    sendErrStr.includes("duplicate")
                 ) {
                     finalSig = extractedSig || txSigStr || "verified_onchain";
+                } else if (
+                    sendErrStr.includes("blockhash not found") ||
+                    sendErrStr.includes("block height exceeded") ||
+                    sendErrStr.includes("expired")
+                ) {
+                    // Check if signature actually made it on chain
+                    let isConfirmed = false;
+                    if (extractedSig) {
+                        try {
+                            const status = await connection.getSignatureStatus(extractedSig, { searchTransactionHistory: true });
+                            if (status.value?.confirmationStatus === "confirmed" || status.value?.confirmationStatus === "finalized") {
+                                isConfirmed = true;
+                                finalSig = extractedSig;
+                            }
+                        } catch {}
+                    }
+                    if (!isConfirmed) {
+                        console.warn("[PendingTransactions] Transaction expired during wallet redirect:", sendErr);
+                        toast.error("Transaction expired during wallet approval. Please try again with a fresh blockhash.");
+                        clearPendingAction();
+                        return false;
+                    }
                 } else {
                     throw sendErr;
                 }
@@ -439,7 +542,25 @@ export async function resumePendingTransactions(connection: Connection): Promise
         }
 
         if (finalSig) {
-            recordActionSuccess(pending.type, pending.data, finalSig);
+            if (pending) {
+                recordActionSuccess(pending.type, pending.data, finalSig);
+            } else {
+                // If pending was not found, check fallback subscription key
+                const rawPendingSub = localStorage.getItem("street_sync_pending_subscription");
+                if (rawPendingSub) {
+                    try {
+                        const parsedSub = JSON.parse(rawPendingSub);
+                        recordActionSuccess("SUBSCRIPTION_BUY", parsedSub, finalSig);
+                    } catch {}
+                } else {
+                    window.dispatchEvent(new Event("stake_accounts_updated"));
+                    window.dispatchEvent(new Event("snbl_updated"));
+                    window.dispatchEvent(new Event("cbl_updated"));
+                    window.dispatchEvent(new Event("sbl_updated"));
+                    window.dispatchEvent(new Event("storage"));
+                    toast.success(`Transaction confirmed on Solana! TX: ${finalSig.slice(0, 8)}...`);
+                }
+            }
             clearPendingAction();
             return true;
         }
@@ -449,7 +570,20 @@ export async function resumePendingTransactions(connection: Connection): Promise
         const errStr = (err?.message || "").toLowerCase();
         if (errStr.includes("already been processed") || errStr.includes("0x0")) {
             const fallbackSig = localStorage.getItem("street_sync_last_tx_signature") || "verified_onchain";
-            recordActionSuccess(pending.type, pending.data, fallbackSig);
+            if (pending) {
+                recordActionSuccess(pending.type, pending.data, fallbackSig);
+            } else {
+                const rawPendingSub = localStorage.getItem("street_sync_pending_subscription");
+                if (rawPendingSub) {
+                    try {
+                        const parsedSub = JSON.parse(rawPendingSub);
+                        recordActionSuccess("SUBSCRIPTION_BUY", parsedSub, fallbackSig);
+                    } catch {}
+                } else {
+                    window.dispatchEvent(new Event("stake_accounts_updated"));
+                    window.dispatchEvent(new Event("snbl_updated"));
+                }
+            }
             clearPendingAction();
             return true;
         }

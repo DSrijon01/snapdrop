@@ -156,7 +156,27 @@ export function useSbl() {
     }
   }, [program, publicKey, obligationPda, marketPda, fetchObligation]);
 
+  const [currentSlot, setCurrentSlot] = useState<number | null>(null);
+  const [isRpcConnected, setIsRpcConnected] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    connection.getSlot()
+      .then((slot) => {
+        if (isMounted) {
+          setCurrentSlot(slot);
+          setIsRpcConnected(true);
+        }
+      })
+      .catch((err) => {
+        console.warn("Devnet RPC getSlot check failed:", err);
+        if (isMounted) setIsRpcConnected(false);
+      });
+    return () => { isMounted = false; };
+  }, [connection]);
+
   return {
+    connection,
     program,
     provider,
     loading,
@@ -164,9 +184,12 @@ export function useSbl() {
     obligationPda,
     obligationData,
     isObligationCreated,
+    currentSlot,
+    isRpcConnected,
     fetchObligation,
     initObligation,
     programId: SBL_PROGRAM_ID,
     isDevnetDeployed: true,
   };
 }
+

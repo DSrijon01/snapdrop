@@ -91,12 +91,35 @@ export function useCbl() {
 
   const marketPda = useMemo(() => findCblMarketAddress(DEFAULT_CBL_MARKET_ID), []);
 
+  const [currentSlot, setCurrentSlot] = useState<number | null>(null);
+  const [isRpcConnected, setIsRpcConnected] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    connection.getSlot()
+      .then((slot) => {
+        if (isMounted) {
+          setCurrentSlot(slot);
+          setIsRpcConnected(true);
+        }
+      })
+      .catch((err) => {
+        console.warn("CBL Devnet RPC getSlot check failed:", err);
+        if (isMounted) setIsRpcConnected(false);
+      });
+    return () => { isMounted = false; };
+  }, [connection]);
+
   return {
+    connection,
     program,
     provider,
     loading,
     marketPda,
+    currentSlot,
+    isRpcConnected,
     programId: CBL_PROGRAM_ID,
     isDevnetDeployed: true,
   };
 }
+

@@ -9,7 +9,10 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import toast from "react-hot-toast";
-import { withSolanaRetry } from "@/utils/solanaRetry";
+import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
+import { savePendingAction, clearPendingAction } from "@/utils/pendingTransactions";
+import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import { isStandaloneApp } from "@/utils/isStandaloneApp";
 
 export interface DevnetValidator {
   votePubkey: string;
@@ -43,7 +46,7 @@ export interface EpochDetails {
 
 export function useNativeStaking() {
   const { connection } = useConnection();
-  const { publicKey, sendTransaction, signTransaction } = useWallet();
+  const { publicKey, sendTransaction, signTransaction, wallet } = useWallet();
 
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -231,7 +234,7 @@ export function useNativeStaking() {
     } finally {
       setLoading(false);
     }
-  }, [connection, publicKey]);
+  }, [connection, publicKey, epochInfo?.epoch]);
 
   useEffect(() => {
     fetchGlobalData();
@@ -240,6 +243,20 @@ export function useNativeStaking() {
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
+
+  // Listen for mobile transaction resumption events
+  useEffect(() => {
+    const handleUpdate = () => {
+      fetchUserData();
+      fetchGlobalData();
+    };
+    window.addEventListener("stake_accounts_updated", handleUpdate);
+    window.addEventListener("snbl_updated", handleUpdate);
+    return () => {
+      window.removeEventListener("stake_accounts_updated", handleUpdate);
+      window.removeEventListener("snbl_updated", handleUpdate);
+    };
+  }, [fetchUserData, fetchGlobalData]);
 
   // 3. Delegate Stake (Creates Stake Account & Delegates Atomically)
   const delegateStake = async (amountSol: number, validatorVotePubkey: string) => {
@@ -290,18 +307,36 @@ export function useNativeStaking() {
 
       tx.add(createStakeAccountIx, delegateIx);
 
-      tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
       tx.feePayer = publicKey;
 
       // Partial sign with new stake account
       tx.partialSign(stakeAccount);
 
+      savePendingAction("SNBL_STAKE", {
+        amountSol,
+        validator: validatorVotePubkey,
+        returnUrl: typeof window !== "undefined" ? window.location.href : "/snbl",
+      });
+
       let signature = "";
-      if (signTransaction) {
-        const signedTx = await signTransaction(tx);
-        signature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
+      const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
+      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+
+      if (isPhantomMobile) {
+        signature = await sendTransaction(tx, connection, {
+          signers: [stakeAccount],
+          skipPreflight: true,
           preflightCommitment: "confirmed",
+        });
+      } else if (signTransaction) {
+        const signedTx = await signTransaction(tx);
+        signature = await withSolanaRetry(async () => {
+          return await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          });
         });
       } else {
         signature = await sendTransaction(tx, connection, {
@@ -310,7 +345,8 @@ export function useNativeStaking() {
         });
       }
 
-      await connection.confirmTransaction(signature, "confirmed");
+      await confirmTransactionRobust(connection, signature, blockhash, lastValidBlockHeight);
+      clearPendingAction();
 
       toast.success(
         `Successfully staked ${amountSol} SOL! Stake account created and delegated.`,
@@ -348,6 +384,11 @@ export function useNativeStaking() {
       return;
     }
 
+    if (targetAccount && targetAccount.staker && targetAccount.staker !== publicKey.toBase58()) {
+      toast.error("Connected wallet is not authorized as staker for this stake account.");
+      return;
+    }
+
     const toastId = toast.loading("Deactivating stake account...");
     setActionLoading(true);
 
@@ -362,15 +403,31 @@ export function useNativeStaking() {
       });
       tx.add(deactivateIx);
 
-      tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
       tx.feePayer = publicKey;
 
+      savePendingAction("SNBL_DEACTIVATE", {
+        stakeAccount: stakeAccountPubkey.toBase58(),
+        returnUrl: typeof window !== "undefined" ? window.location.href : "/snbl",
+      });
+
       let signature = "";
-      if (signTransaction) {
-        const signedTx = await signTransaction(tx);
-        signature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
+      const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
+      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+
+      if (isPhantomMobile) {
+        signature = await sendTransaction(tx, connection, {
+          skipPreflight: true,
           preflightCommitment: "confirmed",
+        });
+      } else if (signTransaction) {
+        const signedTx = await signTransaction(tx);
+        signature = await withSolanaRetry(async () => {
+          return await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          });
         });
       } else {
         signature = await sendTransaction(tx, connection, {
@@ -378,7 +435,8 @@ export function useNativeStaking() {
         });
       }
 
-      await connection.confirmTransaction(signature, "confirmed");
+      await confirmTransactionRobust(connection, signature, blockhash, lastValidBlockHeight);
+      clearPendingAction();
 
       toast.success(
         "Stake account successfully deactivated. It will become fully withdrawable at epoch end.",
@@ -426,15 +484,32 @@ export function useNativeStaking() {
       });
       tx.add(withdrawIx);
 
-      tx.recentBlockhash = (await connection.getLatestBlockhash("confirmed")).blockhash;
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
+      tx.recentBlockhash = blockhash;
       tx.feePayer = publicKey;
 
+      savePendingAction("SNBL_WITHDRAW", {
+        stakeAccount: stakeAccountPubkey.toBase58(),
+        lamports: lamportsToWithdraw,
+        returnUrl: typeof window !== "undefined" ? window.location.href : "/snbl",
+      });
+
       let signature = "";
-      if (signTransaction) {
-        const signedTx = await signTransaction(tx);
-        signature = await connection.sendRawTransaction(signedTx.serialize(), {
-          skipPreflight: false,
+      const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
+      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+
+      if (isPhantomMobile) {
+        signature = await sendTransaction(tx, connection, {
+          skipPreflight: true,
           preflightCommitment: "confirmed",
+        });
+      } else if (signTransaction) {
+        const signedTx = await signTransaction(tx);
+        signature = await withSolanaRetry(async () => {
+          return await connection.sendRawTransaction(signedTx.serialize(), {
+            skipPreflight: false,
+            preflightCommitment: "confirmed",
+          });
         });
       } else {
         signature = await sendTransaction(tx, connection, {
@@ -442,7 +517,8 @@ export function useNativeStaking() {
         });
       }
 
-      await connection.confirmTransaction(signature, "confirmed");
+      await confirmTransactionRobust(connection, signature, blockhash, lastValidBlockHeight);
+      clearPendingAction();
 
       toast.success(
         `Successfully withdrawn ${(lamportsToWithdraw / LAMPORTS_PER_SOL).toFixed(4)} SOL!`,

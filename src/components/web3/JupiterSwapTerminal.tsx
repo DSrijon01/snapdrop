@@ -63,7 +63,7 @@ export const JupiterSwapTerminal: React.FC = () => {
       setQuote(quoteRes);
     } catch (err: any) {
       console.warn("Jupiter quote error:", err);
-      setQuoteError(err.message || "Failed to fetch live quote from Jupiter");
+      setQuoteError(err.message || "Failed to fetch live quote");
       setQuote(null);
     } finally {
       setIsFetchingQuote(false);
@@ -116,7 +116,7 @@ export const JupiterSwapTerminal: React.FC = () => {
               </span>
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Real-time quotes & route aggregation via Jupiter API
+              Real-time quotes & route aggregation
             </p>
           </div>
 
@@ -199,7 +199,7 @@ export const JupiterSwapTerminal: React.FC = () => {
             {isFetchingQuote && (
               <span className="text-[10px] text-primary flex items-center gap-1 font-mono animate-pulse">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                Fetching Jupiter quote...
+                Fetching quote...
               </span>
             )}
           </div>
@@ -242,7 +242,7 @@ export const JupiterSwapTerminal: React.FC = () => {
             <div className="flex justify-between items-center text-muted-foreground">
               <span>Best Route:</span>
               <span className="font-mono font-semibold text-foreground flex items-center gap-1">
-                {quote.routePlan?.map(r => r.swapInfo.label).join(' ➔ ') || "Jupiter Direct"}
+                {quote.routePlan?.map(r => r.swapInfo.label).join(' ➔ ') || "Direct Route"}
               </span>
             </div>
             <div className="flex justify-between items-center text-muted-foreground">
@@ -288,10 +288,10 @@ export const JupiterSwapTerminal: React.FC = () => {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
               </svg>
-              <span>Routing through Jupiter...</span>
+              <span>Executing Swap...</span>
             </>
           ) : (
-            <span>Simulate Swap with Jupiter</span>
+            <span>Simulate Coin Swap</span>
           )}
         </button>
       </div>

@@ -12,6 +12,7 @@ import {
 import { Program, AnchorProvider, BN } from "@coral-xyz/anchor";
 import { getAssociatedTokenAddress, createAssociatedTokenAccountInstruction, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import toast from "react-hot-toast";
+import { savePendingAction, clearPendingAction } from "@/utils/pendingTransactions";
 
 // Use the IDL from src directory which is tracked by git
 import { SnblStaking } from "../types/snbl_staking";
@@ -210,11 +211,17 @@ export function useStaking() {
 
       tx.add(stakeIx);
 
+      savePendingAction("SNBL_STAKE", {
+        amountLamports,
+        returnUrl: typeof window !== "undefined" ? window.location.href : "/snbl",
+      });
+
       const signature = await sendTransaction(tx, connection, {
         skipPreflight: true,
         preflightCommitment: "confirmed",
       });
       await connection.confirmTransaction(signature, "confirmed");
+      clearPendingAction();
       toast.success("Successfully Staked! Received ssSOL.");
       refreshData();
     } catch (error: any) {
@@ -251,11 +258,17 @@ export function useStaking() {
 
       tx.add(unstakeIx);
 
+      savePendingAction("SNBL_UNSTAKE", {
+        amountSsLamports,
+        returnUrl: typeof window !== "undefined" ? window.location.href : "/snbl",
+      });
+
       const signature = await sendTransaction(tx, connection, {
         skipPreflight: true,
         preflightCommitment: "confirmed",
       });
       await connection.confirmTransaction(signature, "confirmed");
+      clearPendingAction();
       toast.success("Unstaked successfully! Received Native SOL.");
       refreshData();
     } catch (error: any) {

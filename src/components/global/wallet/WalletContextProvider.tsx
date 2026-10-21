@@ -29,7 +29,7 @@ import {
   createDefaultChainSelector,
   createDefaultWalletNotFoundHandler as createMwaStandardNotFoundHandler,
 } from "@solana-mobile/wallet-standard-mobile";
-import { clusterApiUrl } from "@solana/web3.js";
+import { clusterApiUrl, Connection } from "@solana/web3.js";
 import toast from "react-hot-toast";
 
 // Default styles that can be overridden by your app
@@ -45,6 +45,7 @@ import {
   PhantomMobileWalletName,
 } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
+import { resumePendingTransactions } from "@/utils/pendingTransactions";
 
 /**
  * Listens for newly installed wallet extensions on desktop and handles auto-reconnect on reload
@@ -310,10 +311,31 @@ const PhantomMobileRedirectWatcher: FC = () => {
           ),
           { duration: 4000, id: "mobile-wallet-connected-toast" }
         );
+      } else if (res.type === "signTransaction" || res.type === "signature" || res.type === "signAllTransactions") {
+        // Automatically broadcast and confirm signed transaction returned from Phantom mobile deeplink
+        try {
+          const devnetConn = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+          resumePendingTransactions(devnetConn).catch((resErr) => {
+            console.warn("[PhantomMobileRedirectWatcher] Resumption note:", resErr);
+          });
+        } catch (connErr) {
+          console.warn("[PhantomMobileRedirectWatcher] Devnet connection error:", connErr);
+        }
       } else if (res.type === "error") {
-        toast.error(res.error || "Connection cancelled.");
+        toast.error(res.error || "Connection or transaction cancelled in Phantom.");
       }
     } else {
+      // Also check if a signed transaction is waiting to be broadcast
+      if (
+        typeof window !== "undefined" &&
+        (localStorage.getItem("street_sync_last_signed_tx") || localStorage.getItem("street_sync_last_tx_signature"))
+      ) {
+        try {
+          const devnetConn = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+          resumePendingTransactions(devnetConn).catch(() => {});
+        } catch {}
+      }
+
       // Also check if an active mobile session was already stored, ensure WalletProvider is selected & connected
       const stored = getStoredPhantomSession();
       if (stored && stored.publicKey && !wallet) {
@@ -373,9 +395,25 @@ const PhantomMobileRedirectWatcher: FC = () => {
       }
     };
 
+    const triggerResumption = () => {
+      try {
+        const devnetConn = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+        resumePendingTransactions(devnetConn).catch((resErr) => {
+          console.warn("[PhantomMobileRedirectWatcher] Resumption note:", resErr);
+        });
+      } catch (connErr) {
+        console.warn("[PhantomMobileRedirectWatcher] Devnet connection error:", connErr);
+      }
+    };
+
     window.addEventListener("phantom_mobile_connected", handleMobileConnectedEvent);
+    window.addEventListener("phantom_mobile_tx_sent", triggerResumption);
+    window.addEventListener("phantom_mobile_tx_signed", triggerResumption);
+
     return () => {
       window.removeEventListener("phantom_mobile_connected", handleMobileConnectedEvent);
+      window.removeEventListener("phantom_mobile_tx_sent", triggerResumption);
+      window.removeEventListener("phantom_mobile_tx_signed", triggerResumption);
     };
   }, [select, connect, wallet, setVisible]);
 
