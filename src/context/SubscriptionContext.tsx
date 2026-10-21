@@ -10,8 +10,13 @@ import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
 import { savePendingAction } from "@/utils/pendingTransactions";
 import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
-
-const MERCHANT_WALLET = "9CmjZcTQ8iovjbBKYgWyH6iEKFZpqAuyDpsmbQj5nRHu";
+import { db } from "@/lib/l2database/config";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  MERCHANT_WALLET,
+  createSubscriptionMemoInstruction,
+  syncWalletSubscriptions,
+} from "@/lib/subscriptions/onChainSubscriptions";
 
 export type SubscriptionPlanId = "1day" | "7days" | "30days";
 
@@ -195,7 +200,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     walletSubCache.current[walletKey] = loadedSubs;
     setSubscriptions(loadedSubs);
     setLoading(false);
-  }, [publicKey]);
+
+    // In background, verify and sync on-chain & cloud subscriptions across any browser/device
+    if (!isDemo && publicKey) {
+      syncWalletSubscriptions(connection, publicKey)
+        .then((onChainSubs) => {
+          if (Object.keys(onChainSubs).length > 0) {
+            setSubscriptions((prev) => {
+              const merged = { ...prev, ...onChainSubs };
+              walletSubCache.current[walletKey] = merged;
+              return merged;
+            });
+          }
+        })
+        .catch((e) => {
+          console.warn("[SubscriptionContext] On-chain subscription sync note:", e);
+        });
+    }
+  }, [publicKey, connection, isDemo]);
 
   // Sync state on mount or wallet connect
   useEffect(() => {
@@ -290,6 +312,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           );
           setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: subDetails }));
 
+          // Also persist to Firestore for cross-browser synchronization
+          try {
+            await setDoc(doc(db, "subscriptions", `${pendingAction.walletKey}_${pendingAction.moduleId}`), {
+              walletAddress: pendingAction.walletKey,
+              moduleId: pendingAction.moduleId,
+              planId: pendingAction.planId,
+              expiresAt: pendingAction.expiresAt,
+              txSignature: signature,
+              isCancelled: false,
+              updatedAt: Date.now(),
+            });
+          } catch (fsErr) {
+            console.warn("Firestore mobile return save note:", fsErr);
+          }
+
           toast.dismiss(toastId);
           toast.success(
             `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
@@ -379,7 +416,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const toastId = toast.loading(`Preparing ${selectedPlan.name} (${selectedPlan.priceSol} SOL) for ${MODULE_NAMES[moduleId]}...`);
     try {
       const transaction = new Transaction()
-        .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 100_000 }))
+        .add(ComputeBudgetProgram.setComputeUnitLimit({ units: 150_000 }))
         .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }))
         .add(
           SystemProgram.transfer({
@@ -387,6 +424,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
             toPubkey: new PublicKey(MERCHANT_WALLET),
             lamports: selectedPlan.lamports,
           })
+        )
+        .add(
+          createSubscriptionMemoInstruction(publicKey, moduleId, planId, expiresAt)
         );
 
       // Fetch fresh blockhash
@@ -464,6 +504,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       localStorage.removeItem("street_sync_pending_subscription");
       localStorage.removeItem("street_sync_last_signed_tx");
       localStorage.removeItem("street_sync_last_tx_signature");
+
+      // Persist to Firestore for cross-browser recovery
+      try {
+        await setDoc(doc(db, "subscriptions", `${walletKey}_${moduleId}`), {
+          walletAddress: walletKey,
+          moduleId,
+          planId,
+          expiresAt,
+          txSignature: signature,
+          isCancelled: false,
+          updatedAt: Date.now(),
+        });
+      } catch (fsErr) {
+        console.warn("Firestore subscription save note:", fsErr);
+      }
+
       window.dispatchEvent(new Event("storage"));
       window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
 
@@ -505,6 +561,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       localStorage.removeItem(`street_sync_sub_${walletKey}_${moduleId}`);
       setSubscriptions((prev) => ({ ...prev, [moduleId]: updatedDetails }));
+
+      // Persist cancellation to Firestore so all browsers reflect termination
+      try {
+        await updateDoc(doc(db, "subscriptions", `${walletKey}_${moduleId}`), {
+          isCancelled: true,
+          expiresAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      } catch (fsErr) {
+        console.warn("Firestore subscription cancel note:", fsErr);
+      }
+
       toast.success(`Unsubscribed from ${MODULE_NAMES[moduleId]} successfully. Access has been terminated.`);
       return true;
     } catch (e) {
@@ -516,12 +584,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Check access
   const hasAccess = useCallback((moduleId: string): boolean => {
+    // Platform Merchant / Admin wallet always has universal Pro access across any browser
+    if (publicKey && publicKey.toBase58() === MERCHANT_WALLET) {
+      return true;
+    }
     const sub = subscriptions[moduleId];
     if (!sub) return false;
     if (!sub.isSubscribed) return false;
     if (sub.expiresAt && Date.now() > sub.expiresAt) return false;
     return true;
-  }, [subscriptions]);
+  }, [subscriptions, publicKey]);
 
   const openSubscriptionModal = (moduleId: string) => {
     setActiveModuleId(moduleId);
