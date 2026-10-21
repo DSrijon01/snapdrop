@@ -6,6 +6,7 @@ import {
     fetchCuratedSecurities, 
     fetchTokensXyzAsset, 
     isKnownSecurity,
+    getFallbackSecurity,
     POPULAR_SECURITIES_LIST 
 } from '@/lib/tokensXyz';
 
@@ -45,7 +46,7 @@ export const MarketSidebar = ({
     const [remoteSecurityResult, setRemoteSecurityResult] = useState<SecurityAsset | null>(null);
     const { formatPrice } = useExchangeRates();
 
-    // 1. Fetch Curated Securities from Tokens.xyz API on mount
+    // 1. Fetch Curated Securities from Tokens.xyz / static cache on mount
     useEffect(() => {
         let isMounted = true;
         const loadSecurities = async () => {
@@ -55,10 +56,8 @@ export const MarketSidebar = ({
                 setCuratedSecurities(list);
             }
         };
-        if (cachedCuratedSecurities.length === 0) {
-            loadSecurities();
-        }
-        const interval = setInterval(loadSecurities, 45000); // 45s refresh
+        loadSecurities();
+        const interval = setInterval(loadSecurities, 20000); // 20s refresh
         return () => {
             isMounted = false;
             clearInterval(interval);
@@ -482,12 +481,13 @@ export const MarketSidebar = ({
 
                                 const isSelected = selectedCoin.toUpperCase() === favSymbol.toUpperCase();
 
+                                const fallback = isSecurity ? getFallbackSecurity(favSymbol) : null;
                                 const priceNum = isSecurity 
-                                    ? (secData?.price || secData?.canonicalPrice || 0)
+                                    ? (secData?.price || secData?.canonicalPrice || fallback?.price || 0)
                                     : (cryptoData ? parseFloat(cryptoData.lastPrice) : 0);
 
                                 const priceChange = isSecurity
-                                    ? (secData?.priceChange24hPercent ?? 0)
+                                    ? (secData?.priceChange24hPercent ?? fallback?.priceChange24hPercent ?? 0)
                                     : (cryptoData ? parseFloat(cryptoData.priceChangePercent) : 0);
 
                                 const isPositive = priceChange >= 0;
@@ -570,7 +570,9 @@ export const MarketSidebar = ({
                             {curatedSecurities.filter(Boolean).map((sec) => {
                                 const isSelected = selectedCoin?.toUpperCase() === sec?.symbol?.toUpperCase();
                                 const isFav = favorites?.includes(sec?.symbol);
-                                const priceChange = sec?.priceChange24hPercent ?? 0;
+                                const fallback = getFallbackSecurity(sec.symbol);
+                                const displayPrice = sec.price || sec.canonicalPrice || fallback.price;
+                                const priceChange = sec.priceChange24hPercent ?? fallback.priceChange24hPercent;
                                 const isPositive = priceChange >= 0;
 
                                 return (
@@ -602,7 +604,7 @@ export const MarketSidebar = ({
 
                                         <div className="flex flex-col items-end gap-0.5 shrink-0">
                                             <span className="text-xs sm:text-sm font-black text-foreground font-mono">
-                                                {formatPrice(sec.price || 0, fiat)}
+                                                {formatPrice(displayPrice, fiat)}
                                             </span>
                                             <div className={`px-1.5 py-0.2 rounded-md text-[10px] font-black font-mono ${
                                                 isPositive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'

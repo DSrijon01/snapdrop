@@ -27,6 +27,7 @@ import {
     SecurityAsset, 
     fetchTokensXyzAsset, 
     isKnownSecurity, 
+    getFallbackSecurity,
     generateSecurityChartData,
     POPULAR_SECURITIES_LIST 
 } from '@/lib/tokensXyz';
@@ -437,8 +438,13 @@ export const MarketDetails = ({
             
             // Check if it's a security or query Tokens.xyz
             if (isKnownSecurity(sym)) {
+                // Immediately provide baseline quote to prevent '---' or dummy 0
+                const baseline = getFallbackSecurity(sym);
+                setSecurityAsset(baseline);
+                setTicker(null);
+
                 const sec = await fetchTokensXyzAsset(sym);
-                if (isMounted) {
+                if (isMounted && sec) {
                     setSecurityAsset(sec);
                     setTicker(null);
                 }
@@ -466,6 +472,9 @@ export const MarketDetails = ({
                 if (secFallback) {
                     setSecurityAsset(secFallback);
                     setTicker(null);
+                } else if (isKnownSecurity(sym)) {
+                    setSecurityAsset(getFallbackSecurity(sym));
+                    setTicker(null);
                 } else {
                     setSecurityAsset(null);
                 }
@@ -491,18 +500,8 @@ export const MarketDetails = ({
 
             // If Security asset is present or known, synthesize responsive chart series immediately
             if (isSecurity) {
-                const fallbackAsset: SecurityAsset = securityAsset || {
-                    assetId: knownSecurityMeta?.id || selectedCoin.toLowerCase(),
-                    name: knownSecurityMeta?.name || selectedCoin,
-                    symbol: selectedCoin.toUpperCase(),
-                    category: knownSecurityMeta?.category || 'equity',
-                    price: 250,
-                    priceChange24hPercent: 2.1,
-                    volume24hUSD: 5000000,
-                    marketCap: 100000000000,
-                    canonicalPrice: 248.5,
-                };
-                const secPoints = generateSecurityChartData(fallbackAsset, currentTimeframe.label, fiat, formatPrice);
+                const activeAsset: SecurityAsset = securityAsset || getFallbackSecurity(selectedCoin);
+                const secPoints = generateSecurityChartData(activeAsset, currentTimeframe.label, fiat, formatPrice);
                 if (isMounted) {
                     setChartData(secPoints);
                     setIsLoadingChart(false);
@@ -593,13 +592,13 @@ export const MarketDetails = ({
 
     // Computed price & stats
     const currentPriceNum = isSecurity 
-        ? (securityAsset?.price || securityAsset?.canonicalPrice || 0)
+        ? (securityAsset?.price || securityAsset?.canonicalPrice || getFallbackSecurity(selectedCoin).price)
         : (ticker?.lastPrice ? parseFloat(ticker.lastPrice) : 0);
 
     const currentPriceStr = currentPriceNum > 0 ? formatPrice(currentPriceNum, fiat) : '---';
 
     const pctChange24h = isSecurity
-        ? (securityAsset?.priceChange24hPercent ?? 0)
+        ? (securityAsset?.priceChange24hPercent ?? getFallbackSecurity(selectedCoin).priceChange24hPercent)
         : (ticker?.priceChangePercent ? parseFloat(ticker.priceChangePercent) : 0);
 
     const isPositive24h = pctChange24h >= 0;

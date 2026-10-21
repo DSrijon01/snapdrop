@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { 
   fetchTokensXyzAsset, 
   POPULAR_SECURITIES_LIST, 
-  SecurityAsset 
+  SecurityAsset,
+  getFallbackSecurity 
 } from "@/lib/tokensXyz";
 
 export const revalidate = 300; // Cache for 5 minutes
@@ -20,24 +21,7 @@ export async function GET() {
         assets.push(r.value);
       } else {
         const fallback = POPULAR_SECURITIES_LIST[idx];
-        assets.push({
-          assetId: fallback.id,
-          name: fallback.name,
-          symbol: fallback.symbol,
-          category: fallback.category,
-          price: 150.0,
-          priceChange24hPercent: 1.25,
-          volume24hUSD: 5000000,
-          marketCap: 100000000000,
-          canonicalPrice: 150.0,
-          primaryVariant: {
-            symbol: `${fallback.symbol}x`,
-            mint: "",
-            label: "xStock",
-            trustTier: "tier2",
-            stockVariantTier: "cash_redeemable",
-          },
-        });
+        assets.push(getFallbackSecurity(fallback.symbol));
       }
     });
 

@@ -50,7 +50,8 @@ programs/street_sync/target/
 # Proprietary Protocol Source Code
 programs/
 tests/
-scripts/
+scripts/*
+!scripts/fetch_securities.mjs
 Anchor.toml
 
 # Research paper temp files & Skills
