@@ -12,7 +12,6 @@ import { checkSolBalance } from '@/utils/balanceCheck';
 import { savePendingAction, recordActionSuccess, clearPendingAction, setInFlightActionActive, isInFlightActionActive, resumePendingTransactions } from '@/utils/pendingTransactions';
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
-import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
 import { MarketCard, Market } from '@/components/features/e-plays/MarketCard';
 
 
@@ -951,7 +950,6 @@ export default function EPlaysPage() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
-          <ModuleSubscriptionWidget moduleId="e-plays" />
           <div className="flex bg-muted/60 p-1 border border-border/60 rounded-xl backdrop-blur-sm">
             <button
               onClick={() => setActiveTab('markets')}
