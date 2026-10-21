@@ -32,6 +32,7 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   icon =
     "data:image/svg+xml;utf8,<svg viewBox='0 0 128 128' fill='none' xmlns='http://www.w3.org/2000/svg'><circle cx='64' cy='64' r='64' fill='%23AB9FF2'/><path d='M110.5 64C110.5 89.6812 89.6812 110.5 64 110.5C38.3188 110.5 17.5 89.6812 17.5 64C17.5 38.3188 38.3188 17.5 64 17.5C89.6812 17.5 110.5 38.3188 110.5 64Z' fill='%23534BB1'/><path d='M73.5 48.5C73.5 51.5376 71.0376 54 68 54C64.9624 54 62.5 51.5376 62.5 48.5C62.5 45.4624 64.9624 43 68 43C71.0376 43 73.5 45.4624 73.5 48.5Z' fill='white'/><path d='M93.5 48.5C93.5 51.5376 91.0376 54 88 54C84.9624 54 82.5 51.5376 82.5 48.5C82.5 45.4624 84.9624 43 88 43C91.0376 43 93.5 45.4624 93.5 48.5Z' fill='white'/></svg>";
   supportedTransactionVersions = new Set(["legacy" as const, 0 as const]);
+  readonly isPhantomMobileAdapter = true;
 
   private _publicKey: PublicKey | null = null;
   private _connecting = false;
@@ -430,62 +431,42 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       }
     }
 
-    let serializedBytes: Uint8Array;
+    // 1. Sign transaction via Phantom Mobile supported signTransaction endpoint
+    const signedTx = await this.signTransaction(transaction);
+
+    // 2. Broadcast signed transaction directly via RPC
+    const signedBytes = isVersioned
+      ? (signedTx as VersionedTransaction).serialize()
+      : (signedTx as Transaction).serialize();
+
+    let signature = "";
     try {
-      if (isVersioned) {
-        serializedBytes = (transaction as VersionedTransaction).serialize();
+      signature = await connection.sendRawTransaction(signedBytes, {
+        skipPreflight: options.skipPreflight ?? true,
+        preflightCommitment: options.preflightCommitment || "confirmed",
+        maxRetries: options.maxRetries ?? 5,
+      });
+    } catch (sendErr: any) {
+      const sendErrStr = (sendErr?.message || "").toLowerCase();
+      if (
+        sendErrStr.includes("already been processed") ||
+        sendErrStr.includes("0x0") ||
+        sendErrStr.includes("duplicate")
+      ) {
+        const tx = isVersioned ? null : Transaction.from(signedBytes);
+        signature = tx ? bs58.encode(tx.signatures[0]?.signature || (tx as any).signature) : "";
       } else {
-        serializedBytes = (transaction as Transaction).serialize({
-          requireAllSignatures: false,
-          verifySignatures: false,
-        });
+        throw sendErr;
       }
-    } catch (err: any) {
-      console.error("[PhantomMobileAdapter] Transaction serialization error:", err);
-      throw new Error(`Failed to serialize transaction: ${err?.message || err}`);
     }
 
-    return new Promise<TransactionSignature>((resolve, reject) => {
-      let timeoutId: any = null;
-
-      const handleSent = (e: any) => {
-        cleanup();
-        if (e.detail?.signature) {
-          resolve(e.detail.signature);
-        } else {
-          reject(new Error("No transaction signature received from Phantom Mobile."));
-        }
-      };
-
-      const handleError = (e: any) => {
-        cleanup();
-        reject(new Error(e.detail?.error || "Transaction rejected by user in Phantom."));
-      };
-
-      const cleanup = () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        window.removeEventListener("phantom_mobile_tx_sent", handleSent);
-        window.removeEventListener("phantom_mobile_error", handleError);
-      };
-
-      window.addEventListener("phantom_mobile_tx_sent", handleSent);
-      window.addEventListener("phantom_mobile_error", handleError);
-
-      // 5-minute timeout window for mobile app-switch & approval
-      timeoutId = setTimeout(() => {
-        cleanup();
-        reject(new Error("Transaction timed out."));
-      }, 5 * 60 * 1000);
-
+    if (signature) {
       try {
-        initiatePhantomMobileSignAndSendTransaction(serializedBytes, undefined, {
-          skipPreflight: options.skipPreflight ?? true,
-        });
-      } catch (err) {
-        cleanup();
-        reject(err);
-      }
-    });
+        localStorage.setItem("street_sync_last_tx_signature", signature);
+      } catch {}
+    }
+
+    return signature;
   }
 }
 

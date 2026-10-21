@@ -410,7 +410,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
       let signature: string;
       const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
-      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+      const isPhantomMobile = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) || (isMobile && !Boolean((window as any).phantom?.solana));
 
       if (isPhantomMobile) {
         // Mobile path: execute signAndSendTransaction in Phantom so transaction is broadcast immediately

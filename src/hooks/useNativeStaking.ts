@@ -322,7 +322,7 @@ export function useNativeStaking() {
 
       let signature = "";
       const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
-      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+      const isPhantomMobile = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) || (isMobile && !Boolean((window as any).phantom?.solana));
 
       if (isPhantomMobile) {
         signature = await sendTransaction(tx, connection, {
@@ -414,7 +414,7 @@ export function useNativeStaking() {
 
       let signature = "";
       const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
-      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+      const isPhantomMobile = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) || (isMobile && !Boolean((window as any).phantom?.solana));
 
       if (isPhantomMobile) {
         signature = await sendTransaction(tx, connection, {
@@ -496,7 +496,7 @@ export function useNativeStaking() {
 
       let signature = "";
       const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
-      const isPhantomMobile = wallet?.adapter.name === PhantomMobileWalletName || (isMobile && !Boolean((window as any).phantom?.solana));
+      const isPhantomMobile = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) || (isMobile && !Boolean((window as any).phantom?.solana));
 
       if (isPhantomMobile) {
         signature = await sendTransaction(tx, connection, {

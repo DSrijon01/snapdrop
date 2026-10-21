@@ -351,52 +351,11 @@ export function initiatePhantomMobileSignAllTransactions(
 export function initiatePhantomMobileSignAndSendTransaction(
   transactionBytes: Uint8Array,
   customRedirectUrl?: string,
-  sendOptions?: { skipPreflight?: boolean }
+  _sendOptions?: { skipPreflight?: boolean }
 ): void {
-  if (typeof window === "undefined") return;
-
-  const session = getStoredPhantomSession();
-  if (!session) {
-    throw new Error("Mobile wallet is not connected.");
-  }
-
-  const dappKeyPair = getOrCreateDappKeyPair();
-  const sharedSecret = bs58.decode(session.sharedSecret);
-  const nonce = nacl.randomBytes(24);
-
-  const payload = {
-    session: session.session,
-    transaction: bs58.encode(transactionBytes),
-    sendOptions: sendOptions || { skipPreflight: true },
-  };
-
-  const encryptedPayload = nacl.box.after(
-    Buffer.from(JSON.stringify(payload)),
-    nonce,
-    sharedSecret
-  );
-
-  const currentUrl = customRedirectUrl || window.location.href;
-  try {
-    sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
-    localStorage.setItem("phantom_mobile_return_url", currentUrl);
-  } catch {}
-  const redirectLink = getMobileRedirectLink(currentUrl);
-
-  const params = new URLSearchParams({
-    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
-    nonce: bs58.encode(nonce),
-    redirect_link: redirectLink,
-    payload: bs58.encode(encryptedPayload),
-  });
-
-  const walletType = session.walletType || "phantom";
-  const baseUrl =
-    walletType === "solflare"
-      ? "https://solflare.com/ul/v1/signAndSendTransaction"
-      : "https://phantom.com/ul/v1/signAndSendTransaction";
-
-  window.location.href = `${baseUrl}?${params.toString()}`;
+  // In Phantom v1 Universal Links, signAndSendTransaction is deprecated and throws "This method is not supported".
+  // The official supported method is signTransaction.
+  initiatePhantomMobileSignTransaction(transactionBytes, customRedirectUrl);
 }
 
 /**
