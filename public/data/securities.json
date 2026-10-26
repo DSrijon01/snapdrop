@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-26T08:18:06.350Z",
+  "updatedAt": "2026-10-26T09:04:43.272Z",
   "total": 15,
   "assets": [
     {
@@ -9,24 +9,24 @@
       "category": "equity",
       "description": "Tesla, Inc. is an American company focused on designing, developing, manufacturing, and selling electric vehicles, as well as energy generation and storage systems.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/TSLAx.png",
-      "price": 371.6,
-      "priceChange24hPercent": -0.40203698740284105,
-      "volume24hUSD": 1465621.094870025,
-      "marketCap": 1468834524854.8,
-      "canonicalPrice": 371.6,
+      "price": 379.1,
+      "priceChange24hPercent": 2.0182992465016145,
+      "volume24hUSD": 1555721.5400119685,
+      "marketCap": 1498480001002.3,
+      "canonicalPrice": 379.1,
       "primaryVariant": {
         "symbol": "TSLA",
         "mint": "TSLAqBbv4CNCnzWFeB7LmydAyEiNMJtve7DYKLpdK4S",
         "label": "TSLA",
         "trustTier": "tier3",
         "stockVariantTier": "share_redeemable",
-        "holders": 461,
-        "liquidity": 1507590.610174187,
+        "holders": 462,
+        "liquidity": 1510050.1654359153,
         "decimals": 6,
-        "trade24h": 1271,
+        "trade24h": 1371,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/TSLAqBbv4CNCnzWFeB7LmydAyEiNMJtve7DYKLpdK4S.webp",
-        "price": 378.340390860072,
-        "priceChange24hPercent": 2.002290174395592
+        "price": 379.6162920193865,
+        "priceChange24hPercent": 1.9098435464173895
       },
       "symbols": [
         "TSLA",
@@ -35,7 +35,7 @@
         "TSLAx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.302Z"
+      "updatedAt": "2026-10-26T09:04:42.825Z"
     },
     {
       "assetId": "apple",
@@ -44,11 +44,11 @@
       "category": "equity",
       "description": "Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories, and provides services including the App Store, Apple Music, iCloud, AppleCare, and payment services.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/AAPLx.png",
-      "price": 347.44,
-      "priceChange24hPercent": -0.12073822802277236,
-      "volume24hUSD": 310786.6426606799,
-      "marketCap": 5070601899200,
-      "canonicalPrice": 347.44,
+      "price": 343,
+      "priceChange24hPercent": -1.2779184895233702,
+      "volume24hUSD": 383880.0803171608,
+      "marketCap": 5005803740000,
+      "canonicalPrice": 343,
       "primaryVariant": {
         "symbol": "AAPL",
         "mint": "AAPLEDt8RpzPgXyhvFzkMBofvFSQw9gpeMCoUdPdLnB8",
@@ -58,10 +58,10 @@
         "holders": 311,
         "liquidity": 514010.9436590668,
         "decimals": 6,
-        "trade24h": 445,
+        "trade24h": 463,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/AAPLEDt8RpzPgXyhvFzkMBofvFSQw9gpeMCoUdPdLnB8.webp",
-        "price": 356.2117296576116,
-        "priceChange24hPercent": 2.7364832975146154
+        "price": 342.24340421095025,
+        "priceChange24hPercent": -0.262689837307624
       },
       "symbols": [
         "AAPL",
@@ -70,7 +70,7 @@
         "AAPLx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.298Z"
+      "updatedAt": "2026-10-26T09:04:42.756Z"
     },
     {
       "assetId": "nvidia",
@@ -79,25 +79,25 @@
       "category": "equity",
       "description": "Nvidia is building the AI-powered future - a more intelligent, automated, and efficient technological landscape driven by artificial intelligence. The company started in 1993 with the radical idea that graphics processing units (GPUs) could revolutionize computing. Today, Nvidia offers a trusted and powerful platform for accessing the broader AI ecosystem, empowering businesses and individuals to harness the transformative power of artificial intelligence.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/NVDAx.png",
-      "price": 210.5,
-      "priceChange24hPercent": -0.2842254855518685,
-      "volume24hUSD": 3546214.2645941046,
-      "marketCap": 5082943500000,
-      "canonicalPrice": 210.5,
+      "price": 210.85,
+      "priceChange24hPercent": -0.11842728564661299,
+      "volume24hUSD": 3611317.304878731,
+      "marketCap": 5091394950000,
+      "canonicalPrice": 210.85,
       "primaryVariant": {
         "symbol": "NVDAx",
         "mint": "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh",
         "label": "xStock",
         "trustTier": "tier2",
         "stockVariantTier": "cash_redeemable",
-        "holders": 190920,
-        "liquidity": 7578255.362450298,
+        "holders": 190878,
+        "liquidity": 7754713.294931144,
         "decimals": 8,
         "executionScore": 83.932,
-        "trade24h": 40603,
+        "trade24h": 41013,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh.webp",
-        "price": 210.75099192924344,
-        "priceChange24hPercent": -0.6888530835967255
+        "price": 211.59098433294994,
+        "priceChange24hPercent": -0.1442838843632127
       },
       "symbols": [
         "NVDA",
@@ -106,7 +106,7 @@
         "NVDAx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.300Z"
+      "updatedAt": "2026-10-26T09:04:42.756Z"
     },
     {
       "assetId": "microsoft",
@@ -117,7 +117,7 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/MSFTx.png",
       "price": 524.72,
       "priceChange24hPercent": 0.6946843216273276,
-      "volume24hUSD": 564006.2344265062,
+      "volume24hUSD": 573600.9034744583,
       "marketCap": 3896332230037.52,
       "canonicalPrice": 524.72,
       "primaryVariant": {
@@ -126,14 +126,14 @@
         "label": "xStock",
         "trustTier": "tier3",
         "stockVariantTier": "cash_redeemable",
-        "holders": 38475,
-        "liquidity": 1543199.2349596007,
+        "holders": 38466,
+        "liquidity": 1545010.292060683,
         "decimals": 8,
         "executionScore": 76.0457,
-        "trade24h": 8679,
+        "trade24h": 8808,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX.webp",
-        "price": 523.3121090023817,
-        "priceChange24hPercent": 0.1607427866004614
+        "price": 526.1302129655168,
+        "priceChange24hPercent": 0.8295598553038236
       },
       "symbols": [
         "MSFT",
@@ -142,7 +142,7 @@
         "MSFTx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.302Z"
+      "updatedAt": "2026-10-26T09:04:42.757Z"
     },
     {
       "assetId": "amazon",
@@ -153,7 +153,7 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/AMZNx.png",
       "price": 248.4,
       "priceChange24hPercent": -0.9924668181274585,
-      "volume24hUSD": 76094.66325873887,
+      "volume24hUSD": 79425.90312054592,
       "marketCap": 2679320291284.8003,
       "canonicalPrice": 248.4,
       "primaryVariant": {
@@ -162,13 +162,13 @@
         "label": "AMZN",
         "trustTier": "tier3",
         "stockVariantTier": "share_redeemable",
-        "holders": 696,
-        "liquidity": 573620.274665814,
+        "holders": 694,
+        "liquidity": 571765.4059091182,
         "decimals": 6,
-        "trade24h": 381,
+        "trade24h": 379,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/AMZNw7cwU9L9c7ewZXxTws2PwQYxBGm2Rxg3FLDBJz9B.webp",
-        "price": 250.7226113153255,
-        "priceChange24hPercent": 1.3766470772457364
+        "price": 249.90078253878372,
+        "priceChange24hPercent": 0.3461918892186182
       },
       "symbols": [
         "AMZN",
@@ -177,7 +177,7 @@
         "AMZNx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.308Z"
+      "updatedAt": "2026-10-26T09:04:43.244Z"
     },
     {
       "assetId": "alphabet",
@@ -188,7 +188,7 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/GOOGLx.png",
       "price": 321,
       "priceChange24hPercent": -1.0938222153751382,
-      "volume24hUSD": 365719.71034503006,
+      "volume24hUSD": 414272.593715949,
       "marketCap": 3925809080751,
       "canonicalPrice": 321,
       "primaryVariant": {
@@ -197,14 +197,14 @@
         "label": "xStock",
         "trustTier": "tier3",
         "stockVariantTier": "cash_redeemable",
-        "holders": 62297,
-        "liquidity": 2446238.4632066227,
+        "holders": 62302,
+        "liquidity": 2451823.804986078,
         "decimals": 8,
         "executionScore": 76.2288,
-        "trade24h": 10926,
+        "trade24h": 11092,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN.webp",
-        "price": 320.9676678238349,
-        "priceChange24hPercent": 0.4369135326178518
+        "price": 321.0075376251658,
+        "priceChange24hPercent": 0.11106383351678875
       },
       "symbols": [
         "GOOGL",
@@ -213,7 +213,7 @@
         "GOOGLx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.277Z"
+      "updatedAt": "2026-10-26T09:04:42.758Z"
     },
     {
       "assetId": "meta",
@@ -224,7 +224,7 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/METAx.png",
       "price": 637.2,
       "priceChange24hPercent": -0.43749999999999295,
-      "volume24hUSD": 256489.80018993985,
+      "volume24hUSD": 268716.22514958883,
       "marketCap": 1623270966570,
       "canonicalPrice": 637.2,
       "primaryVariant": {
@@ -233,13 +233,13 @@
         "label": "META",
         "trustTier": "tier3",
         "stockVariantTier": "share_redeemable",
-        "holders": 370,
-        "liquidity": 1475267.2591954854,
+        "holders": 371,
+        "liquidity": 1472307.1947438703,
         "decimals": 6,
-        "trade24h": 878,
+        "trade24h": 906,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/METAaH6MMZZgy2CTEJq3QdNi7AFVTV3NxHFBfFgLEDd.webp",
-        "price": 638.3822182173162,
-        "priceChange24hPercent": -0.35462571809759746
+        "price": 641.1587843475986,
+        "priceChange24hPercent": 0.15648434186111365
       },
       "symbols": [
         "META",
@@ -248,7 +248,7 @@
         "METAx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.118Z"
+      "updatedAt": "2026-10-26T09:04:42.752Z"
     },
     {
       "assetId": "coinbase",
@@ -259,7 +259,7 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/COINx.png",
       "price": 160.6,
       "priceChange24hPercent": -2.400486174415082,
-      "volume24hUSD": 108598.37239181936,
+      "volume24hUSD": 145208.98016912612,
       "marketCap": 42372209833.799995,
       "canonicalPrice": 160.6,
       "primaryVariant": {
@@ -268,14 +268,14 @@
         "label": "xStock",
         "trustTier": "tier3",
         "stockVariantTier": "cash_redeemable",
-        "holders": 11249,
-        "liquidity": 1925738.3170616606,
+        "holders": 11253,
+        "liquidity": 1935793.5953717926,
         "decimals": 8,
         "executionScore": 70.0043,
-        "trade24h": 2703,
+        "trade24h": 2806,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/Xs7ZdzSHLU9ftNJsii5fCeJhoRWSC32SQGzGQtePxNu.webp",
-        "price": 160.55977584161067,
-        "priceChange24hPercent": -2.439229581507462
+        "price": 160.4339641144941,
+        "priceChange24hPercent": -2.072093936836332
       },
       "symbols": [
         "COIN",
@@ -284,7 +284,7 @@
         "COINx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.175Z"
+      "updatedAt": "2026-10-26T09:04:42.761Z"
     },
     {
       "assetId": "microstrategy",
@@ -293,11 +293,11 @@
       "category": "equity",
       "description": "MicroStrategy is a company that provides enterprise analytics and mobility software, as well as business intelligence solutions. They also engage in Bitcoin development and are known for their Bitcoin treasury strategy.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/MSTRx.png",
-      "price": 146.09,
-      "priceChange24hPercent": 0.7517241379310369,
-      "volume24hUSD": 1108850.586983861,
-      "marketCap": 61879670879.04,
-      "canonicalPrice": 146.09,
+      "price": 141.5,
+      "priceChange24hPercent": -3.1418988294886736,
+      "volume24hUSD": 1141863.0613666258,
+      "marketCap": 59935474224,
+      "canonicalPrice": 141.5,
       "primaryVariant": {
         "symbol": "MSTR",
         "mint": "MSTRdWXMeZxdE8osAQy3fA4rvTY5rgummDSMEx6U7Nz",
@@ -305,12 +305,12 @@
         "trustTier": "tier3",
         "stockVariantTier": "share_redeemable",
         "holders": 267,
-        "liquidity": 517307.3308906502,
+        "liquidity": 516137.4399546518,
         "decimals": 6,
-        "trade24h": 2716,
+        "trade24h": 2836,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/MSTRdWXMeZxdE8osAQy3fA4rvTY5rgummDSMEx6U7Nz.webp",
-        "price": 141.50563046672892,
-        "priceChange24hPercent": -1.8210158207534966
+        "price": 142.55953861811602,
+        "priceChange24hPercent": -0.7484203340624342
       },
       "symbols": [
         "MSTR",
@@ -320,7 +320,7 @@
         "MSTRx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.299Z"
+      "updatedAt": "2026-10-26T09:04:42.757Z"
     },
     {
       "assetId": "palantir",
@@ -329,25 +329,25 @@
       "category": "equity",
       "description": "Palantir Technologies Inc. develops data integration, analytics, and artificial intelligence software platforms used by commercial organizations and government agencies.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/PLTRx.png",
-      "price": 197.15,
-      "priceChange24hPercent": 0.46627767727469205,
-      "volume24hUSD": 41800.25058582162,
-      "marketCap": 473762979332,
-      "canonicalPrice": 197.15,
+      "price": 197.5,
+      "priceChange24hPercent": 0.1775297996449375,
+      "volume24hUSD": 42969.333749554644,
+      "marketCap": 474604049800,
+      "canonicalPrice": 197.5,
       "primaryVariant": {
         "symbol": "PLTRx",
         "mint": "XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4",
         "label": "xStock",
         "trustTier": "tier3",
         "stockVariantTier": "cash_redeemable",
-        "holders": 10795,
-        "liquidity": 637224.064567561,
+        "holders": 10792,
+        "liquidity": 649770.9787553247,
         "decimals": 8,
         "executionScore": 58.5691,
-        "trade24h": 1085,
+        "trade24h": 1111,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/XsoBhf2ufR8fTyNSjqfU71DYGaE6Z3SUGAidpzriAA4.webp",
-        "price": 196.76620133248656,
-        "priceChange24hPercent": -0.026968725491766786
+        "price": 197.33275208672583,
+        "priceChange24hPercent": 0.32737834813834593
       },
       "symbols": [
         "PLTR",
@@ -357,7 +357,7 @@
         "PLTRx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.333Z"
+      "updatedAt": "2026-10-26T09:04:42.758Z"
     },
     {
       "assetId": "sp500",
@@ -366,11 +366,11 @@
       "category": "etf",
       "description": "",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/SPYx.png",
-      "price": 764.6525924206805,
-      "priceChange24hPercent": -0.16044,
-      "volume24hUSD": 3653040.797655611,
-      "marketCap": 68302934,
-      "canonicalPrice": 764.6525924206805,
+      "price": 765.5981565418416,
+      "priceChange24hPercent": 0.05536,
+      "volume24hUSD": 3731213.7678619423,
+      "marketCap": 68393750,
+      "canonicalPrice": 765.5981565418416,
       "primaryVariant": {
         "symbol": "SPYx",
         "mint": "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W",
@@ -390,7 +390,7 @@
         "SPYX",
         "SPYx"
       ],
-      "updatedAt": "2026-10-26T08:18:06.324Z"
+      "updatedAt": "2026-10-26T09:04:42.761Z"
     },
     {
       "assetId": "invesco-qqq",
@@ -423,7 +423,7 @@
         "QQQon",
         "Ondo"
       ],
-      "updatedAt": "2026-10-26T08:18:06.344Z"
+      "updatedAt": "2026-10-26T09:04:42.758Z"
     },
     {
       "assetId": "gold",
@@ -432,11 +432,11 @@
       "category": "commodity",
       "description": "",
       "imageUrl": "https://api.tokens.xyz/logos/commodities/gold.png",
-      "price": 366.1,
-      "priceChange24hPercent": -0.6566807771626938,
-      "volume24hUSD": 228326.05392090825,
-      "marketCap": 33718783.954317674,
-      "canonicalPrice": 366.1,
+      "price": 368.16,
+      "priceChange24hPercent": 0.5626877902212516,
+      "volume24hUSD": 232742.35135173466,
+      "marketCap": 33742706.07755584,
+      "canonicalPrice": 368.16,
       "primaryVariant": {
         "symbol": "XAUt0",
         "mint": "AymATz4TCL9sWNEEV9Kvyz45CHVhDZ6kUgjTJPzLpU9P",
@@ -468,7 +468,7 @@
         "GLDx",
         "Gold"
       ],
-      "updatedAt": "2026-10-26T08:18:06.349Z"
+      "updatedAt": "2026-10-26T09:04:42.758Z"
     },
     {
       "assetId": "amd",
@@ -477,11 +477,11 @@
       "category": "equity",
       "description": "AMD xStock (AMDx) is a tracker certificate issued as a freely transferable token on selected blockchains. AMDx tracks the price of Advanced Micro Devices, Inc. AMDx is designed to give eligible investors regulatory-compliant access to the stock price of Advanced Micro Devices, Inc., whilst maintaining the benefits of blockchain technology.",
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/AMDx.png",
-      "price": 514,
-      "priceChange24hPercent": 1.4266827160250248,
-      "volume24hUSD": 213689.74113775045,
-      "marketCap": 839092171588,
-      "canonicalPrice": 514,
+      "price": 516,
+      "priceChange24hPercent": 0.38910505836575876,
+      "volume24hUSD": 216699.13192427723,
+      "marketCap": 842357121672,
+      "canonicalPrice": 516,
       "primaryVariant": {
         "symbol": "AMD",
         "mint": "AMD8XwJXgQ9WV45Wyj9yFLejxzf2J6VM1PJY8bJEjeES",
@@ -489,12 +489,12 @@
         "trustTier": "tier3",
         "stockVariantTier": "share_redeemable",
         "holders": 5324,
-        "liquidity": 612919.4277792276,
+        "liquidity": 592107.0736041449,
         "decimals": 6,
-        "trade24h": 2558,
+        "trade24h": 2593,
         "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/AMD8XwJXgQ9WV45Wyj9yFLejxzf2J6VM1PJY8bJEjeES.webp",
-        "price": 512.8801902271446,
-        "priceChange24hPercent": -0.9925656125958418
+        "price": 516.3512204083288,
+        "priceChange24hPercent": -0.21632954458172324
       },
       "symbols": [
         "AMD",
@@ -503,7 +503,7 @@
         "AMDx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.121Z"
+      "updatedAt": "2026-10-26T09:04:42.756Z"
     },
     {
       "assetId": "robinhood",
@@ -514,22 +514,23 @@
       "imageUrl": "https://api.tokens.xyz/logos/xstocks/HOODx.png",
       "price": 94.92,
       "priceChange24hPercent": -1.6169154228855744,
-      "volume24hUSD": 151494.57892520225,
+      "volume24hUSD": 152893.31452761937,
       "marketCap": 85340889353.16,
       "canonicalPrice": 94.92,
       "primaryVariant": {
-        "symbol": "HOOD",
-        "mint": "HooDYv5RewLRiMLnEVq3VJqdqxhuE6c5eYvqejMC3e9A",
-        "label": "Backpack Securities",
+        "symbol": "HOODx",
+        "mint": "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg",
+        "label": "xStock",
         "trustTier": "tier3",
-        "stockVariantTier": "share_redeemable",
-        "holders": 588,
-        "liquidity": 354881.67913984694,
-        "decimals": 6,
-        "trade24h": 746,
-        "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/HooDYv5RewLRiMLnEVq3VJqdqxhuE6c5eYvqejMC3e9A.webp",
-        "price": 93.31281928785567,
-        "priceChange24hPercent": -1.9064228395567002
+        "stockVariantTier": "cash_redeemable",
+        "holders": 15270,
+        "liquidity": 1772327.4985614556,
+        "decimals": 8,
+        "executionScore": 73.2006,
+        "trade24h": 3061,
+        "logoURI": "https://storage.googleapis.com/tokens-asset-logos-prd/solana/XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg.webp",
+        "price": 93.88677130204384,
+        "priceChange24hPercent": -0.9289698439544632
       },
       "symbols": [
         "HOOD",
@@ -539,7 +540,7 @@
         "HOODx",
         "xStock"
       ],
-      "updatedAt": "2026-10-26T08:18:06.332Z"
+      "updatedAt": "2026-10-26T09:04:43.271Z"
     }
   ]
 }

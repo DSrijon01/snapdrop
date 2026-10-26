@@ -241,16 +241,63 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Lock to prevent concurrent execution between active subscribe() call and phantom_mobile_tx_signed listener
   const isSubscribingRef = React.useRef(false);
 
+  // Global event listener for redirect_route across all pages
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRedirectRoute = (e: any) => {
+      const targetRoute = e?.detail?.route;
+      if (targetRoute && window.location.pathname !== targetRoute) {
+        window.location.href = targetRoute;
+      }
+    };
+    window.addEventListener("redirect_route", handleRedirectRoute);
+    return () => window.removeEventListener("redirect_route", handleRedirectRoute);
+  }, []);
+
+  // Proactive auto-redirect: if user returns from mobile wallet and module is already active
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const rawPending = localStorage.getItem("street_sync_pending_subscription");
+    if (!rawPending) return;
+
+    try {
+      const parsed = JSON.parse(rawPending);
+      const modId = parsed.moduleId;
+      const walletKey = parsed.walletKey;
+      const targetRoute = parsed.targetProRoute || (modId ? `/${modId}/${modId.replace(/-/g, "")}-pro` : null);
+
+      const localSubStr = walletKey && modId ? localStorage.getItem(`street_sync_sub_${walletKey}_${modId}`) : null;
+      let localActive = false;
+      if (localSubStr) {
+        try {
+          const lData = JSON.parse(localSubStr);
+          localActive = Boolean(lData?.isSubscribed && lData.expiresAt && lData.expiresAt > Date.now());
+        } catch {}
+      }
+
+      const isSubscribedNow = (modId && subscriptions[modId]?.isSubscribed) || localActive;
+      if (isSubscribedNow && targetRoute) {
+        localStorage.removeItem("street_sync_pending_subscription");
+        localStorage.removeItem("street_sync_last_signed_tx");
+        localStorage.removeItem("street_sync_last_tx_signature");
+        localStorage.removeItem("phantom_mobile_return_url");
+
+        setShowModal(false);
+        toast.dismiss();
+        if (window.location.pathname !== targetRoute) {
+          window.location.href = targetRoute;
+        }
+      }
+    } catch {}
+  }, [subscriptions]);
+
   // Resumption handler: Detects return from mobile wallet redirect when page reloaded or resumed
   useEffect(() => {
     const handlePendingMobileSubscription = async () => {
       if (typeof window === "undefined") return;
 
       const rawPending = localStorage.getItem("street_sync_pending_subscription");
-      const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
-      const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
-
-      if (!rawPending || (!signedTxStr && !txSigStr)) return;
+      if (!rawPending) return;
 
       let pendingAction: any;
       try {
@@ -268,8 +315,47 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      const toastId = toast.loading(`Confirming ${pendingAction.planName || "Pro"} subscription on Solana...`);
+      const targetProRoute = pendingAction.targetProRoute || `/${pendingAction.moduleId}/${pendingAction.moduleId.replace(/-/g, "")}-pro`;
+
+      // 1. Check if user is ALREADY subscribed (e.g. on-chain or through concurrent resumePendingTransactions)
+      const existingStored = localStorage.getItem(`street_sync_sub_${pendingAction.walletKey}_${pendingAction.moduleId}`);
+      let isAlreadyActive = subscriptions[pendingAction.moduleId]?.isSubscribed;
+      if (!isAlreadyActive && existingStored) {
+        try {
+          const parsedStored = JSON.parse(existingStored);
+          isAlreadyActive = Boolean(parsedStored?.isSubscribed && parsedStored.expiresAt && parsedStored.expiresAt > Date.now());
+        } catch {}
+      }
+
+      if (isAlreadyActive) {
+        localStorage.removeItem("street_sync_pending_subscription");
+        localStorage.removeItem("street_sync_last_signed_tx");
+        localStorage.removeItem("street_sync_last_tx_signature");
+        localStorage.removeItem("phantom_mobile_return_url");
+
+        setShowModal(false);
+        toast.dismiss();
+        if (window.location.pathname !== targetProRoute) {
+          window.location.href = targetProRoute;
+        }
+        return;
+      }
+
+      const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
+      const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
+      if (!signedTxStr && !txSigStr) return;
+
+      let toastId: string | null = null;
+      let toastSafetyTimer: any = null;
+
       try {
+        toastId = toast.loading(`Confirming ${pendingAction.planName || "Pro"} subscription on Solana...`);
+        // Absolute safety guard: never leave toast spinning more than 5s
+        toastSafetyTimer = setTimeout(() => {
+          if (toastId) toast.dismiss(toastId);
+          toast.dismiss();
+        }, 5000);
+
         let signature = txSigStr;
         if (!signature && signedTxStr) {
           const rawBytes = bs58.decode(signedTxStr);
@@ -329,7 +415,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
           window.dispatchEvent(new Event("storage"));
 
-          toast.dismiss(toastId);
+          if (toastId) toast.dismiss(toastId);
           toast.dismiss();
           toast.success(
             `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
@@ -342,25 +428,32 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           localStorage.removeItem("phantom_mobile_return_url");
 
           // Reroute mobile user directly to the module's Pro dashboard
-          const targetProRoute = pendingAction.targetProRoute || `/${pendingAction.moduleId}/${pendingAction.moduleId.replace(/-/g, "")}-pro`;
           if (typeof window !== "undefined") {
-            window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: targetProRoute } }));
-            setTimeout(() => {
-              if (window.location.pathname !== targetProRoute) {
-                window.location.href = targetProRoute;
-              }
-            }, 300);
+            window.location.href = targetProRoute;
           }
         }
       } catch (err: any) {
         console.error("Failed to broadcast returned mobile subscription tx:", err);
-        toast.dismiss(toastId);
+        if (toastId) toast.dismiss(toastId);
         toast.dismiss();
-        toast.error("Subscription transaction failed: " + (err?.message || "RPC error"));
+
+        // Check if user is actually subscribed despite error/timeout
+        if (subscriptions[pendingAction.moduleId]?.isSubscribed) {
+          setShowModal(false);
+          if (typeof window !== "undefined") {
+            window.location.href = targetProRoute;
+          }
+        } else {
+          toast.error("Subscription transaction note: " + (err?.message || "Please check status"));
+        }
       } finally {
+        if (toastSafetyTimer) clearTimeout(toastSafetyTimer);
+        if (toastId) toast.dismiss(toastId);
+        toast.dismiss();
         localStorage.removeItem("street_sync_pending_subscription");
         localStorage.removeItem("street_sync_last_signed_tx");
         localStorage.removeItem("street_sync_last_tx_signature");
+        localStorage.removeItem("phantom_mobile_return_url");
       }
     };
 
@@ -382,7 +475,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       window.removeEventListener("subscription_updated", handleSubUpdated);
       window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
     };
-  }, [connection, loadSubscriptions]);
+  }, [connection, loadSubscriptions, subscriptions]);
 
   // Subscribe function with selected plan
   const subscribe = async (moduleId: string, planId: SubscriptionPlanId = "30days"): Promise<boolean> => {
