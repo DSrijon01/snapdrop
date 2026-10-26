@@ -20,6 +20,7 @@ import {
 } from "@/context/SubscriptionContext";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { SubscriptionCountdownCards } from "@/components/global/subscription/SubscriptionCountdown";
 
@@ -39,24 +40,53 @@ export const SubscriptionModal: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
-  if (!activeModuleId) return null;
-
-  const moduleName = MODULE_NAMES[activeModuleId] || "Selected Module";
-  const sub = subscriptions[activeModuleId];
+  const moduleName = activeModuleId ? (MODULE_NAMES[activeModuleId] || "Selected Module") : "Selected Module";
+  const sub = activeModuleId ? subscriptions[activeModuleId] : undefined;
   const isSubscribed = sub?.isSubscribed || false;
   const expiresAtDate = sub?.expiresAt ? new Date(sub.expiresAt) : null;
   const currentPlan = SUBSCRIPTION_PLANS[selectedPlanId];
 
   const handleClose = () => {
     setShowCancelConfirm(false);
+    setSubmitting(false);
     closeSubscriptionModal();
   };
+
+  // Auto-resolve: if transaction finishes and isSubscribed turns true while submitting, immediately finish & route
+  React.useEffect(() => {
+    if (submitting && isSubscribed && activeModuleId) {
+      toast.dismiss();
+      setSubmitting(false);
+      handleClose();
+      const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+      router.push(proPath);
+    }
+  }, [isSubscribed, submitting, activeModuleId, router]);
+
+  // Listen for global subscription update events to dismiss modal and route to Pro
+  React.useEffect(() => {
+    const handleSubUpdated = (e: any) => {
+      const detail = e?.detail;
+      if (detail && detail.moduleId === activeModuleId && detail.isSubscribed) {
+        toast.dismiss();
+        setSubmitting(false);
+        handleClose();
+        const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+        router.push(proPath);
+      }
+    };
+    window.addEventListener("subscription_updated", handleSubUpdated);
+    return () => window.removeEventListener("subscription_updated", handleSubUpdated);
+  }, [activeModuleId, router]);
+
+  if (!activeModuleId) return null;
 
   const handleSubscribe = async () => {
     setSubmitting(true);
     const success = await subscribe(activeModuleId, selectedPlanId);
     setSubmitting(false);
-    if (success) {
+    toast.dismiss();
+    if (success || subscriptions[activeModuleId]?.isSubscribed) {
       handleClose();
       const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
       router.push(proPath);
@@ -67,6 +97,7 @@ export const SubscriptionModal: React.FC = () => {
     setSubmitting(true);
     await cancelSubscription(activeModuleId);
     setSubmitting(false);
+    toast.dismiss();
     handleClose();
   };
 
@@ -301,17 +332,28 @@ export const SubscriptionModal: React.FC = () => {
                     ) : isSubscribed ? (
                       <div className="space-y-2">
                         <button
-                          onClick={handleSubscribe}
-                          className="w-full py-3.5 bg-primary text-primary-foreground hover:opacity-95 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-primary/20 font-display"
+                          onClick={() => {
+                            handleClose();
+                            const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+                            router.push(proPath);
+                          }}
+                          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-emerald-500/25 font-display"
                         >
-                          <Sparkles className="w-4 h-4" />
+                          <Zap className="w-4 h-4 fill-white" />
+                          <span>Enter {moduleName} Pro Dashboard</span>
+                        </button>
+                        <button
+                          onClick={handleSubscribe}
+                          className="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none font-display"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
                           <span>
                             Extend by {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"} ({currentPlan.priceSol} SOL)
                           </span>
                         </button>
                         <button
                           onClick={() => setShowCancelConfirm(true)}
-                          className="w-full py-2.5 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center gap-1.5 font-bold uppercase tracking-wider text-[11px] border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none"
+                          className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center gap-1.5 font-bold uppercase tracking-wider text-[11px] border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none"
                         >
                           Unsubscribe from Plan
                         </button>

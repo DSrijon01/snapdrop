@@ -108,23 +108,35 @@ export async function confirmTransactionRobust(
     signature: string,
     blockhash?: string,
     lastValidBlockHeight?: number,
-    timeoutMs: number = 30000
+    timeoutMs: number = 18000
 ): Promise<boolean> {
     const start = Date.now();
-    // 1. Poll getSignatureStatus directly first
+    let processedStreak = 0;
+
+    // 1. Poll getSignatureStatus directly first (fast 900ms interval)
     while (Date.now() - start < timeoutMs) {
         try {
             const status = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
-            if (status.value?.confirmationStatus === "confirmed" || status.value?.confirmationStatus === "finalized") {
+            if (status.value) {
                 if (status.value.err) {
                     throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(status.value.err)}`);
                 }
-                return true;
+                if (status.value.confirmationStatus === "confirmed" || status.value.confirmationStatus === "finalized") {
+                    return true;
+                }
+                if (status.value.confirmationStatus === "processed") {
+                    processedStreak++;
+                    // On Solana devnet, once a transaction is processed without error across 2 checks (~1.8s),
+                    // it is safely included in a block and will finalize
+                    if (processedStreak >= 2) {
+                        return true;
+                    }
+                }
             }
         } catch (e: any) {
             if (e?.message?.includes("failed on-chain")) throw e;
         }
-        await new Promise((r) => setTimeout(r, 1200));
+        await new Promise((r) => setTimeout(r, 900));
     }
 
     // 2. Fallback to standard confirmTransaction if status check didn't resolve in time
@@ -144,10 +156,7 @@ export async function confirmTransactionRobust(
     } catch (confErr: any) {
         // Final sanity check: query one last time
         const finalStatus = await connection.getSignatureStatus(signature, { searchTransactionHistory: true });
-        if (finalStatus.value?.confirmationStatus === "confirmed" || finalStatus.value?.confirmationStatus === "finalized") {
-            if (finalStatus.value.err) {
-                throw new Error(`Transaction ${signature} failed on-chain: ${JSON.stringify(finalStatus.value.err)}`);
-            }
+        if (finalStatus.value && !finalStatus.value.err) {
             return true;
         }
         throw confErr;

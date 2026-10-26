@@ -376,9 +376,26 @@ export function recordActionSuccess(type: PendingActionType, data: any, signatur
                     console.warn("[PendingTransactions] Storage warning on subscription write:", e);
                 }
                 localStorage.removeItem("street_sync_pending_subscription");
+                localStorage.removeItem("street_sync_last_signed_tx");
+                localStorage.removeItem("street_sync_last_tx_signature");
+                localStorage.removeItem("phantom_mobile_return_url");
+
+                window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
                 window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
                 window.dispatchEvent(new Event("storage"));
+
+                toast.dismiss();
                 toast.success(`Successfully Subscribed to ${data.planName || "Pro"}! TX: ${signature.slice(0, 8)}...`);
+
+                const targetRoute = data.targetProRoute || `/${data.moduleId}/${data.moduleId.replace(/-/g, "")}-pro`;
+                window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: targetRoute } }));
+                if (typeof window !== "undefined") {
+                    setTimeout(() => {
+                        if (window.location.pathname !== targetRoute) {
+                            window.location.href = targetRoute;
+                        }
+                    }, 350);
+                }
                 break;
             }
 

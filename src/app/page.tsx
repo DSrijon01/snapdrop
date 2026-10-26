@@ -47,8 +47,18 @@ function StreetSyncContent() {
       }
     };
 
-    // Forward to /sessions if user is returning from a Sessions wallet action/SIWS
+    // Forward to target if user is returning from a subscription or wallet action
     try {
+      const pendingSub = localStorage.getItem("street_sync_pending_subscription");
+      if (pendingSub) {
+        try {
+          const parsedSub = JSON.parse(pendingSub);
+          if (parsedSub?.targetProRoute) {
+            window.location.href = parsedSub.targetProRoute;
+            return;
+          }
+        } catch {}
+      }
       const returnUrl = localStorage.getItem("phantom_mobile_return_url");
       const pendingSiws = localStorage.getItem("street_sync_pending_siws");
       if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {

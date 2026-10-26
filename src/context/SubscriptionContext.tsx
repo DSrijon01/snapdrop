@@ -245,8 +245,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   useEffect(() => {
     const handlePendingMobileSubscription = async () => {
       if (typeof window === "undefined") return;
-      // If user is currently running the in-memory subscribe() call, let that call handle it
-      if (isSubscribingRef.current) return;
 
       const rawPending = localStorage.getItem("street_sync_pending_subscription");
       const signedTxStr = localStorage.getItem("street_sync_last_signed_tx");
@@ -312,29 +310,52 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           );
           setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: subDetails }));
 
-          // Also persist to Firestore for cross-browser synchronization
-          try {
-            await setDoc(doc(db, "subscriptions", `${pendingAction.walletKey}_${pendingAction.moduleId}`), {
-              walletAddress: pendingAction.walletKey,
-              moduleId: pendingAction.moduleId,
-              planId: pendingAction.planId,
-              expiresAt: pendingAction.expiresAt,
-              txSignature: signature,
-              isCancelled: false,
-              updatedAt: Date.now(),
-            });
-          } catch (fsErr) {
+          // Persist to Firestore asynchronously (non-blocking)
+          setDoc(doc(db, "subscriptions", `${pendingAction.walletKey}_${pendingAction.moduleId}`), {
+            walletAddress: pendingAction.walletKey,
+            moduleId: pendingAction.moduleId,
+            planId: pendingAction.planId,
+            expiresAt: pendingAction.expiresAt,
+            txSignature: signature,
+            isCancelled: false,
+            updatedAt: Date.now(),
+          }).catch((fsErr) => {
             console.warn("Firestore mobile return save note:", fsErr);
-          }
+          });
+
+          // Immediately dismiss all modals and loading toasts
+          setShowModal(false);
+          window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+          window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
+          window.dispatchEvent(new Event("storage"));
 
           toast.dismiss(toastId);
+          toast.dismiss();
           toast.success(
             `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
           );
+
+          // Clear mobile resumption storage
+          localStorage.removeItem("street_sync_pending_subscription");
+          localStorage.removeItem("street_sync_last_signed_tx");
+          localStorage.removeItem("street_sync_last_tx_signature");
+          localStorage.removeItem("phantom_mobile_return_url");
+
+          // Reroute mobile user directly to the module's Pro dashboard
+          const targetProRoute = pendingAction.targetProRoute || `/${pendingAction.moduleId}/${pendingAction.moduleId.replace(/-/g, "")}-pro`;
+          if (typeof window !== "undefined") {
+            window.dispatchEvent(new CustomEvent("redirect_route", { detail: { route: targetProRoute } }));
+            setTimeout(() => {
+              if (window.location.pathname !== targetProRoute) {
+                window.location.href = targetProRoute;
+              }
+            }, 300);
+          }
         }
       } catch (err: any) {
         console.error("Failed to broadcast returned mobile subscription tx:", err);
         toast.dismiss(toastId);
+        toast.dismiss();
         toast.error("Subscription transaction failed: " + (err?.message || "RPC error"));
       } finally {
         localStorage.removeItem("street_sync_pending_subscription");
@@ -349,12 +370,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const handleSubUpdated = () => {
       loadSubscriptions();
     };
+    const handleCloseAll = () => {
+      setShowModal(false);
+    };
     window.addEventListener("subscription_updated", handleSubUpdated);
+    window.addEventListener("street_sync_close_all_modals", handleCloseAll);
 
     return () => {
       window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
       window.removeEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
       window.removeEventListener("subscription_updated", handleSubUpdated);
+      window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
     };
   }, [connection, loadSubscriptions]);
 
@@ -435,15 +461,20 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       transaction.feePayer = publicKey;
 
       // Persist pending subscription state for mobile deeplink return resilience
+      const targetProRoute = `/${moduleId}/${moduleId.replace(/-/g, "")}-pro`;
       const pendingSub = {
         walletKey,
         moduleId,
         planId,
         expiresAt,
         planName: selectedPlan.name,
+        targetProRoute,
         timestamp: Date.now(),
       };
       safeLocalStorageSet("street_sync_pending_subscription", JSON.stringify(pendingSub));
+      if (typeof window !== "undefined") {
+        safeLocalStorageSet("phantom_mobile_return_url", window.location.href);
+      }
       savePendingAction("SUBSCRIPTION_BUY", pendingSub);
 
       toast.loading("Awaiting wallet approval in Phantom...", { id: toastId });
@@ -504,26 +535,29 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       localStorage.removeItem("street_sync_pending_subscription");
       localStorage.removeItem("street_sync_last_signed_tx");
       localStorage.removeItem("street_sync_last_tx_signature");
+      localStorage.removeItem("phantom_mobile_return_url");
 
-      // Persist to Firestore for cross-browser recovery
-      try {
-        await setDoc(doc(db, "subscriptions", `${walletKey}_${moduleId}`), {
-          walletAddress: walletKey,
-          moduleId,
-          planId,
-          expiresAt,
-          txSignature: signature,
-          isCancelled: false,
-          updatedAt: Date.now(),
-        });
-      } catch (fsErr) {
+      // Persist to Firestore asynchronously (non-blocking) so Firestore never delays UX
+      setDoc(doc(db, "subscriptions", `${walletKey}_${moduleId}`), {
+        walletAddress: walletKey,
+        moduleId,
+        planId,
+        expiresAt,
+        txSignature: signature,
+        isCancelled: false,
+        updatedAt: Date.now(),
+      }).catch((fsErr) => {
         console.warn("Firestore subscription save note:", fsErr);
-      }
+      });
 
-      window.dispatchEvent(new Event("storage"));
+      // Immediately dismiss modal and notify all listeners
+      setShowModal(false);
+      window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
       window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
+      window.dispatchEvent(new Event("storage"));
 
       toast.dismiss(toastId);
+      toast.dismiss();
       toast.success(`Successfully Subscribed to ${MODULE_NAMES[moduleId]} (${selectedPlan.name})!`);
       return true;
     } catch (error: any) {
@@ -532,6 +566,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       localStorage.removeItem("street_sync_last_signed_tx");
       localStorage.removeItem("street_sync_last_tx_signature");
       toast.dismiss(toastId);
+      toast.dismiss();
+
+      // Check if user is actually subscribed despite timeout/error
+      if (subscriptions[moduleId]?.isSubscribed) {
+        setShowModal(false);
+        window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+        return true;
+      }
+
       toast.error(error.message || "Transaction failed or rejected by user.");
       return false;
     } finally {
