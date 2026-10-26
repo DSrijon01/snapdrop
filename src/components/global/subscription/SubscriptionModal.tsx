@@ -67,11 +67,12 @@ export const SubscriptionModal: React.FC = () => {
   React.useEffect(() => {
     const handleSubUpdated = (e: any) => {
       const detail = e?.detail;
-      if (detail && detail.moduleId === activeModuleId && detail.isSubscribed) {
+      const targetMod = (detail && typeof detail.moduleId === "string") ? detail.moduleId : activeModuleId;
+      if (detail && detail.isSubscribed && targetMod && targetMod === activeModuleId) {
         toast.dismiss();
         setSubmitting(false);
         handleClose();
-        const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+        const proPath = `/${targetMod}/${targetMod.replace(/-/g, "")}-pro`;
         router.push(proPath);
       }
     };
@@ -217,7 +218,7 @@ export const SubscriptionModal: React.FC = () => {
                       </div>
 
                       {/* Live Ticking Countdown Matrix */}
-                      <SubscriptionCountdownCards expiresAt={sub?.expiresAt} />
+                      <SubscriptionCountdownCards expiresAt={sub?.expiresAt ?? null} />
 
                       {expiresAtDate && (
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground font-mono pt-1 border-t border-border/40">
