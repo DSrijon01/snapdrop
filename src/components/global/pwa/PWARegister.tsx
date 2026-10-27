@@ -43,7 +43,9 @@ export function PWARegister() {
       if (
         msg.includes("loading chunk") ||
         msg.includes("chunkloaderror") ||
-        msg.includes("failed to fetch dynamically imported module")
+        msg.includes("failed to fetch dynamically imported module") ||
+        msg.includes("stylesheet load failed") ||
+        msg.includes("broken site styles")
       ) {
         const reloadKey = "street_sync_last_chunk_reload";
         let lastReload = 0;
@@ -80,11 +82,34 @@ export function PWARegister() {
       recoverFromChunkError(msg);
     };
 
+    // Capture resource load errors (e.g. stylesheet 404s) which do not bubble to window
+    const handleCaptureResourceError = (event: Event) => {
+      const target = event.target as HTMLElement | null;
+      if (target && target.tagName === "LINK" && (target as HTMLLinkElement).rel === "stylesheet") {
+        console.warn("[PWA] Critical stylesheet failed to load:", (target as HTMLLinkElement).href);
+        recoverFromChunkError("stylesheet load failed");
+      }
+    };
+
+    // 4. Stylesheet health check: Verify critical styles actually loaded within 2 seconds
+    const styleHealthCheck = setTimeout(() => {
+      try {
+        const isLoaded = getComputedStyle(document.documentElement).getPropertyValue("--street-sync-styles-loaded").trim();
+        if (!isLoaded || isLoaded !== "1") {
+          console.warn("[PWA] Broken site load detected! Styles not loaded after mount, recovering...");
+          recoverFromChunkError("broken site styles");
+        }
+      } catch {}
+    }, 2000);
+
     window.addEventListener("error", handleWindowError);
+    window.addEventListener("error", handleCaptureResourceError, true);
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
 
     return () => {
+      clearTimeout(styleHealthCheck);
       window.removeEventListener("error", handleWindowError);
+      window.removeEventListener("error", handleCaptureResourceError, true);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
     };
   }, []);

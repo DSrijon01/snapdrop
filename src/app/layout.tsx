@@ -67,6 +67,36 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Street Sync" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                window.addEventListener('error', function(e) {
+                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'stylesheet') {
+                    console.warn('[StreetSync] Stylesheet load error detected:', e.target.href);
+                    try {
+                      var key = 'street_sync_css_retry';
+                      var now = Date.now();
+                      var last = parseInt(sessionStorage.getItem(key) || '0', 10);
+                      if (now - last > 15000) {
+                        sessionStorage.setItem(key, String(now));
+                        if (window.caches && caches.keys) {
+                          caches.keys().then(function(keys) {
+                            return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                          }).finally(function() {
+                            window.location.reload();
+                          });
+                        } else {
+                          window.location.reload();
+                        }
+                      }
+                    } catch(err) {}
+                  }
+                }, true);
+              })();
+            `,
+          }}
+        />
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} antialiased`}

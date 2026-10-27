@@ -70,6 +70,8 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
               <img
                 src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
                 alt="Street Sync Bot"
+                width={28}
+                height={28}
                 className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
               />
               <span className="text-[11px] font-black uppercase tracking-widest font-display text-foreground">
@@ -108,6 +110,8 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
             <img
               src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
               alt="Street Sync Bot"
+              width={224}
+              height={224}
               className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain drop-shadow-[0_0_25px_rgba(255,24,1,0.5)] dark:drop-shadow-[0_0_35px_rgba(255,24,1,0.7)] animate-bounce group-hover:scale-110 transition-transform duration-300 pointer-events-auto"
             />
 

@@ -39,6 +39,7 @@
 
 @layer base {
   :root {
+    --street-sync-styles-loaded: 1;
     /* Supreme Theme (Light Mode) */
     --background: #ffffff;
     --foreground: #000000; /* Pure Black specifically for Supreme aesthetic */

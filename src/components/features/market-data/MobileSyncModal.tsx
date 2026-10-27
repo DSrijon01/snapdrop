@@ -64,7 +64,7 @@ export const MobileSyncModal: FC<Props> = ({ isOpen, onClose }) => {
                     <div className="bg-white p-4 rounded-xl shadow-inner mb-6">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img 
-                            src={`${process.env.NODE_ENV === 'production' ? '/snapdrop' : ''}/street-sync-qr.png`} 
+                            src="/street-sync-qr.png" 
                             alt="Mobile Sync QR Code" 
                             className="w-48 h-48 object-contain"
                         />
