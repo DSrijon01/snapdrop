@@ -50,7 +50,6 @@ export const MarketSidebar = ({
     useEffect(() => {
         let isMounted = true;
         const loadSecurities = async () => {
-            if (typeof document !== "undefined" && document.hidden) return;
             const list = await fetchCuratedSecurities();
             if (isMounted && list.length > 0) {
                 cachedCuratedSecurities = list;
@@ -68,7 +67,6 @@ export const MarketSidebar = ({
     // 2. Fetch Favorite Crypto Tickers from Binance
     useEffect(() => {
         const fetchCryptoFavorites = async () => {
-            if (typeof document !== "undefined" && document.hidden) return;
             // Filter favorites that are NOT known securities
             const cryptoFavs = favorites.filter(fav => !isKnownSecurity(fav));
             if (cryptoFavs.length === 0) {

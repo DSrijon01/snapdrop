@@ -434,7 +434,6 @@ export const MarketDetails = ({
         let isMounted = true;
 
         const loadAsset = async () => {
-            if (typeof document !== "undefined" && document.hidden) return;
             const sym = selectedCoin.toUpperCase().trim();
             
             // Check if it's a security or query Tokens.xyz
