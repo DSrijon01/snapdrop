@@ -71,26 +71,73 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                window.addEventListener('error', function(e) {
-                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'stylesheet') {
-                    console.warn('[StreetSync] Stylesheet load error detected:', e.target.href);
-                    try {
-                      var key = 'street_sync_css_retry';
-                      var now = Date.now();
-                      var last = parseInt(sessionStorage.getItem(key) || '0', 10);
-                      if (now - last > 15000) {
-                        sessionStorage.setItem(key, String(now));
-                        if (window.caches && caches.keys) {
-                          caches.keys().then(function(keys) {
-                            return Promise.all(keys.map(function(k) { return caches.delete(k); }));
-                          }).finally(function() {
-                            window.location.reload();
-                          });
-                        } else {
+                function areStylesLoaded() {
+                  try {
+                    return window.getComputedStyle(document.documentElement).getPropertyValue('--street-sync-styles-loaded').trim() === '1';
+                  } catch(e) {
+                    return false;
+                  }
+                }
+
+                function recoverStyles(reason) {
+                  if (areStylesLoaded()) return;
+                  console.warn('[StreetSync] Missing styles detected (' + reason + '). Recovering...');
+
+                  // 1. Try waking all stylesheet links by updating href with a wake param
+                  var links = document.querySelectorAll('link[rel="stylesheet"]');
+                  for (var i = 0; i < links.length; i++) {
+                    var link = links[i];
+                    var href = link.href.split('?')[0];
+                    link.href = href + '?wake=' + Date.now();
+                  }
+
+                  // 2. If after 250ms styles are still unapplied, trigger a debounced reload
+                  setTimeout(function() {
+                    if (!areStylesLoaded()) {
+                      try {
+                        var key = 'street_sync_last_wake_reload';
+                        var now = Date.now();
+                        var last = parseInt(sessionStorage.getItem(key) || '0', 10);
+                        if (now - last > 8000) {
+                          sessionStorage.setItem(key, String(now));
                           window.location.reload();
                         }
+                      } catch(err) {
+                        window.location.reload();
                       }
-                    } catch(err) {}
+                    }
+                  }, 250);
+                }
+
+                // Check on DOM ready
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(function() { recoverStyles('domcontentloaded'); }, 150);
+                  });
+                } else {
+                  setTimeout(function() { recoverStyles('initial'); }, 150);
+                }
+
+                // Tab wake-up from background (mobile idle tab restore)
+                document.addEventListener('visibilitychange', function() {
+                  if (document.visibilityState === 'visible') {
+                    setTimeout(function() { recoverStyles('visibilitychange'); }, 150);
+                  }
+                });
+
+                // bfcache / iOS page restoration
+                window.addEventListener('pageshow', function(e) {
+                  setTimeout(function() { recoverStyles('pageshow'); }, 150);
+                });
+
+                window.addEventListener('focus', function() {
+                  setTimeout(function() { recoverStyles('focus'); }, 150);
+                });
+
+                // Resource load errors on link elements
+                window.addEventListener('error', function(e) {
+                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'stylesheet') {
+                    recoverStyles('link_error');
                   }
                 }, true);
               })();

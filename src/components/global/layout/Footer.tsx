@@ -10,6 +10,7 @@ export function Footer() {
 
   useEffect(() => {
     const fetchSolPrice = async () => {
+      if (typeof document !== "undefined" && document.hidden) return;
       try {
         const response = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=SOLUSDT');
         const data = await response.json();

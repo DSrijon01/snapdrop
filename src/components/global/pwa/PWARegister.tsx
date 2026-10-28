@@ -92,25 +92,43 @@ export function PWARegister() {
     };
 
     // 4. Stylesheet health check: Verify critical styles actually loaded within 2 seconds
-    const styleHealthCheck = setTimeout(() => {
+    const checkStyleHealth = () => {
       try {
         const isLoaded = getComputedStyle(document.documentElement).getPropertyValue("--street-sync-styles-loaded").trim();
         if (!isLoaded || isLoaded !== "1") {
-          console.warn("[PWA] Broken site load detected! Styles not loaded after mount, recovering...");
+          console.warn("[PWA] Broken site load detected! Styles not loaded after mount/wake, recovering...");
           recoverFromChunkError("broken site styles");
         }
       } catch {}
-    }, 2000);
+    };
+
+    const styleHealthCheck = setTimeout(checkStyleHealth, 2000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        setTimeout(checkStyleHealth, 200);
+      }
+    };
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        setTimeout(checkStyleHealth, 200);
+      }
+    };
 
     window.addEventListener("error", handleWindowError);
     window.addEventListener("error", handleCaptureResourceError, true);
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pageshow", handlePageShow);
 
     return () => {
       clearTimeout(styleHealthCheck);
       window.removeEventListener("error", handleWindowError);
       window.removeEventListener("error", handleCaptureResourceError, true);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pageshow", handlePageShow);
     };
   }, []);
 
