@@ -102,15 +102,34 @@ export function PWARegister() {
       } catch {}
     }, 2000);
 
+    // 5. Wake-up health check: Verify styles remain active whenever the tab becomes visible
+    const handleTabWakeUp = () => {
+      if (typeof document !== "undefined" && document.visibilityState === "visible") {
+        setTimeout(() => {
+          try {
+            const isLoaded = getComputedStyle(document.documentElement).getPropertyValue("--street-sync-styles-loaded").trim();
+            if (!isLoaded || isLoaded !== "1") {
+              console.warn("[PWA] Broken site styles on tab resume, recovering...");
+              recoverFromChunkError("broken site styles");
+            }
+          } catch {}
+        }, 150);
+      }
+    };
+
     window.addEventListener("error", handleWindowError);
     window.addEventListener("error", handleCaptureResourceError, true);
     window.addEventListener("unhandledrejection", handleUnhandledRejection);
+    document.addEventListener("visibilitychange", handleTabWakeUp);
+    window.addEventListener("pageshow", handleTabWakeUp);
 
     return () => {
       clearTimeout(styleHealthCheck);
       window.removeEventListener("error", handleWindowError);
       window.removeEventListener("error", handleCaptureResourceError, true);
       window.removeEventListener("unhandledrejection", handleUnhandledRejection);
+      document.removeEventListener("visibilitychange", handleTabWakeUp);
+      window.removeEventListener("pageshow", handleTabWakeUp);
     };
   }, []);
 

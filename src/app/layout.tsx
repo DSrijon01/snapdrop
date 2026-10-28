@@ -67,18 +67,51 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Street Sync" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              /* Defensive Anti-FOUC & WebKit Idle Fallback Styles */
+              .hidden, [hidden] { display: none !important; }
+              html, body { background-color: #000000; color: #ffffff; margin: 0; padding: 0; }
+              img { max-width: 100%; height: auto; }
+            `,
+          }}
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `
               (function() {
-                window.addEventListener('error', function(e) {
-                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'stylesheet') {
-                    console.warn('[StreetSync] Stylesheet load error detected:', e.target.href);
-                    try {
-                      var key = 'street_sync_css_retry';
+                function areStylesActive() {
+                  try {
+                    var val = window.getComputedStyle(document.documentElement).getPropertyValue('--street-sync-styles-loaded');
+                    return Boolean(val && val.trim() === '1');
+                  } catch (e) {
+                    return false;
+                  }
+                }
+
+                function restoreStylesIfBroken() {
+                  if (areStylesActive()) return;
+
+                  console.warn('[StreetSync] Idle tab wake-up: Detached styles detected. Restoring...');
+
+                  // 1. Fast-Path: Touch & re-link Next.js stylesheets with timestamp query
+                  var links = document.querySelectorAll('link[rel="stylesheet"]');
+                  for (var i = 0; i < links.length; i++) {
+                    var link = links[i];
+                    if (link.href && link.href.indexOf('/_next/static/css/') !== -1) {
+                      var cleanHref = link.href.split('?')[0];
+                      link.href = cleanHref + '?wake=' + Date.now();
+                    }
+                  }
+
+                  // 2. Safety Fallback: If touching link tags did not re-resolve styles within 150ms, do clean reload
+                  setTimeout(function() {
+                    if (!areStylesActive()) {
+                      var key = 'street_sync_idle_reload';
                       var now = Date.now();
                       var last = parseInt(sessionStorage.getItem(key) || '0', 10);
-                      if (now - last > 15000) {
+                      if (now - last > 5000) {
                         sessionStorage.setItem(key, String(now));
                         if (window.caches && caches.keys) {
                           caches.keys().then(function(keys) {
@@ -90,9 +123,36 @@ export default function RootLayout({
                           window.location.reload();
                         }
                       }
-                    } catch(err) {}
+                    }
+                  }, 150);
+                }
+
+                // A. Resource error listener (e.g. 404 or network drop on <link>)
+                window.addEventListener('error', function(e) {
+                  if (e.target && e.target.tagName === 'LINK' && e.target.rel === 'stylesheet') {
+                    console.warn('[StreetSync] Stylesheet load error detected:', e.target.href);
+                    restoreStylesIfBroken();
                   }
                 }, true);
+
+                // B. Listen for background tab wake-up (Page Visibility API)
+                document.addEventListener('visibilitychange', function() {
+                  if (document.visibilityState === 'visible') {
+                    restoreStylesIfBroken();
+                  }
+                });
+
+                // C. Listen for iOS WebKit Back-Forward Cache (bfcache) restoration
+                window.addEventListener('pageshow', function(e) {
+                  if (e.persisted) {
+                    restoreStylesIfBroken();
+                  }
+                });
+
+                // D. Listen for window refocus
+                window.addEventListener('focus', function() {
+                  restoreStylesIfBroken();
+                });
               })();
             `,
           }}
