@@ -134,11 +134,6 @@ async function main() {
   }
 
   const outputPath = path.join(outputDir, 'securities.json');
-  if (assets.length === 0 && fs.existsSync(outputPath)) {
-    console.warn(`[Fetch Securities] Fetched 0 assets (possibly offline or rate-limited). Preserving existing ${outputPath}`);
-    return;
-  }
-
   fs.writeFileSync(outputPath, JSON.stringify({
     updatedAt: new Date().toISOString(),
     total: assets.length,
