@@ -103,7 +103,7 @@ export const SubscriptionBadge: React.FC<{
 }> = ({ expiresAt, isCancelled, onClick, className = "" }) => {
   const timer = useSubscriptionTimer(expiresAt);
 
-  if (timer.isExpired) {
+  if (timer.isExpired || isCancelled) {
     return (
       <span
         onClick={onClick}
@@ -193,7 +193,7 @@ export const ProStatusBar: React.FC<{
   const active = hasAccess(moduleId);
   const timer = useSubscriptionTimer(sub?.expiresAt || null);
 
-  if (!active || !sub?.expiresAt) return null;
+  if (!active || !sub?.expiresAt || sub?.isCancelled) return null;
 
   return (
     <div

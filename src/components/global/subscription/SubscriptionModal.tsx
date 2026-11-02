@@ -23,6 +23,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { SubscriptionCountdownCards } from "@/components/global/subscription/SubscriptionCountdown";
+import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 
 export const SubscriptionModal: React.FC = () => {
   const {
@@ -42,9 +43,11 @@ export const SubscriptionModal: React.FC = () => {
 
   const moduleName = activeModuleId ? (MODULE_NAMES[activeModuleId] || "Selected Module") : "Selected Module";
   const sub = activeModuleId ? subscriptions[activeModuleId] : undefined;
-  const isSubscribed = sub?.isSubscribed || false;
+  const isSubscribed = Boolean(sub?.isSubscribed && !sub?.isCancelled && (!sub?.expiresAt || sub.expiresAt > Date.now()));
   const expiresAtDate = sub?.expiresAt ? new Date(sub.expiresAt) : null;
   const currentPlan = SUBSCRIPTION_PLANS[selectedPlanId];
+
+  const isWalletConnected = connected || (typeof window !== "undefined" && (Boolean(getStoredPhantomSession()) || Boolean(localStorage.getItem("streetsync_solana_auth_user"))));
 
   const handleClose = () => {
     setShowCancelConfirm(false);
@@ -54,21 +57,21 @@ export const SubscriptionModal: React.FC = () => {
 
   // Auto-resolve: if transaction finishes and isSubscribed turns true while submitting, immediately finish & route
   React.useEffect(() => {
-    if (submitting && isSubscribed && activeModuleId) {
+    if (submitting && isSubscribed && activeModuleId && !showCancelConfirm) {
       toast.dismiss();
       setSubmitting(false);
       handleClose();
       const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
       router.push(proPath);
     }
-  }, [isSubscribed, submitting, activeModuleId, router]);
+  }, [isSubscribed, submitting, activeModuleId, router, showCancelConfirm]);
 
   // Listen for global subscription update events to dismiss modal and route to Pro
   React.useEffect(() => {
     const handleSubUpdated = (e: any) => {
       const detail = e?.detail;
       const targetMod = (detail && typeof detail.moduleId === "string") ? detail.moduleId : activeModuleId;
-      if (detail && detail.isSubscribed && targetMod && targetMod === activeModuleId) {
+      if (detail && detail.isSubscribed && !detail.isCancelled && targetMod && targetMod === activeModuleId) {
         toast.dismiss();
         setSubmitting(false);
         handleClose();
@@ -84,22 +87,38 @@ export const SubscriptionModal: React.FC = () => {
 
   const handleSubscribe = async () => {
     setSubmitting(true);
-    const success = await subscribe(activeModuleId, selectedPlanId);
-    setSubmitting(false);
-    toast.dismiss();
-    if (success || subscriptions[activeModuleId]?.isSubscribed) {
-      handleClose();
-      const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
-      router.push(proPath);
+    try {
+      const success = await subscribe(activeModuleId, selectedPlanId);
+      if (success || (subscriptions[activeModuleId]?.isSubscribed && !subscriptions[activeModuleId]?.isCancelled)) {
+        handleClose();
+        const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+        router.push(proPath);
+      }
+    } catch (err) {
+      console.error("Subscription error:", err);
+    } finally {
+      setSubmitting(false);
+      toast.dismiss();
     }
   };
 
   const executeCancel = async () => {
+    if (!activeModuleId) {
+      handleClose();
+      return;
+    }
     setSubmitting(true);
-    await cancelSubscription(activeModuleId);
-    setSubmitting(false);
-    toast.dismiss();
-    handleClose();
+    try {
+      await cancelSubscription(activeModuleId);
+    } catch (err) {
+      console.error("Cancel failed:", err);
+      toast.error("Failed to cancel subscription.");
+    } finally {
+      setSubmitting(false);
+      setShowCancelConfirm(false);
+      toast.dismiss();
+      handleClose();
+    }
   };
 
   return (
@@ -315,7 +334,7 @@ export const SubscriptionModal: React.FC = () => {
 
                   {/* Actions Section */}
                   <div className="pt-3 border-t border-border/40 space-y-2.5">
-                    {!connected ? (
+                    {!isWalletConnected ? (
                       <div className="flex flex-col items-center gap-2.5">
                         <p className="text-[11px] text-muted-foreground uppercase font-mono text-center">
                           Connect wallet to subscribe on Solana

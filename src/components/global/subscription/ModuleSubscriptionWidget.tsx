@@ -6,6 +6,7 @@ import { useSubscription } from "@/context/SubscriptionContext";
 import { useWallet } from "@solana/wallet-adapter-react";
 import Link from "next/link";
 import { SubscriptionBadge } from "@/components/global/subscription/SubscriptionCountdown";
+import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 
 interface ModuleSubscriptionWidgetProps {
   moduleId: string;
@@ -15,7 +16,9 @@ export const ModuleSubscriptionWidget: React.FC<ModuleSubscriptionWidgetProps> =
   const { subscriptions, hasAccess, openSubscriptionModal } = useSubscription();
   const { connected } = useWallet();
 
-  if (!connected) return null;
+  const isWalletConnected = connected || (typeof window !== "undefined" && (Boolean(getStoredPhantomSession()) || Boolean(localStorage.getItem("streetsync_solana_auth_user"))));
+
+  if (!isWalletConnected) return null;
 
   const sub = subscriptions[moduleId];
   const active = hasAccess(moduleId);

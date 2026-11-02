@@ -368,6 +368,7 @@ export function recordActionSuccess(type: PendingActionType, data: any, signatur
                     planId: data.planId,
                 };
                 try {
+                    localStorage.removeItem(`street_sync_cancelled_${data.walletKey}_${data.moduleId}`);
                     localStorage.setItem(
                         `street_sync_sub_${data.walletKey}_${data.moduleId}`,
                         JSON.stringify(subDetails)

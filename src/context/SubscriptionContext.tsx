@@ -10,6 +10,7 @@ import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
 import { savePendingAction } from "@/utils/pendingTransactions";
 import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
+import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 import { db } from "@/lib/l2database/config";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import {
@@ -95,6 +96,25 @@ export const MODULE_NAMES: Record<string, string> = {
   "sessions": "Sessions Board",
 };
 
+// Helper to resolve active wallet key across desktop wallet adapter, Phantom mobile session, and SIWS auth
+export const getEffectiveWalletAddress = (adapterPublicKey?: PublicKey | null): string | null => {
+  if (adapterPublicKey) return adapterPublicKey.toBase58();
+  if (typeof window !== "undefined") {
+    try {
+      const session = getStoredPhantomSession();
+      if (session?.publicKey) return session.publicKey;
+    } catch {}
+    try {
+      const authUserStr = localStorage.getItem("streetsync_solana_auth_user");
+      if (authUserStr) {
+        const authUser = JSON.parse(authUserStr);
+        if (authUser?.walletAddress) return authUser.walletAddress;
+      }
+    } catch {}
+  }
+  return null;
+};
+
 // Helper to safely write to localStorage, clearing oversized simulated feed logs if quota is full
 const safeLocalStorageSet = (key: string, value: string) => {
   try {
@@ -147,13 +167,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Load subscriptions for the active wallet
   const loadSubscriptions = useCallback(() => {
-    if (!publicKey) {
+    const effectiveWallet = getEffectiveWalletAddress(publicKey);
+    if (!effectiveWallet) {
       setSubscriptions({});
       setLoading(false);
       return;
     }
 
-    const walletKey = publicKey.toBase58();
+    const walletKey = effectiveWallet;
     const cached = walletSubCache.current[walletKey];
     if (cached) {
       setSubscriptions(cached);
@@ -166,16 +187,28 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     Object.keys(MODULE_NAMES).forEach((moduleId) => {
       try {
+        const cancelledAtStr = localStorage.getItem(`street_sync_cancelled_${walletKey}_${moduleId}`);
+        if (cancelledAtStr) {
+          loadedSubs[moduleId] = {
+            moduleId,
+            isSubscribed: false,
+            expiresAt: null,
+            isCancelled: true,
+            txSignature: null,
+          };
+          return;
+        }
+
         const stored = localStorage.getItem(`street_sync_sub_${walletKey}_${moduleId}`);
         if (stored) {
           const parsed = JSON.parse(stored);
           const now = Date.now();
-          if (parsed.expiresAt && now > parsed.expiresAt) {
+          if (parsed.isCancelled || (parsed.expiresAt && now > parsed.expiresAt)) {
             loadedSubs[moduleId] = {
               moduleId,
               isSubscribed: false,
               expiresAt: null,
-              isCancelled: false,
+              isCancelled: Boolean(parsed.isCancelled),
               txSignature: null,
               planId: parsed.planId,
             };
@@ -202,12 +235,28 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setLoading(false);
 
     // In background, verify and sync on-chain & cloud subscriptions across any browser/device
-    if (!isDemo && publicKey) {
-      syncWalletSubscriptions(connection, publicKey)
+    let effectivePubkey: PublicKey | null = publicKey;
+    if (!effectivePubkey && effectiveWallet) {
+      try {
+        effectivePubkey = new PublicKey(effectiveWallet);
+      } catch {}
+    }
+
+    if (!isDemo && effectivePubkey) {
+      syncWalletSubscriptions(connection, effectivePubkey)
         .then((onChainSubs) => {
           if (Object.keys(onChainSubs).length > 0) {
             setSubscriptions((prev) => {
-              const merged = { ...prev, ...onChainSubs };
+              const filteredOnChain: Record<string, Subscription> = {};
+              Object.entries(onChainSubs).forEach(([mod, sub]) => {
+                const isCancelledLocally = Boolean(
+                  localStorage.getItem(`street_sync_cancelled_${walletKey}_${mod}`)
+                );
+                if (!isCancelledLocally) {
+                  filteredOnChain[mod] = sub;
+                }
+              });
+              const merged = { ...prev, ...filteredOnChain };
               walletSubCache.current[walletKey] = merged;
               return merged;
             });
@@ -390,6 +439,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
             planId: pendingAction.planId,
           };
 
+          localStorage.removeItem(`street_sync_cancelled_${pendingAction.walletKey}_${pendingAction.moduleId}`);
           safeLocalStorageSet(
             `street_sync_sub_${pendingAction.walletKey}_${pendingAction.moduleId}`,
             JSON.stringify(subDetails)
@@ -510,6 +560,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           };
 
           try {
+            localStorage.removeItem(`street_sync_cancelled_${walletKey}_${moduleId}`);
             safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
             setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
             toast.dismiss(toastId);
@@ -623,6 +674,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         planId,
       };
 
+      localStorage.removeItem(`street_sync_cancelled_${walletKey}_${moduleId}`);
       safeLocalStorageSet(`street_sync_sub_${walletKey}_${moduleId}`, JSON.stringify(subDetails));
       setSubscriptions((prev) => ({ ...prev, [moduleId]: subDetails }));
       localStorage.removeItem("street_sync_pending_subscription");
@@ -677,11 +729,28 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Cancel/Unsubscribe subscription immediately
   const cancelSubscription = async (moduleId: string): Promise<boolean> => {
-    if (!publicKey) return false;
+    const effectiveWallet = getEffectiveWalletAddress(publicKey);
+    if (!effectiveWallet) {
+      toast.error("Please connect your wallet first.");
+      return false;
+    }
     
-    const walletKey = publicKey.toBase58();
+    const walletKey = effectiveWallet;
     const currentSub = subscriptions[moduleId];
-    if (!currentSub || !currentSub.isSubscribed) {
+
+    // Check if stored in localStorage even if state not yet updated
+    let storedSub: any = null;
+    try {
+      const stored = localStorage.getItem(`street_sync_sub_${walletKey}_${moduleId}`);
+      if (stored) storedSub = JSON.parse(stored);
+    } catch {}
+
+    const isActive = Boolean(
+      (currentSub?.isSubscribed && !currentSub?.isCancelled) ||
+      (storedSub?.isSubscribed && !storedSub?.isCancelled)
+    );
+
+    if (!isActive && (!currentSub || !currentSub.isSubscribed)) {
       toast.error("No active subscription found.");
       return false;
     }
@@ -691,25 +760,60 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         moduleId,
         isSubscribed: false,
         expiresAt: null,
-        isCancelled: false,
+        isCancelled: true,
         txSignature: null,
       };
 
-      localStorage.removeItem(`street_sync_sub_${walletKey}_${moduleId}`);
-      setSubscriptions((prev) => ({ ...prev, [moduleId]: updatedDetails }));
-
-      // Persist cancellation to Firestore so all browsers reflect termination
+      // 1. Remove active subscription & pending subscriptions from localStorage
       try {
-        await updateDoc(doc(db, "subscriptions", `${walletKey}_${moduleId}`), {
-          isCancelled: true,
-          expiresAt: Date.now(),
-          updatedAt: Date.now(),
-        });
+        localStorage.removeItem(`street_sync_sub_${walletKey}_${moduleId}`);
+        localStorage.removeItem("street_sync_pending_subscription");
+        localStorage.removeItem("street_sync_last_signed_tx");
+        localStorage.removeItem("street_sync_last_tx_signature");
+        // Record cancellation tombstone so on-chain memo scan does not resurrect it
+        localStorage.setItem(`street_sync_cancelled_${walletKey}_${moduleId}`, String(Date.now()));
+      } catch (storageErr) {
+        console.warn("Storage write note:", storageErr);
+      }
+
+      // 2. Immediately update state and in-memory cache
+      setSubscriptions((prev) => ({ ...prev, [moduleId]: updatedDetails }));
+      if (walletSubCache.current[walletKey]) {
+        walletSubCache.current[walletKey][moduleId] = updatedDetails;
+      }
+
+      // 3. Dispatch global events so all components, widgets, modals and pro pages update immediately
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("subscription_updated", { detail: updatedDetails }));
+        window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
+        window.dispatchEvent(new Event("storage"));
+      }
+
+      // 4. Persist cancellation to Firestore with safe timeout so network never blocks UX
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error("Firestore timeout")), 2500)
+        );
+        await Promise.race([
+          setDoc(
+            doc(db, "subscriptions", `${walletKey}_${moduleId}`),
+            {
+              walletAddress: walletKey,
+              moduleId,
+              isSubscribed: false,
+              isCancelled: true,
+              expiresAt: Date.now(),
+              updatedAt: Date.now(),
+            },
+            { merge: true }
+          ),
+          timeoutPromise,
+        ]);
       } catch (fsErr) {
         console.warn("Firestore subscription cancel note:", fsErr);
       }
 
-      toast.success(`Unsubscribed from ${MODULE_NAMES[moduleId]} successfully. Access has been terminated.`);
+      toast.success(`Unsubscribed from ${MODULE_NAMES[moduleId] || moduleId} successfully. Access terminated.`);
       return true;
     } catch (e) {
       console.error("Failed to unsubscribe:", e);
@@ -721,12 +825,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Check access
   const hasAccess = useCallback((moduleId: string): boolean => {
     // Platform Merchant / Admin wallet always has universal Pro access across any browser
-    if (publicKey && publicKey.toBase58() === MERCHANT_WALLET) {
+    const effectiveWallet = getEffectiveWalletAddress(publicKey);
+    if (effectiveWallet === MERCHANT_WALLET) {
       return true;
     }
     const sub = subscriptions[moduleId];
     if (!sub) return false;
     if (!sub.isSubscribed) return false;
+    if (sub.isCancelled) return false;
     if (sub.expiresAt && Date.now() > sub.expiresAt) return false;
     return true;
   }, [subscriptions, publicKey]);

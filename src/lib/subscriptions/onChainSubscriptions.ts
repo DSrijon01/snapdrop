@@ -68,22 +68,52 @@ export async function syncWalletSubscriptions(
 
     snapshot.forEach((docSnap) => {
       const data = docSnap.data();
-      if (data && data.moduleId && data.expiresAt && data.expiresAt > now) {
-        resolvedSubs[data.moduleId] = {
-          moduleId: data.moduleId,
-          isSubscribed: true,
-          expiresAt: data.expiresAt,
-          isCancelled: Boolean(data.isCancelled),
-          txSignature: data.txSignature || null,
-          planId: data.planId || "30days",
-        };
-        try {
-          localStorage.setItem(
-            `street_sync_sub_${walletKey}_${data.moduleId}`,
-            JSON.stringify(resolvedSubs[data.moduleId])
-          );
-        } catch (e) {
-          // ignore storage error
+      if (data && data.moduleId) {
+        if (data.isCancelled || data.isSubscribed === false) {
+          resolvedSubs[data.moduleId] = {
+            moduleId: data.moduleId,
+            isSubscribed: false,
+            expiresAt: null,
+            isCancelled: true,
+            txSignature: data.txSignature || null,
+            planId: data.planId || "30days",
+          };
+          try {
+            localStorage.removeItem(`street_sync_sub_${walletKey}_${data.moduleId}`);
+            localStorage.setItem(
+              `street_sync_cancelled_${walletKey}_${data.moduleId}`,
+              String(data.updatedAt || now)
+            );
+          } catch (e) {}
+          return;
+        }
+
+        if (data.expiresAt && data.expiresAt > now) {
+          const cancelledAtStr = typeof window !== "undefined"
+            ? localStorage.getItem(`street_sync_cancelled_${walletKey}_${data.moduleId}`)
+            : null;
+          const cancelledAt = cancelledAtStr ? Number(cancelledAtStr) : 0;
+          if (cancelledAt && cancelledAt >= (data.updatedAt || 0)) {
+            // Local cancellation is newer than this Firestore subscription
+            return;
+          }
+
+          resolvedSubs[data.moduleId] = {
+            moduleId: data.moduleId,
+            isSubscribed: true,
+            expiresAt: data.expiresAt,
+            isCancelled: false,
+            txSignature: data.txSignature || null,
+            planId: data.planId || "30days",
+          };
+          try {
+            localStorage.setItem(
+              `street_sync_sub_${walletKey}_${data.moduleId}`,
+              JSON.stringify(resolvedSubs[data.moduleId])
+            );
+          } catch (e) {
+            // ignore storage error
+          }
         }
       }
     });
@@ -110,6 +140,17 @@ export async function syncWalletSubscriptions(
             const planId = parts[2] as SubscriptionPlanId;
             const expiresAt = Number(parts[3]);
 
+            const cancelledAtStr = typeof window !== "undefined"
+              ? localStorage.getItem(`street_sync_cancelled_${walletKey}_${modId}`)
+              : null;
+            const cancelledAt = cancelledAtStr ? Number(cancelledAtStr) : 0;
+            const isCancelledInFirestore = resolvedSubs[modId]?.isCancelled === true;
+
+            // If user explicitly cancelled this subscription, DO NOT resurrect it from on-chain history!
+            if (cancelledAt > 0 || isCancelledInFirestore) {
+              continue;
+            }
+
             if (expiresAt && expiresAt > now && (!resolvedSubs[modId] || (resolvedSubs[modId].expiresAt || 0) < expiresAt)) {
               const subObj: Subscription = {
                 moduleId: modId,
@@ -130,14 +171,20 @@ export async function syncWalletSubscriptions(
 
               // Also persist to Firestore to speed up other browsers
               try {
-                await setDoc(doc(db, "subscriptions", `${walletKey}_${modId}`), {
-                  walletAddress: walletKey,
-                  moduleId: modId,
-                  planId,
-                  expiresAt,
-                  txSignature: sigInfo.signature,
-                  updatedAt: now,
-                });
+                await setDoc(
+                  doc(db, "subscriptions", `${walletKey}_${modId}`),
+                  {
+                    walletAddress: walletKey,
+                    moduleId: modId,
+                    planId,
+                    expiresAt,
+                    txSignature: sigInfo.signature,
+                    isCancelled: false,
+                    isSubscribed: true,
+                    updatedAt: now,
+                  },
+                  { merge: true }
+                );
               } catch (fsSyncErr) {
                 console.warn("[syncWalletSubscriptions] Background Firestore persist note:", fsSyncErr);
               }
