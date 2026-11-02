@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Clock,
   Check,
+  Smartphone,
 } from "lucide-react";
 import {
   useSubscription,
@@ -23,7 +24,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { SubscriptionCountdownCards } from "@/components/global/subscription/SubscriptionCountdown";
-import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
+import { getStoredPhantomSession, openInPhantomBrowser } from "@/lib/wallet/phantomDeeplink";
 
 export const SubscriptionModal: React.FC = () => {
   const {
@@ -388,6 +389,25 @@ export const SubscriptionModal: React.FC = () => {
                         </span>
                       </button>
                     )}
+
+                    {/* Phantom In-App Browser Direct Fallback for mobile browsers */}
+                    {typeof window !== "undefined" &&
+                      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+                      !Boolean((window as any).phantom?.solana) && (
+                        <div className="pt-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleClose();
+                              openInPhantomBrowser();
+                            }}
+                            className="text-[11px] font-mono text-muted-foreground hover:text-primary transition-colors inline-flex items-center justify-center gap-1.5 mx-auto py-1 px-2 rounded-lg hover:bg-muted/50"
+                          >
+                            <Smartphone className="w-3.5 h-3.5 text-primary" />
+                            <span>Having issues with deep links? Open in Phantom Browser</span>
+                          </button>
+                        </div>
+                      )}
                   </div>
                 </div>
               </>

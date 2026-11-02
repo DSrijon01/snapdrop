@@ -219,7 +219,12 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     }
 
     if (!this.connected || !this._publicKey) {
-      throw new Error("Wallet not connected");
+      const stored = getStoredPhantomSession();
+      if (stored && stored.publicKey) {
+        this._publicKey = new PublicKey(stored.publicKey);
+      } else {
+        throw new Error("Wallet not connected");
+      }
     }
 
     const session = getStoredPhantomSession();
@@ -311,7 +316,12 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     }
 
     if (!this.connected || !this._publicKey) {
-      throw new Error("Wallet not connected");
+      const stored = getStoredPhantomSession();
+      if (stored && stored.publicKey) {
+        this._publicKey = new PublicKey(stored.publicKey);
+      } else {
+        throw new Error("Wallet not connected");
+      }
     }
 
     const session = getStoredPhantomSession();
@@ -402,7 +412,12 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     }
 
     if (!this.connected || !this._publicKey) {
-      throw new Error("Wallet not connected");
+      const stored = getStoredPhantomSession();
+      if (stored && stored.publicKey) {
+        this._publicKey = new PublicKey(stored.publicKey);
+      } else {
+        throw new Error("Wallet not connected");
+      }
     }
 
     const session = getStoredPhantomSession();

@@ -13,6 +13,8 @@ export interface PhantomMobileSession {
   sharedSecret: string; // Base58 encoded
   connectedAt: number;
   walletType?: "phantom" | "solflare";
+  dappPublicKey?: string; // Base58 encoded dapp encryption public key
+  dappSecretKey?: string; // Base58 encoded dapp encryption secret key
 }
 
 export interface DappKeyPair {
@@ -29,8 +31,20 @@ export function getOrCreateDappKeyPair(): DappKeyPair {
     return nacl.box.keyPair();
   }
 
+  // 1. Check existing session first to ensure key continuity
   try {
-    const raw = localStorage.getItem(DAPP_KEYS_STORAGE_KEY);
+    const existingSession = getStoredPhantomSession();
+    if (existingSession?.dappPublicKey && existingSession?.dappSecretKey) {
+      return {
+        publicKey: bs58.decode(existingSession.dappPublicKey),
+        secretKey: bs58.decode(existingSession.dappSecretKey),
+      };
+    }
+  } catch {}
+
+  // 2. Check localStorage & sessionStorage
+  try {
+    const raw = localStorage.getItem(DAPP_KEYS_STORAGE_KEY) || sessionStorage.getItem(DAPP_KEYS_STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.publicKey && parsed.secretKey) {
@@ -45,14 +59,13 @@ export function getOrCreateDappKeyPair(): DappKeyPair {
   }
 
   const keyPair = nacl.box.keyPair();
+  const serialized = JSON.stringify({
+    publicKey: bs58.encode(keyPair.publicKey),
+    secretKey: bs58.encode(keyPair.secretKey),
+  });
   try {
-    localStorage.setItem(
-      DAPP_KEYS_STORAGE_KEY,
-      JSON.stringify({
-        publicKey: bs58.encode(keyPair.publicKey),
-        secretKey: bs58.encode(keyPair.secretKey),
-      })
-    );
+    localStorage.setItem(DAPP_KEYS_STORAGE_KEY, serialized);
+    sessionStorage.setItem(DAPP_KEYS_STORAGE_KEY, serialized);
   } catch (saveErr) {
     console.warn("[MobileDeeplink] Could not persist dapp keypair:", saveErr);
   }
@@ -74,11 +87,23 @@ export function getStoredPhantomSession(): PhantomMobileSession | null {
 }
 
 /**
- * Disconnects and removes stored Mobile Wallet session.
+ * Disconnects and removes stored Mobile Wallet session and associated stale keys.
  */
 export function disconnectPhantomMobileSession(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(SESSION_STORAGE_KEY);
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(DAPP_KEYS_STORAGE_KEY);
+    sessionStorage.removeItem(DAPP_KEYS_STORAGE_KEY);
+    sessionStorage.removeItem("street_sync_temp_dapp_pubkey");
+    sessionStorage.removeItem("street_sync_temp_dapp_seckey");
+    sessionStorage.removeItem("mobile_wallet_type");
+    localStorage.removeItem("street_sync_pending_subscription");
+    localStorage.removeItem("street_sync_last_signed_tx");
+    localStorage.removeItem("street_sync_last_tx_signature");
+  } catch (e) {
+    console.warn("[MobileDeeplink] Error clearing session storage:", e);
+  }
   window.dispatchEvent(new CustomEvent("phantom_mobile_disconnected"));
 }
 
@@ -101,11 +126,15 @@ export function getMobileRedirectLink(customRedirectUrl?: string): string {
   }
   try {
     const urlObj = new URL(currentUrl);
-    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
+    // If not production domain (e.g. localhost, 127.0.0.1, or local IP), use production domain
+    // so Phantom accepts the universal link and matches app_url
+    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1" || !currentUrl.startsWith("https://")) {
       return `https://streetsync-ss.com${urlObj.pathname}`;
     }
-  } catch {}
-  return currentUrl.split("#")[0].split("?")[0];
+    return currentUrl.split("#")[0].split("?")[0];
+  } catch {
+    return "https://streetsync-ss.com/";
+  }
 }
 
 /**
@@ -148,6 +177,11 @@ export function initiateMobileWalletConnect(
   }
 
   const dappKeyPair = getOrCreateDappKeyPair();
+  try {
+    sessionStorage.setItem("street_sync_temp_dapp_pubkey", bs58.encode(dappKeyPair.publicKey));
+    sessionStorage.setItem("street_sync_temp_dapp_seckey", bs58.encode(dappKeyPair.secretKey));
+  } catch {}
+
   const currentUrl = customRedirectUrl || window.location.href;
   const redirectLink = getMobileRedirectLink(currentUrl);
 
@@ -157,7 +191,8 @@ export function initiateMobileWalletConnect(
   } catch {}
   sessionStorage.setItem("mobile_wallet_type", walletType);
 
-  const appUrl = window.location.origin.startsWith("http")
+  // Phantom strictly requires app_url to be HTTPS and its domain to match redirect_link
+  const appUrl = (typeof window !== "undefined" && window.location.origin.startsWith("https://"))
     ? window.location.origin
     : "https://streetsync-ss.com";
 
@@ -201,7 +236,7 @@ export function initiatePhantomMobileSignMessage(
     throw new Error("Mobile wallet is not connected.");
   }
 
-  const dappKeyPair = getOrCreateDappKeyPair();
+  const dappPubKeyStr = session.dappPublicKey || bs58.encode(getOrCreateDappKeyPair().publicKey);
   const sharedSecret = bs58.decode(session.sharedSecret);
   const nonce = nacl.randomBytes(24);
 
@@ -225,7 +260,7 @@ export function initiatePhantomMobileSignMessage(
   sessionStorage.setItem(PENDING_SIGN_KEY, bs58.encode(messageBytes));
 
   const params = new URLSearchParams({
-    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    dapp_encryption_public_key: dappPubKeyStr,
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
@@ -255,7 +290,7 @@ export function initiatePhantomMobileSignTransaction(
     throw new Error("Mobile wallet is not connected.");
   }
 
-  const dappKeyPair = getOrCreateDappKeyPair();
+  const dappPubKeyStr = session.dappPublicKey || bs58.encode(getOrCreateDappKeyPair().publicKey);
   const sharedSecret = bs58.decode(session.sharedSecret);
   const nonce = nacl.randomBytes(24);
 
@@ -278,7 +313,7 @@ export function initiatePhantomMobileSignTransaction(
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
-    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    dapp_encryption_public_key: dappPubKeyStr,
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
@@ -307,7 +342,7 @@ export function initiatePhantomMobileSignAllTransactions(
     throw new Error("Mobile wallet is not connected.");
   }
 
-  const dappKeyPair = getOrCreateDappKeyPair();
+  const dappPubKeyStr = session.dappPublicKey || bs58.encode(getOrCreateDappKeyPair().publicKey);
   const sharedSecret = bs58.decode(session.sharedSecret);
   const nonce = nacl.randomBytes(24);
 
@@ -330,7 +365,7 @@ export function initiatePhantomMobileSignAllTransactions(
   const redirectLink = getMobileRedirectLink(currentUrl);
 
   const params = new URLSearchParams({
-    dapp_encryption_public_key: bs58.encode(dappKeyPair.publicKey),
+    dapp_encryption_public_key: dappPubKeyStr,
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
@@ -447,6 +482,20 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
     const errMsg = errorMessage || `Error ${errorCode}`;
     console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errMsg}`);
 
+    // If unauthorized (4100), decryption failure, or session expired/invalid (-32603),
+    // the Phantom session is dead/stale. Purge it immediately so the user is never trapped in a bounce loop!
+    const isSessionDead =
+      String(errorCode) === "4100" ||
+      String(errorCode) === "-32603" ||
+      errMsg.toLowerCase().includes("unauthorized") ||
+      errMsg.toLowerCase().includes("session") ||
+      errMsg.toLowerCase().includes("decrypt");
+
+    if (isSessionDead) {
+      console.warn("[MobileDeeplink] Stale/unauthorized mobile session detected. Purging session.");
+      disconnectPhantomMobileSession();
+    }
+
     // Clear pending actions
     localStorage.removeItem("street_sync_pending_subscription");
     localStorage.removeItem("street_sync_pending_nft_buy");
@@ -454,7 +503,7 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
 
     window.dispatchEvent(
       new CustomEvent("phantom_mobile_error", {
-        detail: { error: errMsg, code: errorCode },
+        detail: { error: errMsg, code: errorCode, isSessionDead },
       })
     );
 
@@ -468,11 +517,23 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
   // Case 2: Connect or Sign response returned
   if (nonceStr && dataStr) {
     try {
-      const dappKeyPair = getOrCreateDappKeyPair();
+      let dappKeyPair = getOrCreateDappKeyPair();
       let sharedSecret: Uint8Array;
 
       if (phantomPubKeyStr) {
         // Connect response contains wallet's encryption public key
+        // Recover exact temporary dapp keys used during initiateMobileWalletConnect if available
+        try {
+          const tempPub = sessionStorage.getItem("street_sync_temp_dapp_pubkey");
+          const tempSec = sessionStorage.getItem("street_sync_temp_dapp_seckey");
+          if (tempPub && tempSec) {
+            dappKeyPair = {
+              publicKey: bs58.decode(tempPub),
+              secretKey: bs58.decode(tempSec),
+            };
+          }
+        } catch {}
+
         const phantomPubKey = bs58.decode(phantomPubKeyStr);
         sharedSecret = nacl.box.before(phantomPubKey, dappKeyPair.secretKey);
       } else {
@@ -483,6 +544,12 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           return { handled: false, error: "Missing existing session for decryption." };
         }
         sharedSecret = bs58.decode(existingSession.sharedSecret);
+        if (existingSession.dappPublicKey && existingSession.dappSecretKey) {
+          dappKeyPair = {
+            publicKey: bs58.decode(existingSession.dappPublicKey),
+            secretKey: bs58.decode(existingSession.dappSecretKey),
+          };
+        }
       }
 
       const nonce = bs58.decode(nonceStr);
@@ -491,7 +558,9 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
       const decrypted = nacl.box.open.after(encryptedData, nonce, sharedSecret);
       if (!decrypted) {
         cleanUrl();
-        return { handled: true, type: "error", error: "Failed to decrypt response payload." };
+        console.warn("[MobileDeeplink] Failed to decrypt response payload. Purging stale session.");
+        disconnectPhantomMobileSession();
+        return { handled: true, type: "error", error: "Failed to decrypt response payload. Stale session cleared." };
       }
 
       const payload = JSON.parse(Buffer.from(decrypted).toString("utf8"));
@@ -508,11 +577,18 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           sharedSecret: bs58.encode(sharedSecret),
           connectedAt: Date.now(),
           walletType,
+          dappPublicKey: bs58.encode(dappKeyPair.publicKey),
+          dappSecretKey: bs58.encode(dappKeyPair.secretKey),
         };
 
         localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
         const walletName = walletType === "solflare" ? "Solflare" : "Phantom";
         localStorage.setItem("walletName", JSON.stringify(walletName));
+
+        try {
+          sessionStorage.removeItem("street_sync_temp_dapp_pubkey");
+          sessionStorage.removeItem("street_sync_temp_dapp_seckey");
+        } catch {}
 
         window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
         window.dispatchEvent(

@@ -373,6 +373,20 @@ export function recordActionSuccess(type: PendingActionType, data: any, signatur
                         `street_sync_sub_${data.walletKey}_${data.moduleId}`,
                         JSON.stringify(subDetails)
                     );
+                    // Persist to Firestore asynchronously so the database stays synchronized
+                    import("@/lib/l2database/config").then(({ db }) => {
+                        import("firebase/firestore").then(({ doc, setDoc }) => {
+                            setDoc(doc(db, "subscriptions", `${data.walletKey}_${data.moduleId}`), {
+                                walletAddress: data.walletKey,
+                                moduleId: data.moduleId,
+                                planId: data.planId,
+                                expiresAt: data.expiresAt,
+                                txSignature: signature,
+                                isCancelled: false,
+                                updatedAt: Date.now(),
+                            }).catch((err) => console.warn("[PendingTransactions] Firestore sub save note:", err));
+                        });
+                    }).catch(() => {});
                 } catch (e) {
                     console.warn("[PendingTransactions] Storage warning on subscription write:", e);
                 }

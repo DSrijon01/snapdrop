@@ -377,6 +377,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
 
       if (isAlreadyActive) {
+        if (!subscriptions[pendingAction.moduleId]?.isSubscribed && existingStored) {
+          try {
+            const parsedStored = JSON.parse(existingStored);
+            setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: parsedStored }));
+          } catch {}
+        }
         localStorage.removeItem("street_sync_pending_subscription");
         localStorage.removeItem("street_sync_last_signed_tx");
         localStorage.removeItem("street_sync_last_tx_signature");
@@ -510,7 +516,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     handlePendingMobileSubscription();
     window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
     window.addEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
-    const handleSubUpdated = () => {
+    const handleSubUpdated = (e: any) => {
+      const detail = e?.detail;
+      if (detail && detail.moduleId) {
+        setSubscriptions((prev) => ({ ...prev, [detail.moduleId]: detail }));
+      }
       loadSubscriptions();
     };
     const handleCloseAll = () => {
@@ -529,14 +539,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   // Subscribe function with selected plan
   const subscribe = async (moduleId: string, planId: SubscriptionPlanId = "30days"): Promise<boolean> => {
-    if (!publicKey) {
+    const effectiveWallet = getEffectiveWalletAddress(publicKey);
+    if (!effectiveWallet) {
       toast.error("Please connect your wallet first.");
       return false;
     }
 
+    const userPubkey = publicKey || new PublicKey(effectiveWallet);
     const selectedPlan = SUBSCRIPTION_PLANS[planId] || SUBSCRIPTION_PLANS["30days"];
     const durationMs = selectedPlan.durationDays * 24 * 60 * 60 * 1000;
-    const walletKey = publicKey.toBase58();
+    const walletKey = effectiveWallet;
     const currentSub = subscriptions[moduleId];
 
     // If already active and extending, add on top of remaining time
@@ -576,7 +588,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     // Real Solana transaction flow
-    const isBalanceOk = await checkSolBalance(publicKey, selectedPlan.priceSol, connection, () => {
+    const isBalanceOk = await checkSolBalance(userPubkey, selectedPlan.priceSol, connection, () => {
       // Re-trigger load to sync local state balances
       loadSubscriptions();
     });
@@ -590,19 +602,19 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 100_000 }))
         .add(
           SystemProgram.transfer({
-            fromPubkey: publicKey,
+            fromPubkey: userPubkey,
             toPubkey: new PublicKey(MERCHANT_WALLET),
             lamports: selectedPlan.lamports,
           })
         )
         .add(
-          createSubscriptionMemoInstruction(publicKey, moduleId, planId, expiresAt)
+          createSubscriptionMemoInstruction(userPubkey, moduleId, planId, expiresAt)
         );
 
       // Fetch fresh blockhash
       const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash("confirmed");
       transaction.recentBlockhash = blockhash;
-      transaction.feePayer = publicKey;
+      transaction.feePayer = userPubkey;
 
       // Persist pending subscription state for mobile deeplink return resilience
       const targetProRoute = `/${moduleId}/${moduleId.replace(/-/g, "")}-pro`;
