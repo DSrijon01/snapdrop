@@ -6,19 +6,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, 
   ShieldAlert, 
-  Sparkles, 
   Zap, 
   CheckCircle2, 
   TrendingUp, 
-  Newspaper, 
-  Info, 
   X,
-  Share2,
-  Calendar,
-  Layers,
-  ChevronRight,
-  Flame,
-  Activity
+  Layers
 } from "lucide-react";
 import Link from "next/link";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
@@ -78,7 +70,7 @@ export function MarketNewsPro() {
 
   if (!isMounted || loading) {
     return (
-      <div className="flex h-screen w-full bg-background items-center justify-center text-muted-foreground animate-pulse font-mono uppercase tracking-widest text-xs">
+      <div className="flex h-screen w-full bg-white items-center justify-center text-slate-500 animate-pulse font-mono uppercase tracking-widest text-xs">
         Initializing Market News Pro Environment...
       </div>
     );
@@ -88,28 +80,28 @@ export function MarketNewsPro() {
   const isUnlocked = access || simulatedSubscribe;
 
   return (
-    <div className="min-h-screen bg-background text-foreground pb-24 relative overflow-x-hidden flex flex-col items-center">
-      {/* Background Neon glows */}
-      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/3 left-1/4 w-[28rem] h-[28rem] bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+    <div className="min-h-screen bg-white text-slate-900 pb-24 relative overflow-x-hidden flex flex-col items-center">
+      {/* Background Soft Ambient Light Gradients */}
+      <div className="absolute top-0 right-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute bottom-1/3 left-1/4 w-[28rem] h-[28rem] bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* ----------------------------------------------------
-          PRO LOCAL NAVBAR (Mobile-Optimized & Scaled)
+          PRO LOCAL NAVBAR (Clean, White Supreme Theme)
           ---------------------------------------------------- */}
-      <nav className="w-full h-14 border-b border-border bg-card/70 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 sticky top-0">
+      <nav className="w-full h-14 border-b border-slate-200 bg-white/95 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between shrink-0 z-30 sticky top-0 shadow-xs">
         
         {/* Left: Back Link & Brand */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/market-news"
-            className="flex items-center gap-1 text-xs font-mono uppercase text-muted-foreground hover:text-primary transition-colors py-1 px-2 rounded-lg hover:bg-muted shrink-0"
+            className="flex items-center gap-1 text-xs font-mono uppercase text-slate-600 hover:text-primary transition-colors py-1 px-2 rounded-lg hover:bg-slate-100 shrink-0 font-bold"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Back</span>
           </Link>
 
           <div className="flex items-center gap-1.5 truncate">
-            <span className="hidden sm:inline-block text-xs font-black font-display tracking-widest uppercase italic transform -skew-x-6 text-foreground select-none">
+            <span className="hidden sm:inline-block text-xs font-black font-display tracking-widest uppercase italic transform -skew-x-6 text-black select-none">
               STREET SYNC
             </span>
             <span className="text-[9px] sm:text-[10px] font-mono text-primary font-black uppercase tracking-wider bg-primary/10 px-1.5 sm:px-2 py-0.5 rounded truncate flex items-center gap-1">
@@ -123,17 +115,17 @@ export function MarketNewsPro() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setShowSentimentModal(true)}
-            className="flex items-center gap-1 py-1 px-2.5 rounded-lg bg-secondary/80 hover:bg-secondary border border-border text-[11px] font-mono text-muted-foreground hover:text-foreground cursor-pointer transition-colors"
+            className="flex items-center gap-1 py-1 px-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-[11px] font-mono text-slate-800 font-bold cursor-pointer transition-colors shadow-sm"
             title="7-Day NLP Sentiment Breakdown"
           >
-            <TrendingUp className="w-3 h-3 text-emerald-400" />
+            <TrendingUp className="w-3 h-3 text-emerald-600" />
             <span className="hidden xs:inline">7D NLP</span>
           </button>
 
           {!access && (
             <button
               onClick={() => openSubscriptionModal("market-news")}
-              className="py-1 px-3 bg-primary hover:opacity-90 text-primary-foreground font-mono text-[11px] font-bold uppercase rounded-lg shadow-sm transition-all"
+              className="py-1 px-3 bg-primary hover:opacity-90 text-white font-mono text-[11px] font-black uppercase rounded-lg shadow-sm transition-all"
             >
               Unlock Pro
             </button>
@@ -150,33 +142,33 @@ export function MarketNewsPro() {
         <AnimatePresence mode="wait">
           {!isUnlocked ? (
             /* ====================================================
-               LOCKED PAYWALL SCREEN (Mobile & Android Optimized)
+               LOCKED PAYWALL SCREEN (Bright White Theme)
                ==================================================== */
             <motion.div
               key="locked"
               initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
-              className="max-w-lg w-full mx-auto my-6 bg-card/60 backdrop-blur-xl border border-border/90 rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center shadow-2xl relative overflow-hidden"
+              className="max-w-lg w-full mx-auto my-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-5 sm:p-8 text-center shadow-xl relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 w-28 h-28 bg-primary/10 rounded-full blur-2xl pointer-events-none" />
 
-              <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-4">
+              <div className="w-14 h-14 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-red-600 mx-auto mb-4">
                 <ShieldAlert size={28} />
               </div>
 
-              <h2 className="text-xl sm:text-2xl font-black font-display uppercase tracking-tight text-foreground mb-1.5">
+              <h2 className="text-xl sm:text-2xl font-black font-sans uppercase tracking-tight text-slate-950 mb-1.5">
                 Market News Pro Required
               </h2>
-              <p className="text-muted-foreground text-xs font-mono uppercase tracking-wide mb-5">
+              <p className="text-slate-500 text-xs font-mono uppercase tracking-wide mb-5">
                 Interactive Event Visualizer & Correlation Engine
               </p>
 
-              <div className="bg-muted/30 border border-border/60 rounded-2xl p-4 mb-5 text-left space-y-3 font-sans">
-                <p className="text-xs text-muted-foreground leading-relaxed">
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 mb-5 text-left space-y-3 font-sans">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   Subscribe to Market News Pro starting from <strong>0.1 SOL</strong> (1 Day, 7 Days, or 30 Days) to unlock:
                 </p>
-                <ul className="space-y-2 text-xs font-mono uppercase text-foreground/90">
+                <ul className="space-y-2 text-xs font-mono uppercase text-slate-800 font-bold">
                   <li className="flex items-center gap-2">
                     <CheckCircle2 className="w-3.5 h-3.5 text-primary shrink-0" />
                     <span>Interactive node correlation visualizer</span>
@@ -199,7 +191,7 @@ export function MarketNewsPro() {
               <div className="space-y-2.5">
                 <button
                   onClick={() => openSubscriptionModal("market-news")}
-                  className="w-full py-3.5 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] transition-all rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-primary/20 cursor-pointer"
+                  className="w-full py-3.5 bg-primary text-white hover:bg-primary/90 transition-all rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-primary/20 cursor-pointer"
                 >
                   Choose Plan & Unlock Pro
                 </button>
@@ -210,14 +202,14 @@ export function MarketNewsPro() {
                     setSimulatedSubscribe(true);
                     toast.success("Developer Preview: Pro Visualizer unlocked");
                   }}
-                  className="w-full py-2 bg-secondary text-muted-foreground hover:text-foreground hover:bg-muted transition-colors rounded-xl font-bold uppercase tracking-wider text-[10px] cursor-pointer"
+                  className="w-full py-2 bg-slate-100 text-slate-700 hover:text-slate-950 hover:bg-slate-200 transition-colors rounded-xl font-bold uppercase tracking-wider text-[10px] cursor-pointer"
                 >
                   Simulate Unlock (Dev Preview)
                 </button>
 
                 <Link
                   href="/market-news"
-                  className="w-full py-2.5 bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground border border-border transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-2.5 bg-slate-50 hover:bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200 transition-all rounded-xl font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
                   Back to Market News Home
                 </Link>
@@ -243,11 +235,11 @@ export function MarketNewsPro() {
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-display font-black text-sm uppercase tracking-tight text-foreground flex items-center gap-1.5">
+                    <h3 className="font-sans font-black text-sm uppercase tracking-tight text-slate-950 flex items-center gap-1.5">
                       <Layers className="w-4 h-4 text-primary" />
                       <span>Tracked Macro Storylines</span>
                     </h3>
-                    <p className="text-[10px] font-mono text-muted-foreground">
+                    <p className="text-[10px] font-mono text-slate-500">
                       Explore active narratives and milestones mapped in the visualizer
                     </p>
                   </div>
@@ -257,30 +249,30 @@ export function MarketNewsPro() {
                   {STORYLINE_PRESETS.map((preset) => (
                     <div
                       key={preset.id}
-                      className="bg-card/40 border border-border/70 hover:border-border rounded-2xl p-4 transition-all hover:bg-muted/20 flex flex-col justify-between space-y-3"
+                      className="bg-white border border-slate-200 hover:border-slate-300 rounded-2xl p-4 transition-all hover:shadow-md flex flex-col justify-between space-y-3 shadow-xs"
                     >
                       <div className="space-y-1">
                         <div className="flex items-center justify-between">
-                          <span className="text-[9px] font-mono uppercase font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                          <span className="text-[9px] font-mono uppercase font-black text-primary bg-primary/10 px-2 py-0.5 rounded">
                             {preset.nodes.length} Milestones
                           </span>
-                          <span className="text-[9px] font-mono uppercase text-muted-foreground">
+                          <span className="text-[9px] font-mono uppercase text-slate-500 font-bold">
                             {preset.edges.length} Connections
                           </span>
                         </div>
-                        <h4 className="font-display font-bold text-xs uppercase text-foreground leading-snug">
+                        <h4 className="font-sans font-black text-xs uppercase text-slate-950 leading-snug">
                           {preset.name}
                         </h4>
-                        <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2 font-sans">
+                        <p className="text-[11px] text-slate-600 leading-relaxed line-clamp-2 font-sans">
                           {preset.subtitle}
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-border/40 flex items-center justify-between text-[10px] font-mono">
-                        <span className="text-emerald-400 font-bold">
+                      <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-emerald-600 font-black">
                           ● Verified Flow
                         </span>
-                        <span className="text-muted-foreground">
+                        <span className="text-slate-500 font-bold">
                           {preset.nodes[0]?.date || "2026-06"}
                         </span>
                       </div>
@@ -294,7 +286,7 @@ export function MarketNewsPro() {
       </main>
 
       {/* ----------------------------------------------------
-          7-DAY NLP SENTIMENT SCORING MODAL
+          7-DAY NLP SENTIMENT SCORING MODAL (White Theme)
           ---------------------------------------------------- */}
       <AnimatePresence>
         {showSentimentModal && (
@@ -302,24 +294,24 @@ export function MarketNewsPro() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 text-slate-900"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#121216] border border-border max-w-lg w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
+              className="bg-white border border-slate-200 max-w-lg w-full rounded-3xl p-5 sm:p-6 shadow-2xl space-y-5"
             >
-              <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <TrendingUp size={18} />
                   </div>
                   <div>
-                    <h3 className="font-display font-black text-sm uppercase tracking-tight text-foreground">
+                    <h3 className="font-sans font-black text-sm uppercase tracking-tight text-slate-950">
                       7-Day NLP Sentiment Breakdown
                     </h3>
-                    <p className="text-[10px] font-mono text-muted-foreground">
+                    <p className="text-[10px] font-mono text-slate-500">
                       Weighted natural language model sentiment index
                     </p>
                   </div>
@@ -327,7 +319,7 @@ export function MarketNewsPro() {
 
                 <button
                   onClick={() => setShowSentimentModal(false)}
-                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -343,56 +335,57 @@ export function MarketNewsPro() {
                     <CartesianGrid
                       strokeDasharray="3 3"
                       vertical={false}
-                      stroke="rgba(255,255,255,0.06)"
+                      stroke="rgba(0,0,0,0.06)"
                     />
                     <XAxis
                       dataKey="day"
-                      stroke="#71717a"
+                      stroke="#64748b"
                       fontSize={10}
                       tickLine={false}
-                      axisLine={{ stroke: "#27272a" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
                     />
                     <YAxis
                       domain={[0, 100]}
                       ticks={[0, 25, 50, 75, 100]}
-                      stroke="#71717a"
+                      stroke="#64748b"
                       fontSize={10}
                       tickLine={false}
-                      axisLine={{ stroke: "#27272a" }}
+                      axisLine={{ stroke: "#cbd5e1" }}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: "rgba(18, 18, 22, 0.95)",
-                        borderColor: "rgba(255,255,255,0.15)",
+                        backgroundColor: "#ffffff",
+                        borderColor: "#e2e8f0",
                         borderRadius: "12px",
                         fontFamily: "monospace",
                         fontSize: "10px",
-                        color: "#fff",
+                        color: "#0f172a",
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
                       }}
                     />
-                    <Bar dataKey="sentiment" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="sentiment" fill="#DA291C" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
 
               <div className="grid grid-cols-3 gap-2 text-center font-mono">
-                <div className="p-2.5 rounded-xl bg-muted/20 border border-border/40">
-                  <span className="text-[9px] text-muted-foreground block uppercase">Avg Score</span>
-                  <span className="text-sm font-black text-foreground">70.4%</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[9px] text-slate-500 block uppercase font-bold">Avg Score</span>
+                  <span className="text-sm font-black text-slate-900">70.4%</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted/20 border border-border/40">
-                  <span className="text-[9px] text-muted-foreground block uppercase">Bias</span>
-                  <span className="text-sm font-black text-emerald-400">Bullish</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[9px] text-slate-500 block uppercase font-bold">Bias</span>
+                  <span className="text-sm font-black text-emerald-600">Bullish</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-muted/20 border border-border/40">
-                  <span className="text-[9px] text-muted-foreground block uppercase">Confidence</span>
+                <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <span className="text-[9px] text-slate-500 block uppercase font-bold">Confidence</span>
                   <span className="text-sm font-black text-primary">High</span>
                 </div>
               </div>
 
               <button
                 onClick={() => setShowSentimentModal(false)}
-                className="w-full py-2.5 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl font-mono text-xs font-bold uppercase transition-colors"
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl font-mono text-xs font-bold uppercase transition-colors shadow-sm"
               >
                 Close Breakdown
               </button>

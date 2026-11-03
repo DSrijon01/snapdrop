@@ -9,20 +9,15 @@ import {
   Link2, 
   Unlink, 
   ExternalLink, 
-  Sparkles, 
-  Maximize2, 
   ZoomIn, 
   ZoomOut, 
-  Info, 
   X, 
   Trash2, 
   Search, 
-  Check, 
   TrendingUp, 
   TrendingDown, 
   Minus,
   Newspaper,
-  Layers,
   ChevronDown
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -33,7 +28,7 @@ export type NodeStatus = "verified" | "active" | "alert" | "mapped";
 export interface VisualizerNode {
   id: string;
   title: string;
-  label: string; // Short pill label (e.g. "Stripe Launch", "Merchant Beta")
+  label: string; // Short pill label (e.g. "Launch", "Merchant Beta")
   category: "Solana" | "Macro" | "Regulation" | "DeFi" | "Tech";
   date: string;
   sentiment: "Bullish" | "Bearish" | "Neutral";
@@ -630,7 +625,6 @@ export function NewsEventVisualizer({
 
   // Add Article from Live Feed into Visualizer
   const handleAddArticleToMap = (article: NewsArticle) => {
-    // Generate distinct location
     const existingCount = nodes.length;
     const col = existingCount % 4;
     const row = Math.floor(existingCount / 4);
@@ -729,30 +723,23 @@ export function NewsEventVisualizer({
     return nodes.filter((n) => n.impact === "high" || n.status === "alert").length;
   }, [nodes]);
 
-  // Overall Bullish Bias %
-  const averageSentiment = useMemo(() => {
-    if (nodes.length === 0) return 75;
-    const sum = nodes.reduce((acc, curr) => acc + curr.sentimentScore, 0);
-    return Math.round(sum / nodes.length);
-  }, [nodes]);
-
   return (
-    <div className="w-full flex flex-col bg-[#08080a] border border-border/80 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden font-sans select-none">
+    <div className="w-full flex flex-col bg-white border border-slate-200/90 rounded-2xl sm:rounded-3xl shadow-lg overflow-hidden font-sans select-none text-slate-900">
       
       {/* ----------------------------------------------------
-          TOP HEADER BAR (Replicating Reference Image Metrics)
-          "Sign in • Apple ID • iPhone 15 Pro | SCREENS 8 FLOWS 36 BUGS 1 ELAPSED 12:52"
+          TOP HEADER BAR (Clean, Bright White Theme)
+          "Stripe & Solana Pay Expansion • SCREENS 8 FLOWS 36 BUGS 1 ELAPSED 12:52"
           ---------------------------------------------------- */}
-      <div className="bg-[#0e0e11] border-b border-border/70 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
+      <div className="bg-slate-50/90 border-b border-slate-200/90 px-4 py-3 flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs">
         
         {/* Left: Breadcrumbs / Topic context */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-muted-foreground truncate">
-            <span className="text-primary font-bold">{activePreset.name}</span>
-            <span>•</span>
-            <span className="text-foreground/90 hidden xs:inline">Solana L1 Core</span>
-            <span>•</span>
-            <span className="text-muted-foreground/80 hidden sm:inline">Event Nexus</span>
+          <div className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-wider text-slate-500 truncate">
+            <span className="text-primary font-black">{activePreset.name}</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-800 font-bold hidden xs:inline">Solana L1 Core</span>
+            <span className="text-slate-300">•</span>
+            <span className="text-slate-600 hidden sm:inline">Event Nexus</span>
           </div>
 
           {/* Preset Selector Dropdown */}
@@ -760,7 +747,7 @@ export function NewsEventVisualizer({
             <select
               value={selectedPresetId}
               onChange={(e) => handleSelectPreset(e.target.value)}
-              className="bg-card hover:bg-muted/60 border border-border/80 text-[10px] font-mono uppercase font-bold text-foreground py-1 px-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer transition-colors"
+              className="bg-white hover:bg-slate-50 border border-slate-300 text-[10px] font-mono uppercase font-black text-slate-900 py-1 px-2.5 rounded-lg focus:outline-none focus:border-primary cursor-pointer transition-colors shadow-sm"
             >
               {STORYLINE_PRESETS.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -774,29 +761,29 @@ export function NewsEventVisualizer({
         {/* Right: Metrics line matching reference image stats exactly */}
         <div className="flex items-center gap-3 sm:gap-4 font-mono text-[11px] uppercase tracking-wider shrink-0 overflow-x-auto scrollbar-none py-0.5">
           <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">EVENTS</span>
-            <span className="font-bold text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-slate-500 font-bold">EVENTS</span>
+            <span className="font-black text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] shadow-sm">
               {nodes.length}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-muted-foreground">FLOWS</span>
-            <span className="font-bold text-foreground bg-muted/60 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-slate-500 font-bold">FLOWS</span>
+            <span className="font-black text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] shadow-sm">
               {edges.length}
             </span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-rose-400 font-bold">HIGH IMPACT</span>
-            <span className="font-black text-rose-500 bg-rose-500/10 border border-rose-500/20 px-1.5 py-0.5 rounded text-[10px]">
+            <span className="text-rose-600 font-black">HIGH IMPACT</span>
+            <span className="font-black text-rose-600 bg-rose-50 border border-rose-200 px-2 py-0.5 rounded text-[10px] shadow-sm">
               {highImpactCount}
             </span>
           </div>
 
           <div className="hidden sm:flex items-center gap-1.5">
-            <span className="text-muted-foreground">ELAPSED</span>
-            <span className="font-bold text-primary font-mono">
+            <span className="text-slate-500 font-bold">ELAPSED</span>
+            <span className="font-black text-primary font-mono bg-white border border-slate-200 px-2 py-0.5 rounded text-[10px] shadow-sm">
               {formatElapsed(elapsedSeconds)}
             </span>
           </div>
@@ -805,20 +792,19 @@ export function NewsEventVisualizer({
       </div>
 
       {/* ----------------------------------------------------
-          INTERACTION TOOLBAR
-          (Connect mode, Auto-Align, +Add Node, Live Feed, Zoom)
+          INTERACTION TOOLBAR (Clean Light Styling)
           ---------------------------------------------------- */}
-      <div className="bg-[#0b0b0e] border-b border-border/60 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
+      <div className="bg-white border-b border-slate-200/80 px-3 sm:px-4 py-2 flex items-center justify-between gap-2 flex-wrap">
         
         {/* Left Toolbar Actions */}
         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
           {/* Reset / Auto-Align Layout Button */}
           <button
             onClick={handleResetLayout}
-            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border text-[11px] font-mono uppercase font-bold tracking-wider cursor-pointer transition-colors active:scale-95"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 text-[11px] font-mono uppercase font-black tracking-wider cursor-pointer transition-colors shadow-sm active:scale-95"
             title="Auto-organize and center all event milestones"
           >
-            <RotateCcw className="w-3 h-3 text-primary" />
+            <RotateCcw className="w-3.5 h-3.5 text-primary" />
             <span>Reset Flow</span>
           </button>
 
@@ -828,32 +814,32 @@ export function NewsEventVisualizer({
               setIsConnectMode(!isConnectMode);
               setConnectSourceNodeId(null);
             }}
-            className={`flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl border text-[11px] font-mono uppercase font-bold tracking-wider cursor-pointer transition-all active:scale-95 ${
+            className={`flex items-center gap-1.5 py-1.5 px-3 rounded-xl border text-[11px] font-mono uppercase font-black tracking-wider cursor-pointer transition-all shadow-sm active:scale-95 ${
               isConnectMode
-                ? "bg-primary text-primary-foreground border-primary shadow-md shadow-primary/20 ring-1 ring-primary"
-                : "bg-card hover:bg-muted text-muted-foreground hover:text-foreground border-border"
+                ? "bg-primary text-white border-primary shadow-md shadow-primary/20 ring-2 ring-primary/30"
+                : "bg-slate-50 hover:bg-slate-100 text-slate-800 border-slate-200"
             }`}
             title="Click two nodes to create or remove an edge"
           >
-            <Link2 className="w-3 h-3" />
+            <Link2 className="w-3.5 h-3.5" />
             <span>{isConnectMode ? "Link Mode: Active" : "Link Nodes"}</span>
           </button>
 
           {/* Add Custom Catalyst Button */}
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border text-[11px] font-mono uppercase font-bold tracking-wider cursor-pointer transition-colors active:scale-95"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 text-[11px] font-mono uppercase font-black tracking-wider cursor-pointer transition-colors shadow-sm active:scale-95"
           >
-            <Plus className="w-3 h-3 text-emerald-400" />
+            <Plus className="w-3.5 h-3.5 text-emerald-600" />
             <span>Add Event</span>
           </button>
 
           {/* Live News Drawer Toggle */}
           <button
             onClick={() => setIsFeedDrawerOpen(true)}
-            className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border text-[11px] font-mono uppercase font-bold tracking-wider cursor-pointer transition-colors active:scale-95"
+            className="flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 text-[11px] font-mono uppercase font-black tracking-wider cursor-pointer transition-colors shadow-sm active:scale-95"
           >
-            <Newspaper className="w-3 h-3 text-cyan-400" />
+            <Newspaper className="w-3.5 h-3.5 text-sky-600" />
             <span className="hidden xs:inline">Live Wire</span> ({liveArticles.length || 6})
           </button>
 
@@ -861,9 +847,9 @@ export function NewsEventVisualizer({
           {onOpenSentimentModal && (
             <button
               onClick={onOpenSentimentModal}
-              className="hidden md:flex items-center gap-1.5 py-1.5 px-2.5 rounded-xl bg-card hover:bg-muted text-muted-foreground hover:text-foreground border border-border text-[11px] font-mono uppercase font-bold tracking-wider cursor-pointer transition-colors active:scale-95"
+              className="hidden md:flex items-center gap-1.5 py-1.5 px-3 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-800 border border-slate-200 text-[11px] font-mono uppercase font-black tracking-wider cursor-pointer transition-colors shadow-sm active:scale-95"
             >
-              <TrendingUp className="w-3 h-3 text-amber-400" />
+              <TrendingUp className="w-3.5 h-3.5 text-amber-600" />
               <span>7D Score</span>
             </button>
           )}
@@ -873,31 +859,31 @@ export function NewsEventVisualizer({
         <div className="flex items-center gap-2 ml-auto">
           {/* Quick Search */}
           <div className="relative hidden sm:block">
-            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Filter nodes..."
-              className="bg-card border border-border rounded-lg pl-7 pr-2.5 py-1 text-[11px] font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary w-28 md:w-36 transition-all"
+              className="bg-slate-50 border border-slate-200 rounded-lg pl-7 pr-2.5 py-1 text-[11px] font-mono text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-primary focus:bg-white w-28 md:w-36 transition-all shadow-inner"
             />
           </div>
 
           {/* Zoom In/Out Buttons */}
-          <div className="flex items-center bg-card border border-border rounded-xl p-0.5">
+          <div className="flex items-center bg-slate-50 border border-slate-200 rounded-xl p-0.5 shadow-sm">
             <button
               onClick={() => setZoomLevel((z) => Math.max(0.65, z - 0.1))}
-              className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="p-1 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               title="Zoom Out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] font-mono px-1.5 text-muted-foreground font-bold">
+            <span className="text-[10px] font-mono px-1.5 text-slate-700 font-bold">
               {Math.round(zoomLevel * 100)}%
             </span>
             <button
               onClick={() => setZoomLevel((z) => Math.min(1.4, z + 0.1))}
-              className="p-1 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="p-1 hover:bg-white rounded-lg text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
               title="Zoom In"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -908,22 +894,22 @@ export function NewsEventVisualizer({
       </div>
 
       {/* ----------------------------------------------------
-          CANVAS AREA
-          (Dot Grid, SVG Bezier Connections, Interactive Draggable Pills)
+          CANVAS AREA (Crisp Light Dot Grid Background)
+          Matching Reference Image: Soft slate-50 background with subtle dark dots
           ---------------------------------------------------- */}
       <div
         ref={containerRef}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="relative w-full h-[460px] sm:h-[520px] md:h-[580px] bg-[#070709] overflow-hidden touch-none select-none cursor-crosshair"
+        className="relative w-full h-[460px] sm:h-[520px] md:h-[580px] bg-[#f8fafc] overflow-hidden touch-none select-none cursor-crosshair border-y border-slate-200/80"
         style={{
-          backgroundImage: "radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(circle, rgba(100, 116, 139, 0.22) 1.2px, transparent 1.2px)",
           backgroundSize: "22px 22px",
         }}
       >
-        {/* Subtle Top-Left Ambient Glow */}
-        <div className="absolute top-1/4 left-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+        {/* Subtle Ambient Light Gradients */}
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-sky-500/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Link Mode Guidance Bar */}
         <AnimatePresence>
@@ -932,7 +918,7 @@ export function NewsEventVisualizer({
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-primary text-primary-foreground font-mono text-[11px] font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-lg flex items-center gap-2 pointer-events-none"
+              className="absolute top-3 left-1/2 -translate-x-1/2 z-30 bg-primary text-white font-mono text-[11px] font-bold uppercase tracking-wider py-1.5 px-4 rounded-full shadow-lg flex items-center gap-2 pointer-events-none"
             >
               <Link2 className="w-3.5 h-3.5 animate-spin" />
               <span>
@@ -956,7 +942,7 @@ export function NewsEventVisualizer({
           {/* SVG LAYER: Curved Bezier Connections */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
             <defs>
-              {/* Normal Arrowhead */}
+              {/* Normal Arrowhead (slate-500) */}
               <marker
                 id="arrowhead-normal"
                 viewBox="0 0 10 10"
@@ -966,10 +952,10 @@ export function NewsEventVisualizer({
                 markerHeight="5"
                 orient="auto"
               >
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255, 255, 255, 0.25)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
               </marker>
 
-              {/* Selected / Active Arrowhead */}
+              {/* Selected / Active Arrowhead (Supreme Red) */}
               <marker
                 id="arrowhead-active"
                 viewBox="0 0 10 10"
@@ -979,13 +965,13 @@ export function NewsEventVisualizer({
                 markerHeight="6"
                 orient="auto"
               >
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#dc2626" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#DA291C" />
               </marker>
 
               {/* Gradient for highlighted edges */}
               <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#dc2626" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#f43f5e" stopOpacity="0.9" />
+                <stop offset="0%" stopColor="#DA291C" stopOpacity="0.9" />
+                <stop offset="100%" stopColor="#ef4444" stopOpacity="1" />
               </linearGradient>
             </defs>
 
@@ -996,7 +982,7 @@ export function NewsEventVisualizer({
               if (!source || !target) return null;
 
               // Node dimensions for center anchor
-              const nodeWidth = 148;
+              const nodeWidth = 152;
               const nodeHeight = 44;
 
               const x1 = source.x + nodeWidth;
@@ -1017,10 +1003,10 @@ export function NewsEventVisualizer({
               const strokeColor = isEdgeActive
                 ? "url(#edge-gradient)"
                 : edge.style === "dashed"
-                ? "rgba(255, 255, 255, 0.18)"
-                : "rgba(255, 255, 255, 0.28)";
+                ? "rgba(100, 116, 139, 0.45)"
+                : "rgba(100, 116, 139, 0.65)";
 
-              const strokeWidth = isEdgeActive ? 2.5 : 1.5;
+              const strokeWidth = isEdgeActive ? 2.5 : 1.75;
 
               return (
                 <g key={edge.id} className="transition-all duration-200">
@@ -1031,11 +1017,11 @@ export function NewsEventVisualizer({
                     strokeWidth={strokeWidth}
                     strokeDasharray={edge.style === "dashed" ? "5 4" : undefined}
                     markerEnd={isEdgeActive ? "url(#arrowhead-active)" : "url(#arrowhead-normal)"}
-                    className={isEdgeActive ? "drop-shadow-[0_0_8px_rgba(220,38,38,0.4)]" : ""}
+                    className={isEdgeActive ? "drop-shadow-[0_0_6px_rgba(218,41,28,0.35)]" : ""}
                   />
-                  {/* Subtle directional pulse dot if selected */}
+                  {/* Directional pulse dot if selected */}
                   {isEdgeActive && (
-                    <circle r="3" fill="#ffffff">
+                    <circle r="3.5" fill="#DA291C">
                       <animateMotion
                         path={`M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`}
                         dur="2.5s"
@@ -1048,7 +1034,7 @@ export function NewsEventVisualizer({
             })}
           </svg>
 
-          {/* INTERACTIVE DRAGGABLE NODE PILLS */}
+          {/* INTERACTIVE DRAGGABLE NODE PILLS (Crisp White with Bold Dark Text) */}
           {filteredNodes.map((node) => {
             const isSelected = selectedNodeId === node.id;
             const isConnectSource = connectSourceNodeId === node.id;
@@ -1060,7 +1046,7 @@ export function NewsEventVisualizer({
                 : node.status === "alert"
                 ? "bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)] animate-pulse"
                 : node.status === "active"
-                ? "bg-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.5)]"
+                ? "bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]"
                 : "bg-slate-400";
 
             return (
@@ -1070,33 +1056,33 @@ export function NewsEventVisualizer({
                 onClick={() => setSelectedNodeId(node.id)}
                 style={{
                   transform: `translate3d(${node.x}px, ${node.y}px, 0)`,
-                  width: "148px",
+                  width: "152px",
                   height: "44px",
                 }}
-                className={`absolute rounded-full border px-3 py-1.5 flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing transition-shadow duration-150 select-none ${
+                className={`absolute rounded-full border px-3.5 py-1.5 flex items-center justify-between gap-2 cursor-grab active:cursor-grabbing transition-all duration-150 select-none shadow-sm ${
                   isSelected
-                    ? "bg-[#18181b] border-primary shadow-[0_0_20px_rgba(220,38,38,0.35)] ring-2 ring-primary/80 z-20"
+                    ? "bg-white border-primary shadow-[0_0_20px_rgba(218,41,28,0.3)] ring-2 ring-primary text-slate-950 z-20"
                     : isConnectSource
-                    ? "bg-primary/20 border-primary ring-2 ring-primary z-20 animate-pulse"
-                    : "bg-[#101013]/90 hover:bg-[#16161a] border-border/70 hover:border-border text-foreground z-10"
+                    ? "bg-rose-50 border-primary ring-2 ring-primary z-20 animate-pulse text-slate-950"
+                    : "bg-white hover:bg-slate-50 border-slate-300 hover:border-slate-400 text-slate-900 z-10"
                 }`}
               >
                 {/* Status Dot */}
-                <span className={`w-2 h-2 rounded-full shrink-0 ${dotColor}`} />
+                <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${dotColor}`} />
 
-                {/* Short Node Label */}
-                <span className="font-mono text-xs font-bold uppercase tracking-tight text-foreground truncate flex-1 text-left">
+                {/* Short Node Label (Bold High-Contrast Dark Text) */}
+                <span className="font-sans text-xs font-black uppercase tracking-tight text-slate-950 truncate flex-1 text-left">
                   {node.label}
                 </span>
 
                 {/* Sentiment Badge / Mini Icon */}
                 <div className="shrink-0 flex items-center">
                   {node.sentiment === "Bullish" ? (
-                    <TrendingUp className="w-3 h-3 text-emerald-400" />
+                    <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
                   ) : node.sentiment === "Bearish" ? (
-                    <TrendingDown className="w-3 h-3 text-rose-400" />
+                    <TrendingDown className="w-3.5 h-3.5 text-rose-600" />
                   ) : (
-                    <Minus className="w-3 h-3 text-slate-400" />
+                    <Minus className="w-3.5 h-3.5 text-slate-500" />
                   )}
                 </div>
               </div>
@@ -1104,18 +1090,17 @@ export function NewsEventVisualizer({
           })}
 
           {/* FLOATING INSPECTOR CARD (Replicating BUG FOUND Inspector from Screenshot)
-              Renders directly on canvas on desktop (md:) */}
+              Clean, bright white card with crystal clear typography */}
           {selectedNode && (
             <div
-              className="hidden md:block absolute z-30 w-80 bg-[#121216]/95 backdrop-blur-xl border border-border/90 rounded-2xl p-4 shadow-2xl transition-all duration-200"
+              className="hidden md:block absolute z-30 w-84 bg-white/98 backdrop-blur-xl border border-slate-200/90 rounded-2xl p-4 shadow-2xl transition-all duration-200 text-slate-900"
               style={{
-                // Position intelligently: right side if node is on left half, else left side
-                left: selectedNode.x > 480 ? `${Math.max(20, selectedNode.x - 330)}px` : `${Math.min(540, selectedNode.x + 160)}px`,
+                left: selectedNode.x > 480 ? `${Math.max(20, selectedNode.x - 350)}px` : `${Math.min(520, selectedNode.x + 165)}px`,
                 top: `${Math.min(320, Math.max(30, selectedNode.y - 40))}px`,
               }}
             >
               {/* Header Status Tag */}
-              <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border/40">
+              <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-1.5 font-mono text-[9px] uppercase font-black tracking-wider">
                   <span
                     className={`w-2 h-2 rounded-full ${
@@ -1123,17 +1108,17 @@ export function NewsEventVisualizer({
                         ? "bg-rose-500 animate-pulse"
                         : selectedNode.status === "verified"
                         ? "bg-emerald-500"
-                        : "bg-cyan-400"
+                        : "bg-sky-500"
                     }`}
                   />
                   <span
-                    className={
+                    className={`px-1.5 py-0.5 rounded ${
                       selectedNode.status === "alert"
-                        ? "text-rose-400"
+                        ? "text-rose-700 bg-rose-50 border border-rose-200"
                         : selectedNode.status === "verified"
-                        ? "text-emerald-400"
-                        : "text-cyan-400"
-                    }
+                        ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                        : "text-sky-700 bg-sky-50 border border-sky-200"
+                    }`}
                   >
                     {selectedNode.status === "alert"
                       ? "CRITICAL CATALYST"
@@ -1145,20 +1130,20 @@ export function NewsEventVisualizer({
 
                 <button
                   onClick={() => setSelectedNodeId(null)}
-                  className="text-muted-foreground hover:text-foreground p-0.5 rounded cursor-pointer"
+                  className="text-slate-400 hover:text-slate-800 p-0.5 rounded cursor-pointer"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
 
-              {/* Title & Headline */}
-              <h4 className="font-display font-black text-xs uppercase tracking-tight text-foreground leading-snug line-clamp-2 mb-1.5">
+              {/* Title & Headline (Bold Black Text) */}
+              <h4 className="font-sans font-black text-xs uppercase tracking-tight text-slate-950 leading-snug line-clamp-2 mb-1.5">
                 {selectedNode.title}
               </h4>
 
               {/* Meta: Source, Date, Impact */}
-              <div className="flex items-center gap-2 text-[10px] font-mono uppercase text-muted-foreground mb-2 flex-wrap">
-                <span className="text-foreground/90 font-bold">{selectedNode.source}</span>
+              <div className="flex items-center gap-2 text-[10px] font-mono uppercase text-slate-500 mb-2 flex-wrap">
+                <span className="text-slate-900 font-bold">{selectedNode.source}</span>
                 <span>•</span>
                 <span>{selectedNode.date}</span>
                 <span>•</span>
@@ -1168,18 +1153,18 @@ export function NewsEventVisualizer({
               </div>
 
               {/* Summary text */}
-              <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-3 mb-3 bg-muted/20 p-2 rounded-xl border border-border/40 font-sans">
+              <p className="text-[11px] text-slate-700 leading-relaxed line-clamp-3 mb-3 bg-slate-50 p-2.5 rounded-xl border border-slate-200 font-sans">
                 {selectedNode.summary}
               </p>
 
-              {/* Action Buttons matching reference image */}
-              <div className="flex items-center gap-1.5 pt-1 border-t border-border/40 flex-wrap">
+              {/* Action Buttons */}
+              <div className="flex items-center gap-1.5 pt-1 border-t border-slate-100 flex-wrap">
                 {selectedNode.url && (
                   <a
                     href={selectedNode.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 py-1.5 px-2 bg-muted/60 hover:bg-muted text-foreground border border-border/80 rounded-lg text-[10px] font-mono uppercase font-bold text-center flex items-center justify-center gap-1 transition-colors"
+                    className="flex-1 py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-lg text-[10px] font-mono uppercase font-bold text-center flex items-center justify-center gap-1 transition-colors shadow-sm"
                   >
                     <span>Source</span>
                     <ExternalLink className="w-2.5 h-2.5" />
@@ -1188,7 +1173,7 @@ export function NewsEventVisualizer({
 
                 <button
                   onClick={() => handleStartConnectFromInspector(selectedNode.id)}
-                  className="py-1.5 px-2.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-lg text-[10px] font-mono uppercase font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  className="py-1.5 px-3 bg-primary text-white hover:bg-primary/90 rounded-lg text-[10px] font-mono uppercase font-bold flex items-center gap-1 transition-colors cursor-pointer shadow-sm"
                   title="Link this event to another node"
                 >
                   <Link2 className="w-3 h-3" />
@@ -1197,7 +1182,7 @@ export function NewsEventVisualizer({
 
                 <button
                   onClick={() => handleDisconnectNode(selectedNode.id)}
-                  className="p-1.5 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/60 rounded-lg transition-colors cursor-pointer"
+                  className="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 border border-slate-200 rounded-lg transition-colors cursor-pointer"
                   title="Disconnect all edges for this node"
                 >
                   <Unlink className="w-3 h-3" />
@@ -1205,7 +1190,7 @@ export function NewsEventVisualizer({
 
                 <button
                   onClick={() => handleDeleteNode(selectedNode.id)}
-                  className="p-1.5 bg-muted/40 hover:bg-rose-500/20 text-muted-foreground hover:text-rose-400 border border-border/60 rounded-lg transition-colors cursor-pointer ml-auto"
+                  className="p-1.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-200 rounded-lg transition-colors cursor-pointer ml-auto"
                   title="Remove from visualizer"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -1219,7 +1204,6 @@ export function NewsEventVisualizer({
 
       {/* ----------------------------------------------------
           MOBILE BOTTOM SHEET INSPECTOR (md:hidden)
-          Smoothly slides up from bottom when a node is selected on mobile
           ---------------------------------------------------- */}
       <AnimatePresence>
         {selectedNode && (
@@ -1228,10 +1212,10 @@ export function NewsEventVisualizer({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: "100%", opacity: 0 }}
             transition={{ type: "spring", damping: 25, stiffness: 220 }}
-            className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-[#101014]/98 backdrop-blur-2xl border-t border-border/90 rounded-t-3xl p-4 pb-24 shadow-2xl space-y-3 font-sans"
+            className="md:hidden fixed inset-x-0 bottom-0 z-50 bg-white/98 backdrop-blur-2xl border-t border-slate-200 rounded-t-3xl p-4 pb-24 shadow-2xl space-y-3 font-sans text-slate-900"
           >
             {/* Drag Handle Bar */}
-            <div className="w-10 h-1 bg-muted-foreground/30 rounded-full mx-auto" />
+            <div className="w-10 h-1 bg-slate-300 rounded-full mx-auto" />
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5 font-mono text-[10px] uppercase font-bold">
@@ -1241,17 +1225,17 @@ export function NewsEventVisualizer({
                       ? "bg-rose-500 animate-pulse"
                       : selectedNode.status === "verified"
                       ? "bg-emerald-500"
-                      : "bg-cyan-400"
+                      : "bg-sky-500"
                   }`}
                 />
                 <span
-                  className={
+                  className={`px-1.5 py-0.5 rounded font-black ${
                     selectedNode.status === "alert"
-                      ? "text-rose-400"
+                      ? "text-rose-700 bg-rose-50"
                       : selectedNode.status === "verified"
-                      ? "text-emerald-400"
-                      : "text-cyan-400"
-                  }
+                      ? "text-emerald-700 bg-emerald-50"
+                      : "text-sky-700 bg-sky-50"
+                  }`}
                 >
                   {selectedNode.status === "alert"
                     ? "CRITICAL CATALYST"
@@ -1259,7 +1243,7 @@ export function NewsEventVisualizer({
                     ? "VERIFIED NARRATIVE"
                     : "ACTIVE EVENT"}
                 </span>
-                <span className="text-muted-foreground">•</span>
+                <span className="text-slate-300">•</span>
                 <span className="text-primary font-bold">
                   {selectedNode.sentimentScore}% {selectedNode.sentiment}
                 </span>
@@ -1267,17 +1251,17 @@ export function NewsEventVisualizer({
 
               <button
                 onClick={() => setSelectedNodeId(null)}
-                className="p-1 rounded-lg bg-muted/60 text-muted-foreground hover:text-foreground"
+                className="p-1 rounded-lg bg-slate-100 text-slate-500 hover:text-slate-900"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            <h4 className="font-display font-black text-sm uppercase tracking-tight text-foreground leading-snug">
+            <h4 className="font-sans font-black text-sm uppercase tracking-tight text-slate-950 leading-snug">
               {selectedNode.title}
             </h4>
 
-            <p className="text-xs text-muted-foreground leading-relaxed bg-muted/20 p-3 rounded-2xl border border-border/40 font-sans max-h-24 overflow-y-auto">
+            <p className="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-200 font-sans max-h-24 overflow-y-auto">
               {selectedNode.summary}
             </p>
 
@@ -1287,7 +1271,7 @@ export function NewsEventVisualizer({
                   href={selectedNode.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex-1 py-2.5 px-3 bg-muted hover:bg-muted/80 text-foreground border border-border rounded-xl text-xs font-mono uppercase font-bold text-center flex items-center justify-center gap-1.5"
+                  className="flex-1 py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 rounded-xl text-xs font-mono uppercase font-bold text-center flex items-center justify-center gap-1.5 shadow-sm"
                 >
                   <span>Source</span>
                   <ExternalLink className="w-3 h-3" />
@@ -1296,7 +1280,7 @@ export function NewsEventVisualizer({
 
               <button
                 onClick={() => handleStartConnectFromInspector(selectedNode.id)}
-                className="flex-1 py-2.5 px-3 bg-primary text-primary-foreground rounded-xl text-xs font-mono uppercase font-bold flex items-center justify-center gap-1.5"
+                className="flex-1 py-2.5 px-3 bg-primary text-white rounded-xl text-xs font-mono uppercase font-bold flex items-center justify-center gap-1.5 shadow-sm"
               >
                 <Link2 className="w-3.5 h-3.5" />
                 <span>Connect</span>
@@ -1304,7 +1288,7 @@ export function NewsEventVisualizer({
 
               <button
                 onClick={() => handleDeleteNode(selectedNode.id)}
-                className="p-2.5 bg-muted text-muted-foreground hover:text-rose-400 border border-border rounded-xl"
+                className="p-2.5 bg-slate-100 text-slate-600 hover:text-rose-600 border border-slate-200 rounded-xl shadow-sm"
                 title="Remove node"
               >
                 <Trash2 className="w-4 h-4" />
@@ -1315,40 +1299,39 @@ export function NewsEventVisualizer({
       </AnimatePresence>
 
       {/* ----------------------------------------------------
-          BOTTOM LEGEND BAR (Directly matching Reference Image)
+          BOTTOM LEGEND BAR (Bright, Crisp Light Theme)
           "• VERIFIED • RUNNING • FAILED • MAPPED, NOT WALKED"
           ---------------------------------------------------- */}
-      <div className="bg-[#0b0b0e] border-t border-border/70 px-4 py-2.5 flex items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-muted-foreground overflow-x-auto scrollbar-none flex-wrap">
+      <div className="bg-slate-50 border-t border-slate-200/90 px-4 py-2.5 flex items-center justify-between gap-3 text-[10px] font-mono uppercase tracking-wider text-slate-600 overflow-x-auto scrollbar-none flex-wrap">
         <div className="flex items-center gap-4 sm:gap-6 shrink-0">
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
-            <span className="text-foreground/90 font-bold">VERIFIED / BULLISH</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.5)]" />
+            <span className="text-slate-900 font-bold">VERIFIED / BULLISH</span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
-            <span className="text-foreground/90 font-bold">ACTIVE FLOW</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_6px_rgba(14,165,233,0.5)]" />
+            <span className="text-slate-900 font-bold">ACTIVE FLOW</span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="text-rose-400 font-bold">CRITICAL CATALYST</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
+            <span className="text-rose-600 font-black">CRITICAL CATALYST</span>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-0.5 border-t border-dashed border-muted-foreground" />
-            <span>MAPPED NARRATIVE</span>
+            <span className="w-3 h-0.5 border-t border-dashed border-slate-400" />
+            <span className="text-slate-700 font-bold">MAPPED NARRATIVE</span>
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-2 text-muted-foreground/70">
+        <div className="hidden lg:flex items-center gap-2 text-slate-500">
           <span>Tip: Drag nodes to rearrange • Click 'Link Nodes' to connect</span>
         </div>
       </div>
 
       {/* ----------------------------------------------------
           LIVE NEWS WIRE DRAWER / POPUP
-          (Allows user to pin real headlines to the visualizer map)
           ---------------------------------------------------- */}
       <AnimatePresence>
         {isFeedDrawerOpen && (
@@ -1356,24 +1339,24 @@ export function NewsEventVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 text-slate-900"
           >
             <motion.div
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="bg-[#101014] border border-border w-full max-w-xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl flex flex-col space-y-4"
+              className="bg-white border border-slate-200 w-full max-w-xl max-h-[85vh] rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl flex flex-col space-y-4"
             >
-              <div className="flex items-center justify-between pb-2 border-b border-border/60">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
                     <Newspaper size={18} />
                   </div>
                   <div>
-                    <h3 className="font-display font-black text-sm uppercase tracking-tight text-foreground">
+                    <h3 className="font-sans font-black text-sm uppercase tracking-tight text-slate-950">
                       Live Market News Wire
                     </h3>
-                    <p className="text-[10px] font-mono text-muted-foreground">
+                    <p className="text-[10px] font-mono text-slate-500">
                       Select any headline to inject as an interactive node on the map
                     </p>
                   </div>
@@ -1381,7 +1364,7 @@ export function NewsEventVisualizer({
 
                 <button
                   onClick={() => setIsFeedDrawerOpen(false)}
-                  className="p-1 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted"
+                  className="p-1 rounded-lg text-slate-400 hover:text-slate-800 hover:bg-slate-100"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1392,24 +1375,24 @@ export function NewsEventVisualizer({
                 {liveArticles.slice(0, 12).map((art) => (
                   <div
                     key={art.article_id}
-                    className="p-3 rounded-2xl bg-muted/20 hover:bg-muted/40 border border-border/60 transition-all flex items-start justify-between gap-3 group"
+                    className="p-3 rounded-2xl bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all flex items-start justify-between gap-3 group shadow-sm"
                   >
                     <div className="space-y-1 min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-muted-foreground">
-                        <span className="font-bold text-foreground/90">{art.source_name}</span>
+                      <div className="flex items-center gap-2 text-[9px] font-mono uppercase text-slate-500">
+                        <span className="font-bold text-slate-900">{art.source_name}</span>
                         <span>•</span>
-                        <span className={art.sentiment === "Positive" ? "text-emerald-400" : art.sentiment === "Negative" ? "text-rose-400" : "text-slate-400"}>
+                        <span className={art.sentiment === "Positive" ? "text-emerald-600 font-bold" : art.sentiment === "Negative" ? "text-rose-600 font-bold" : "text-slate-600"}>
                           {art.sentiment} ({Math.round(Math.abs(art.sentiment_score || 0.8) * 100)}%)
                         </span>
                       </div>
-                      <h4 className="font-display font-bold text-xs uppercase tracking-tight text-foreground leading-snug line-clamp-2">
+                      <h4 className="font-sans font-bold text-xs uppercase tracking-tight text-slate-950 leading-snug line-clamp-2">
                         {art.title}
                       </h4>
                     </div>
 
                     <button
                       onClick={() => handleAddArticleToMap(art)}
-                      className="shrink-0 py-1.5 px-3 rounded-xl bg-primary hover:opacity-90 text-primary-foreground font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all"
+                      className="shrink-0 py-1.5 px-3 rounded-xl bg-primary hover:opacity-90 text-white font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-sm transition-all"
                     >
                       <Plus className="w-3 h-3" />
                       <span>Pin</span>
@@ -1431,26 +1414,26 @@ export function NewsEventVisualizer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 text-slate-900"
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-[#121216] border border-border max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-4"
+              className="bg-white border border-slate-200 max-w-md w-full rounded-3xl p-6 shadow-2xl space-y-4"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-base font-black font-display uppercase tracking-tight text-foreground">
+                  <h3 className="text-base font-black font-sans uppercase tracking-tight text-slate-950">
                     Add Custom Event Milestone
                   </h3>
-                  <p className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                  <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                     Plot a new market development on the visual correlation graph
                   </p>
                 </div>
                 <button
                   onClick={() => setIsAddModalOpen(false)}
-                  className="text-muted-foreground hover:text-foreground"
+                  className="text-slate-400 hover:text-slate-800"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1458,7 +1441,7 @@ export function NewsEventVisualizer({
 
               <form onSubmit={handleCreateCustomNode} className="space-y-3 font-mono text-xs">
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground block mb-1">
+                  <label className="text-[10px] uppercase text-slate-600 font-bold block mb-1">
                     Event Headline Title
                   </label>
                   <input
@@ -1467,13 +1450,13 @@ export function NewsEventVisualizer({
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g. Visa integrates Solana settling $500M in test trials"
                     required
-                    className="w-full bg-[#18181c] border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-primary text-xs"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] uppercase text-muted-foreground block mb-1">
+                    <label className="text-[10px] uppercase text-slate-600 font-bold block mb-1">
                       Short Node Pill Label
                     </label>
                     <input
@@ -1481,17 +1464,17 @@ export function NewsEventVisualizer({
                       value={newLabel}
                       onChange={(e) => setNewLabel(e.target.value)}
                       placeholder="e.g. Visa Trial"
-                      className="w-full bg-[#18181c] border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-primary text-xs"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase text-muted-foreground block mb-1">
+                    <label className="text-[10px] uppercase text-slate-600 font-bold block mb-1">
                       Sector / Category
                     </label>
                     <select
                       value={newCategory}
                       onChange={(e) => setNewCategory(e.target.value as any)}
-                      className="w-full bg-[#18181c] border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs cursor-pointer"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-primary text-xs cursor-pointer"
                     >
                       <option value="Solana">Solana</option>
                       <option value="Macro">Macro</option>
@@ -1504,13 +1487,13 @@ export function NewsEventVisualizer({
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-[10px] uppercase text-muted-foreground block mb-1">
+                    <label className="text-[10px] uppercase text-slate-600 font-bold block mb-1">
                       Sentiment
                     </label>
                     <select
                       value={newSentiment}
                       onChange={(e) => setNewSentiment(e.target.value as any)}
-                      className="w-full bg-[#18181c] border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs cursor-pointer"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-primary text-xs cursor-pointer"
                     >
                       <option value="Bullish">Bullish</option>
                       <option value="Neutral">Neutral</option>
@@ -1519,7 +1502,7 @@ export function NewsEventVisualizer({
                   </div>
 
                   <div>
-                    <label className="text-[10px] uppercase text-muted-foreground flex justify-between mb-1">
+                    <label className="text-[10px] uppercase text-slate-600 font-bold flex justify-between mb-1">
                       <span>NLP Score</span>
                       <span className="text-primary font-bold">{newScore}%</span>
                     </label>
@@ -1535,7 +1518,7 @@ export function NewsEventVisualizer({
                 </div>
 
                 <div>
-                  <label className="text-[10px] uppercase text-muted-foreground block mb-1">
+                  <label className="text-[10px] uppercase text-slate-600 font-bold block mb-1">
                     Analysis & Narrative Impact
                   </label>
                   <textarea
@@ -1543,7 +1526,7 @@ export function NewsEventVisualizer({
                     onChange={(e) => setNewSummary(e.target.value)}
                     placeholder="Describe how this event affects liquidity, network TPS, or institutional capital flows..."
                     rows={2}
-                    className="w-full bg-[#18181c] border border-border rounded-xl px-3 py-2 text-foreground focus:outline-none focus:border-primary text-xs resize-none"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-slate-900 focus:outline-none focus:border-primary text-xs resize-none"
                   />
                 </div>
 
@@ -1551,13 +1534,13 @@ export function NewsEventVisualizer({
                   <button
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="flex-1 py-2.5 bg-muted hover:bg-muted/80 text-muted-foreground rounded-xl font-bold uppercase transition-colors"
+                    className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold uppercase transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 py-2.5 bg-primary hover:opacity-90 text-primary-foreground rounded-xl font-bold uppercase transition-all shadow-md shadow-primary/20"
+                    className="flex-1 py-2.5 bg-primary hover:opacity-90 text-white rounded-xl font-bold uppercase transition-all shadow-md shadow-primary/20"
                   >
                     Plot Event
                   </button>
