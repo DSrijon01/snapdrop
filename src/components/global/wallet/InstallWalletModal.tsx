@@ -197,18 +197,26 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                     </div>
                   </div>
                 </div>
+              ) : isInApp ? (
+                <div className="p-3.5 bg-amber-500/10 border border-amber-500/25 rounded-xl space-y-2">
+                  <div className="flex items-start gap-2.5">
+                    <Smartphone className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="text-xs">
+                      <p className="font-bold text-amber-600 dark:text-amber-400">Social Browser Detected (X / Meta)</p>
+                      <p className="text-muted-foreground leading-relaxed mt-0.5">
+                        In-app browsers restrict wallet connections. Open directly in Phantom App for a native 1-tap connection, or connect via deep link.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               ) : isMobile ? (
-                <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-2.5">
+                <div className="p-4 bg-muted/50 border border-border rounded-xl space-y-2">
                   <div className="flex items-start gap-2.5">
                     <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <div className="text-xs">
-                      <p className="font-bold text-foreground">
-                        {isInApp ? "Twitter / Social Browser" : "Mobile Solana Wallet"}
-                      </p>
+                      <p className="font-bold text-foreground">Connect Phantom Wallet</p>
                       <p className="text-muted-foreground leading-relaxed mt-0.5">
-                        {isInApp
-                          ? "For 1-tap connection without app switching, tap 'Open in Phantom App' below. Or connect via deep link to continue."
-                          : "Have Phantom or a Solana wallet installed? Open directly in Phantom app for 1-tap connection or connect using Mobile Wallet Adapter."}
+                        Connect your Phantom mobile wallet to trade, buy NFTs, and sync your portfolio on Street Sync.
                       </p>
                     </div>
                   </div>
@@ -229,42 +237,75 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
               {/* Action Buttons */}
               <div className="space-y-3">
-                {isApp || isMobile || isAndroid ? (
+                {isInApp ? (
+                  /* IN-APP SOCIAL BROWSER (X / Facebook / Instagram): Shift risk to Phantom with 1-Tap App */
                   <>
-                    {/* Option 1: Open in Phantom App (1-Tap Web3 Browser) - Official Phantom recommendation */}
-                    {!isApp && (
-                      <button
-                        onClick={handleOpenInPhantomBrowser}
-                        className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer"
-                      >
-                        <Zap className="w-4 h-4 fill-primary-foreground" />
-                        <span>Open in Phantom App (1-Tap Web3)</span>
-                      </button>
-                    )}
-
-                    {/* Option 2: 2-Way Phantom Deep Link (Universal link & streetsync:// scheme) */}
                     <button
-                      onClick={handleOpenPhantomApp}
-                      className={`w-full py-3 px-4 ${
-                        isApp 
-                          ? "bg-primary text-primary-foreground font-black text-sm shadow-lg shadow-primary/25" 
-                          : "bg-secondary text-secondary-foreground font-bold text-xs border border-border shadow-sm"
-                      } font-display uppercase tracking-wider rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 cursor-pointer`}
+                      onClick={handleOpenInPhantomBrowser}
+                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer"
                     >
-                      <Zap className="w-4 h-4 fill-current" />
-                      <span>{isApp ? "Connect Phantom Wallet" : "Connect Phantom (Deep Link)"}</span>
+                      <Zap className="w-4 h-4 fill-primary-foreground" />
+                      <span>Open in Phantom App (Recommended)</span>
                     </button>
 
-                    {/* Option 3: Solflare */}
+                    <button
+                      onClick={handleOpenPhantomApp}
+                      className="w-full py-2.5 px-4 bg-secondary text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs border border-border rounded-xl hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-primary fill-primary" />
+                      <span>Connect via Deep Link</span>
+                    </button>
+
+                    <a
+                      href={isIOS ? "https://apps.apple.com/app/phantom-solana-wallet/id1598432977" : "https://play.google.com/store/apps/details?id=app.phantom"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl transition-all flex items-center justify-center gap-2 border border-border/60 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Download Phantom ({isIOS ? "App Store" : "Google Play"})</span>
+                    </a>
+
+                    <button
+                      onClick={onOpenStandardModal}
+                      className="w-full py-2 px-4 text-muted-foreground hover:text-foreground font-display uppercase tracking-wider font-bold text-[11px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Choose Other Wallet</span>
+                    </button>
+                  </>
+                ) : isApp || isMobile || isAndroid ? (
+                  /* CONVENTIONAL MOBILE BROWSER (Chrome, Safari, Firefox): Clean, simple Connect -> Return */
+                  <>
+                    {/* Primary Button: Connect Phantom */}
+                    <button
+                      onClick={handleOpenPhantomApp}
+                      className="w-full py-3.5 px-4 bg-primary text-primary-foreground font-display uppercase tracking-wider font-black text-sm rounded-xl hover:bg-primary/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-primary/25 cursor-pointer"
+                    >
+                      <Zap className="w-4 h-4 fill-primary-foreground" />
+                      <span>Connect Phantom</span>
+                    </button>
+
+                    {/* Download Phantom if not installed */}
+                    <a
+                      href={isIOS ? "https://apps.apple.com/app/phantom-solana-wallet/id1598432977" : "https://play.google.com/store/apps/details?id=app.phantom"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-3 px-4 bg-secondary text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border shadow-sm cursor-pointer"
+                    >
+                      <ExternalLink className="w-4 h-4 text-muted-foreground" />
+                      <span>Download Phantom ({isIOS ? "App Store" : "Google Play"})</span>
+                    </a>
+
+                    {/* Connect Solflare */}
                     <button
                       onClick={handleOpenSolflareApp}
-                      className="w-full py-2.5 px-4 bg-secondary/80 text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl hover:bg-secondary active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border shadow-sm cursor-pointer"
+                      className="w-full py-2.5 px-4 bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground font-display uppercase tracking-wider font-bold text-xs rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-border/50 cursor-pointer"
                     >
-                      <Zap className="w-4 h-4 text-orange-500 fill-orange-500" />
+                      <Zap className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
                       <span>Connect Solflare</span>
                     </button>
 
-                    {/* Option 4: Solana Mobile Wallet Adapter (Saga & Seed Vault) */}
+                    {/* Solana Mobile Wallet Adapter (Android Only) */}
                     {(isAndroid || isApp) && (
                       <button
                         onClick={handleConnectMwa}
