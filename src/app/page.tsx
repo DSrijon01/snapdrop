@@ -47,26 +47,39 @@ function StreetSyncContent() {
       }
     };
 
-    // Forward to target if user is returning from a subscription or wallet action
-    try {
-      const pendingSub = localStorage.getItem("street_sync_pending_subscription");
-      if (pendingSub) {
-        try {
-          const parsedSub = JSON.parse(pendingSub);
-          if (parsedSub?.targetProRoute) {
-            window.location.href = parsedSub.targetProRoute;
-            return;
-          }
-        } catch {}
-      }
-      const returnUrl = localStorage.getItem("phantom_mobile_return_url");
-      const pendingSiws = localStorage.getItem("street_sync_pending_siws");
-      if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {
+    // Only forward if user is actively returning from a mobile wallet deep link callback with payload params
+    const hasDeeplinkCallbackParams = typeof window !== "undefined" && (
+      window.location.search.includes("phantom_encryption_public_key") ||
+      window.location.search.includes("nonce") ||
+      window.location.search.includes("data") ||
+      window.location.search.includes("errorCode")
+    );
+
+    if (hasDeeplinkCallbackParams) {
+      try {
+        const pendingSub = localStorage.getItem("street_sync_pending_subscription");
+        if (pendingSub) {
+          try {
+            const parsedSub = JSON.parse(pendingSub);
+            if (parsedSub?.targetProRoute) {
+              window.location.href = parsedSub.targetProRoute;
+              return;
+            }
+          } catch {}
+        }
+        const returnUrl = localStorage.getItem("phantom_mobile_return_url");
+        const pendingSiws = localStorage.getItem("street_sync_pending_siws");
+        if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {
+          localStorage.removeItem("phantom_mobile_return_url");
+          window.location.href = "/sessions";
+          return;
+        }
+      } catch {}
+    } else {
+      try {
         localStorage.removeItem("phantom_mobile_return_url");
-        window.location.href = "/sessions";
-        return;
-      }
-    } catch {}
+      } catch {}
+    }
 
     handleGlobalResumption();
     window.addEventListener("switch_tab", handleSwitchTab);

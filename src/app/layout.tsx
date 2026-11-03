@@ -40,8 +40,26 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Street Sync | Sync Your Street",
-  description: "The next generation of digital collectibles. Connect your wallet to access the marketplace.",
+  metadataBase: new URL("https://streetsync-ss.com"),
+  title: {
+    default: "Street Sync | Solana Native Super App",
+    template: "%s | Street Sync",
+  },
+  description: "Solana Native Super App For Everyday Crypto: Real-Time Market Intelligence, High-Throughput Trading, and Digital Collectibles.",
+  keywords: [
+    "Solana",
+    "Super App",
+    "Crypto",
+    "Trading",
+    "NFTs",
+    "StreetSync",
+    "Market Data",
+    "DeFi",
+    "Web3",
+  ],
+  authors: [{ name: "Street Sync Team" }],
+  creator: "Street Sync",
+  publisher: "Street Sync",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -52,6 +70,31 @@ export const metadata: Metadata = {
     icon: "/pwa-192x192.png",
     shortcut: "/pwa-192x192.png",
     apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    title: "Street Sync | Solana Native Super App",
+    description: "Solana Native Super App For Everyday Crypto: Real-Time Market Intelligence, High-Throughput Trading, and Digital Collectibles.",
+    url: "https://streetsync-ss.com",
+    siteName: "Street Sync",
+    images: [
+      {
+        url: "/og-banner.png",
+        width: 1200,
+        height: 630,
+        alt: "Street Sync - Solana Native Super App",
+        type: "image/png",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Street Sync | Solana Native Super App",
+    description: "Solana Native Super App For Everyday Crypto: Real-Time Market Intelligence, High-Throughput Trading, and Digital Collectibles.",
+    images: ["/og-banner.png"],
+    creator: "@DSrijon_B",
+    site: "@DSrijon_B",
   },
 };
 

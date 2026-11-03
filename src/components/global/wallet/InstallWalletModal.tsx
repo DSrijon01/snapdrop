@@ -7,6 +7,7 @@ import {
   initiateSolflareMobileConnect,
   openInPhantomBrowser,
 } from "@/lib/wallet/phantomDeeplink";
+import { PhantomMobileWalletAdapter } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import toast from "react-hot-toast";
 
@@ -67,6 +68,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleOpenPhantomApp = () => {
     if (typeof window === "undefined") return;
+    PhantomMobileWalletAdapter.markExplicitUserInteraction();
     window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
     initiatePhantomMobileConnect();
     onClose();

@@ -39,6 +39,13 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
   private _readyState: WalletReadyState = WalletReadyState.NotDetected;
   private _mwaDelegate?: BaseMessageSignerWalletAdapter;
 
+  // Track whether connect() was initiated by an explicit user gesture (button click)
+  private static _isExplicitUserInteraction = false;
+
+  public static markExplicitUserInteraction(): void {
+    PhantomMobileWalletAdapter._isExplicitUserInteraction = true;
+  }
+
   constructor(options?: { mwaDelegate?: BaseMessageSignerWalletAdapter }) {
     super();
 
@@ -125,12 +132,27 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     }
 
     try {
+      // 1. If stored session exists, silently restore it without redirecting
       const stored = getStoredPhantomSession();
       if (stored && stored.publicKey) {
         this._publicKey = new PublicKey(stored.publicKey);
         this.emit("connect", this._publicKey);
         return;
       }
+
+      // 2. CRITICAL PROTECTION: Never redirect on background autoConnect!
+      // If there is no stored session, and this was an automatic background connect()
+      // (from WalletProvider autoConnect on page load), DO NOT redirect the browser to phantom.com.
+      // Visitors must always see the main website landing page.
+      if (!PhantomMobileWalletAdapter._isExplicitUserInteraction) {
+        console.debug(
+          "[PhantomMobileAdapter] AutoConnect skipped: no stored session and not user-initiated."
+        );
+        return;
+      }
+
+      // Reset user gesture flag after consuming it
+      PhantomMobileWalletAdapter._isExplicitUserInteraction = false;
 
       if (this.connecting) return;
 
@@ -144,6 +166,7 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       throw error;
     } finally {
       this._connecting = false;
+      PhantomMobileWalletAdapter._isExplicitUserInteraction = false;
     }
   }
 

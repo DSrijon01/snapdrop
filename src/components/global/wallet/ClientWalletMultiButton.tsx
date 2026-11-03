@@ -9,7 +9,7 @@ import { InstallWalletModal } from "./InstallWalletModal";
 
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
-import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import { PhantomMobileWalletAdapter, PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 
 const BaseWalletMultiButton = dynamic(
   async () => (await import("@solana/wallet-adapter-react-ui")).WalletMultiButton,
@@ -72,6 +72,7 @@ export const ClientWalletMultiButton = (props: any) => {
   const handleClick = () => {
     // If mobile session exists but disconnected, connect directly without showing any wallet selector
     if (hasMobileSession && !connected) {
+      PhantomMobileWalletAdapter.markExplicitUserInteraction();
       select(PhantomMobileWalletName);
       connect().catch(() => {});
       return;

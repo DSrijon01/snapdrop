@@ -544,9 +544,21 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     [network]
   );
 
+  // Only autoConnect on mobile if an established session already exists in storage.
+  // This prevents un-authenticated mobile visitors from triggering any background wallet prompts or redirects.
+  const shouldAutoConnect = useMemo(() => {
+    if (typeof window === "undefined") return false;
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const hasInjected = Boolean((window as any).phantom?.solana || (window as any).solana);
+    if (isMobile && !hasInjected) {
+      return Boolean(getStoredPhantomSession()?.publicKey);
+    }
+    return true;
+  }, []);
+
   return (
     <ConnectionProvider endpoint={endpoint} config={{ commitment: "confirmed" }}>
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect={shouldAutoConnect}>
         <WalletModalProvider>
           <WalletExtensionWatcher />
           <PhantomMobileRedirectWatcher />
