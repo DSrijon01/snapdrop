@@ -197,20 +197,20 @@ export const ProStatusBar: React.FC<{
 
   return (
     <div
-      className={`w-full max-w-7xl mx-auto mb-6 px-4 py-3 rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-3 text-xs font-mono ${className}`}
+      className={`w-full max-w-7xl mx-auto mb-4 sm:mb-6 px-3 py-2 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border border-primary/20 backdrop-blur-md flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-xs font-mono ${className}`}
     >
-      <div className="flex items-center gap-2.5 text-foreground">
-        <span className="relative flex h-2.5 w-2.5">
+      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2.5 text-foreground min-w-0">
+        <span className="relative flex h-2 w-2 sm:h-2.5 sm:w-2.5 shrink-0">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+          <span className="relative inline-flex rounded-full h-2 w-2 sm:h-2.5 sm:w-2.5 bg-emerald-500" />
         </span>
-        <span className="font-bold text-primary flex items-center gap-1.5 uppercase tracking-wide">
-          <ShieldCheck className="w-4 h-4" />
+        <span className="font-bold text-primary flex items-center gap-1 uppercase tracking-wide text-[11px] sm:text-xs shrink-0">
+          <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           {MODULE_NAMES[moduleId] || "Pro"} Active
         </span>
         <span className="text-muted-foreground hidden sm:inline">•</span>
-        <span className="text-muted-foreground flex items-center gap-1">
-          <Clock className="w-3.5 h-3.5 text-primary" />
+        <span className="text-muted-foreground flex items-center gap-1 text-[11px] sm:text-xs shrink-0">
+          <Clock className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-primary" />
           <strong className="text-foreground">{timer.formattedCompact}</strong>
           <span className="hidden md:inline">
             ({new Date(sub.expiresAt).toLocaleDateString()} {new Date(sub.expiresAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})
@@ -220,10 +220,10 @@ export const ProStatusBar: React.FC<{
 
       <button
         onClick={() => openSubscriptionModal(moduleId)}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary font-bold uppercase tracking-wider text-[11px] transition-all hover:scale-105 active:scale-95"
+        className="flex items-center gap-1 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg sm:rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/30 text-primary font-bold uppercase tracking-wider text-[10px] sm:text-[11px] transition-all hover:scale-105 active:scale-95 shrink-0 ml-auto sm:ml-0"
       >
         <span>Extend / Manage</span>
-        <ArrowUpRight className="w-3.5 h-3.5" />
+        <ArrowUpRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
       </button>
     </div>
   );

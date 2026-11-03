@@ -141,7 +141,7 @@ export const SubscriptionModal: React.FC = () => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: "spring", duration: 0.5 }}
-            className="relative w-full max-w-lg bg-card border border-border/80 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-hidden font-sans my-auto max-h-[90vh] overflow-y-auto scrollbar-hide"
+            className="relative w-full max-w-lg bg-card border border-border/80 rounded-2xl sm:rounded-3xl p-4 sm:p-7 shadow-2xl overflow-hidden font-sans my-auto max-h-[88dvh] overflow-y-auto scrollbar-hide"
           >
             {/* Background Glows */}
             <div className="absolute top-0 right-0 w-36 h-36 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
@@ -259,7 +259,7 @@ export const SubscriptionModal: React.FC = () => {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-2.5">
                       {(Object.keys(SUBSCRIPTION_PLANS) as SubscriptionPlanId[]).map((planKey) => {
                         const plan = SUBSCRIPTION_PLANS[planKey];
                         const isSelected = selectedPlanId === planKey;
@@ -269,7 +269,7 @@ export const SubscriptionModal: React.FC = () => {
                             key={plan.id}
                             type="button"
                             onClick={() => setSelectedPlanId(plan.id)}
-                            className={`relative p-3 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between ${
+                            className={`relative p-2.5 sm:p-3 rounded-xl sm:rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between ${
                               isSelected
                                 ? "bg-primary/10 border-primary shadow-[0_0_15px_rgba(var(--primary),0.2)] ring-1 ring-primary"
                                 : "bg-card/45 border-border/70 hover:border-border hover:bg-muted/40"
@@ -277,7 +277,7 @@ export const SubscriptionModal: React.FC = () => {
                           >
                             {plan.badge && (
                               <span
-                                className={`absolute -top-2 right-2 px-1.5 py-0.5 rounded-full text-[8px] font-mono uppercase font-bold tracking-tight ${
+                                className={`absolute -top-2 right-2 px-1.5 py-0.5 rounded-full text-[8px] sm:text-[9px] font-mono uppercase font-bold tracking-tight ${
                                   plan.popular
                                     ? "bg-primary text-primary-foreground shadow-sm"
                                     : "bg-muted text-muted-foreground border border-border"
@@ -287,13 +287,19 @@ export const SubscriptionModal: React.FC = () => {
                               </span>
                             )}
 
-                            <div>
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs font-display uppercase tracking-tight text-foreground">
-                                  {plan.durationDays} {plan.durationDays === 1 ? "Day" : "Days"}
-                                </span>
+                            <div className="w-full">
+                              <div className="flex items-center justify-between gap-1.5">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-bold text-xs font-display uppercase tracking-tight text-foreground">
+                                    {plan.durationDays} {plan.durationDays === 1 ? "Day" : "Days"}
+                                  </span>
+                                  {/* Mobile-only inline price */}
+                                  <span className="sm:hidden font-mono font-black text-xs text-primary">
+                                    • {plan.priceSol} SOL
+                                  </span>
+                                </div>
                                 {isSelected && (
-                                  <div className="w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
+                                  <div className="w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center text-primary-foreground shrink-0">
                                     <Check size={10} strokeWidth={3} />
                                   </div>
                                 )}
@@ -303,7 +309,7 @@ export const SubscriptionModal: React.FC = () => {
                               </p>
                             </div>
 
-                            <div className="mt-3 pt-2 border-t border-border/40">
+                            <div className="hidden sm:block mt-3 pt-2 border-t border-border/40 w-full">
                               <span className="text-base font-black font-display text-primary">
                                 {plan.priceSol} <span className="text-[10px] font-mono text-muted-foreground">SOL</span>
                               </span>
