@@ -5,6 +5,7 @@ import { ClientWalletMultiButton as WalletMultiButton } from "@/components/globa
 import { AnimatedBackground } from "@/components/global/theme-logo/AnimatedBackground";
 import { StackedNFTGallery } from "@/app/snbl/_components/StackedNFTGallery";
 import { NFTGallery } from "@/components/features/nft-marketplace/NFTGallery";
+import { WebsiteHeroBanner } from "@/components/global/banner/WebsiteHeroBanner";
 
 import { Marketplace } from "@/components/features/nft-marketplace/Marketplace";
 import { ForSale } from "@/components/features/nft-marketplace/ForSale";
@@ -171,6 +172,10 @@ function StreetSyncContent() {
             <div className="animate-in fade-in duration-500">
                 {activeTab === 'stream' ? (
                     <div className="container mx-auto px-4 py-4 space-y-4">
+                        <section>
+                            <WebsiteHeroBanner />
+                        </section>
+
                         <section>
                             <StackedNFTGallery />
                         </section>

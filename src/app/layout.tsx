@@ -14,6 +14,7 @@ import { SubscriptionProvider } from "@/context/SubscriptionContext";
 import { SubscriptionModal } from "@/components/global/subscription/SubscriptionModal";
 import { PWARegister } from "@/components/global/pwa/PWARegister";
 import { InstallPromptModal } from "@/components/global/pwa/InstallPromptModal";
+import { SocialPromoPopupModal } from "@/components/global/banner/SocialPromoPopupModal";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -78,10 +79,24 @@ export const metadata: Metadata = {
     siteName: "Street Sync",
     images: [
       {
-        url: "/og-banner.png",
-        width: 1200,
-        height: 630,
+        url: "/banners/banner-facebook.png",
+        width: 1024,
+        height: 576,
         alt: "Street Sync - Solana Native Super App",
+        type: "image/png",
+      },
+      {
+        url: "/banners/banner-instagram.png",
+        width: 1024,
+        height: 1024,
+        alt: "Street Sync - Solana Native Super App (Instagram Square Edition)",
+        type: "image/png",
+      },
+      {
+        url: "/banners/banner-x.png",
+        width: 1024,
+        height: 480,
+        alt: "Street Sync - Solana Native Super App (X Edition)",
         type: "image/png",
       },
     ],
@@ -92,7 +107,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Street Sync | Solana Native Super App",
     description: "Solana Native Super App For Everyday Crypto: Real-Time Market Intelligence, High-Throughput Trading, and Digital Collectibles.",
-    images: ["/og-banner.png"],
+    images: ["/banners/banner-x.png"],
     creator: "@DSrijon_B",
     site: "@DSrijon_B",
   },
@@ -163,6 +178,7 @@ export default function RootLayout({
                 <MobileNavDock />
               </div>
               <InstallPromptModal />
+              <SocialPromoPopupModal />
               <Toaster position="bottom-right" />
               <SubscriptionModal />
             </SubscriptionProvider>
