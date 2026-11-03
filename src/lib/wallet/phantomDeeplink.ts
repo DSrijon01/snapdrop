@@ -421,17 +421,20 @@ export function initiatePhantomMobileSignAndSendTransaction(
  * Decrypts payload, sets session and walletName immediately so autoConnect works seamlessly,
  * dispatches appropriate events, and strips query parameters from URL.
  */
-let lastProcessedResult: {
+export interface MobileRedirectResult {
   handled: boolean;
   type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
   publicKey?: string;
   signature?: string;
   transaction?: string;
   transactions?: string[];
+  walletType?: "phantom" | "solflare";
   error?: string;
-} | null = null;
+}
 
-export function getLastProcessedResult() {
+let lastProcessedResult: MobileRedirectResult | null = null;
+
+export function getLastProcessedResult(): MobileRedirectResult | null {
   return lastProcessedResult;
 }
 
@@ -439,15 +442,7 @@ export function clearLastProcessedResult() {
   lastProcessedResult = null;
 }
 
-export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
-  handled: boolean;
-  type?: "connect" | "signMessage" | "signTransaction" | "signAllTransactions" | "signature" | "error";
-  publicKey?: string;
-  signature?: string;
-  transaction?: string;
-  transactions?: string[];
-  error?: string;
-} {
+export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileRedirectResult {
   if (typeof window === "undefined") return { handled: false };
 
   let urlParams: URLSearchParams;
@@ -648,13 +643,14 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           new CustomEvent("phantom_mobile_connected", { detail: sessionData })
         );
 
-        lastProcessedResult = {
+        const result: MobileRedirectResult = {
           handled: true,
           type: "connect",
           publicKey: payload.public_key,
           walletType,
         };
-        return lastProcessedResult;
+        lastProcessedResult = result;
+        return result;
       }
 
       // 2. Sign Transaction Response
@@ -668,12 +664,13 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        lastProcessedResult = {
+        const result: MobileRedirectResult = {
           handled: true,
           type: "signTransaction",
           transaction: payload.transaction,
         };
-        return lastProcessedResult;
+        lastProcessedResult = result;
+        return result;
       }
 
       // 3. Sign All Transactions Response
@@ -689,12 +686,13 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        lastProcessedResult = {
+        const result: MobileRedirectResult = {
           handled: true,
           type: "signAllTransactions",
           transactions: payload.transactions,
         };
-        return lastProcessedResult;
+        lastProcessedResult = result;
+        return result;
       }
 
       // 4. Sign Message or SignAndSend Signature Response
@@ -711,12 +709,13 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           })
         );
 
-        lastProcessedResult = {
+        const result: MobileRedirectResult = {
           handled: true,
           type: "signature",
           signature: payload.signature,
         };
-        return lastProcessedResult;
+        lastProcessedResult = result;
+        return result;
       }
     } catch (parseErr: any) {
       cleanUrl();
