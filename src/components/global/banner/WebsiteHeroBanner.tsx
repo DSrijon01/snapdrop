@@ -132,6 +132,38 @@ export function WebsiteHeroBanner() {
             </div>
           </div>
 
+          {/* Official Community Channels */}
+          <div className="flex items-center gap-2 pt-0.5">
+            <span className="text-[11px] font-mono text-muted-foreground font-bold uppercase">Join:</span>
+            <a
+              href="https://x.com/streetsyncss"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded bg-muted/60 hover:bg-muted text-foreground text-[11px] font-mono font-bold border border-border transition-colors"
+              title="Follow Street Sync on 𝕏"
+            >
+              𝕏
+            </a>
+            <a
+              href="https://t.me/streetsync"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded bg-muted/60 hover:bg-muted text-foreground text-[11px] font-mono font-bold border border-border transition-colors"
+              title="Join Street Sync Telegram"
+            >
+              Telegram
+            </a>
+            <a
+              href="https://discord.gg/gTz6DDmFq"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-2 py-0.5 rounded bg-muted/60 hover:bg-muted text-foreground text-[11px] font-mono font-bold border border-border transition-colors"
+              title="Join Street Sync Discord"
+            >
+              Discord
+            </a>
+          </div>
+
           {/* Action Button */}
           <div className="pt-1">
             <button
@@ -147,3 +179,4 @@ export function WebsiteHeroBanner() {
     </div>
   );
 }
+

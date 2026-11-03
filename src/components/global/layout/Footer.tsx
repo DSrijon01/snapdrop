@@ -43,15 +43,36 @@ export function Footer() {
         </Link>
         
         <div className="flex items-center space-x-3 pl-4 border-l border-border m-0">
-          <Link href="#" className="hover:text-foreground transition-colors" aria-label="Discord">
+          <a
+            href="https://discord.gg/gTz6DDmFq"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+            aria-label="Discord"
+            title="Join Street Sync Discord"
+          >
             <Discord className="w-3.5 h-3.5" />
-          </Link>
-          <Link href="#" className="hover:text-foreground transition-colors" aria-label="Telegram">
+          </a>
+          <a
+            href="https://t.me/streetsync"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+            aria-label="Telegram"
+            title="Join Street Sync Telegram"
+          >
             <Send className="w-3.5 h-3.5" />
-          </Link>
-          <Link href="#" className="hover:text-foreground transition-colors" aria-label="Twitter">
+          </a>
+          <a
+            href="https://x.com/streetsyncss"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-foreground transition-colors"
+            aria-label="X (Twitter)"
+            title="Follow Street Sync on 𝕏"
+          >
             <Twitter className="w-3.5 h-3.5" />
-          </Link>
+          </a>
         </div>
       </div>
 

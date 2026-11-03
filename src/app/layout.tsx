@@ -108,8 +108,8 @@ export const metadata: Metadata = {
     title: "Street Sync | Solana Native Super App",
     description: "Solana Native Super App For Everyday Crypto: Real-Time Market Intelligence, High-Throughput Trading, and Digital Collectibles.",
     images: ["/banners/banner-x.png"],
-    creator: "@DSrijon_B",
-    site: "@DSrijon_B",
+    creator: "@streetsyncss",
+    site: "@streetsyncss",
   },
 };
 

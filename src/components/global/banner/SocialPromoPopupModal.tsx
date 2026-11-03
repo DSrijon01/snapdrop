@@ -36,8 +36,8 @@ const PLATFORMS: Record<SocialPlatform, PlatformConfig> = {
     imageSrc: "/banners/banner-x.png",
     imageAlt: "Street Sync - Follow On 𝕏 Coming Soon Banner",
     aspectClass: "aspect-[1024/480]",
-    primaryActionLabel: "Follow @DSrijon_B on 𝕏",
-    primaryActionUrl: "https://x.com/DSrijon_B",
+    primaryActionLabel: "Follow @streetsyncss on 𝕏",
+    primaryActionUrl: "https://x.com/streetsyncss",
     accentColor: "#000000",
     promoParam: "ref=x",
   },
@@ -361,6 +361,39 @@ export function SocialPromoPopupModal() {
                 )}
               </button>
             </div>
+
+            {/* Official Community Channels */}
+            <div className="pt-1 flex items-center justify-between flex-wrap gap-2 text-xs font-mono">
+              <span className="text-muted-foreground font-bold uppercase text-[11px]">
+                Official Channels:
+              </span>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://x.com/streetsyncss"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-[11px] font-bold border border-border flex items-center gap-1 transition-colors"
+                >
+                  <span>𝕏 @streetsyncss</span>
+                </a>
+                <a
+                  href="https://t.me/streetsync"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-[11px] font-bold border border-border flex items-center gap-1 transition-colors"
+                >
+                  <span>✈ Telegram</span>
+                </a>
+                <a
+                  href="https://discord.gg/gTz6DDmFq"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-[11px] font-bold border border-border flex items-center gap-1 transition-colors"
+                >
+                  <span>💬 Discord</span>
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Footer Actions */}
@@ -399,3 +432,4 @@ export function SocialPromoPopupModal() {
     </AnimatePresence>
   );
 }
+

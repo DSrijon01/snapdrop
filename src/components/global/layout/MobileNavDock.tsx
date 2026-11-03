@@ -383,29 +383,32 @@ export function MobileNavDock() {
                 <div className="pt-2 flex flex-col gap-3">
                   <div className="flex items-center justify-center gap-6 text-muted-foreground">
                     <a
-                      href="https://discord.com"
+                      href="https://discord.gg/gTz6DDmFq"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:text-foreground transition-colors"
                       aria-label="Discord"
+                      title="Join Street Sync Discord"
                     >
                       <Discord size={18} />
                     </a>
                     <a
-                      href="https://t.me"
+                      href="https://t.me/streetsync"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:text-foreground transition-colors"
                       aria-label="Telegram"
+                      title="Join Street Sync Telegram"
                     >
                       <Send size={18} />
                     </a>
                     <a
-                      href="https://twitter.com"
+                      href="https://x.com/streetsyncss"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:text-foreground transition-colors"
-                      aria-label="Twitter"
+                      aria-label="X (Twitter)"
+                      title="Follow Street Sync on 𝕏"
                     >
                       <Twitter size={18} />
                     </a>
