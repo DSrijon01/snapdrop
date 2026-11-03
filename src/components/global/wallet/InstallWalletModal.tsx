@@ -29,6 +29,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
   const [isApp, setIsApp] = useState(false);
+  const [isInApp, setIsInApp] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -37,6 +38,7 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
       setIsIOS(/iPhone|iPad|iPod/i.test(ua));
       setIsAndroid(/Android/i.test(ua) || isStandaloneApp());
       setIsApp(isStandaloneApp());
+      setIsInApp(/Twitter|Instagram|FBAN|FBAV|Snapchat|Line\//i.test(ua));
 
       let isPending = false;
       try {
@@ -200,9 +202,13 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                   <div className="flex items-start gap-2.5">
                     <Smartphone className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                     <div className="text-xs">
-                      <p className="font-bold text-foreground">Mobile Solana Wallet</p>
+                      <p className="font-bold text-foreground">
+                        {isInApp ? "Twitter / Social Browser" : "Mobile Solana Wallet"}
+                      </p>
                       <p className="text-muted-foreground leading-relaxed mt-0.5">
-                        Have Phantom or a Solana wallet installed? Open directly in Phantom app for 1-tap connection or connect using Mobile Wallet Adapter.
+                        {isInApp
+                          ? "For 1-tap connection without app switching, tap 'Open in Phantom App' below. Or connect via deep link to continue."
+                          : "Have Phantom or a Solana wallet installed? Open directly in Phantom app for 1-tap connection or connect using Mobile Wallet Adapter."}
                       </p>
                     </div>
                   </div>

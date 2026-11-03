@@ -270,9 +270,11 @@ const PhantomMobileRedirectWatcher: FC = () => {
     const res = processPhantomMobileRedirect();
     if (res.handled) {
       if (res.type === "connect" && res.publicKey) {
-        let storedWalletType = "phantom";
+        let storedWalletType = (res as any).walletType || "phantom";
         try {
-          storedWalletType = sessionStorage.getItem("mobile_wallet_type") || "phantom";
+          if (!(res as any).walletType) {
+            storedWalletType = sessionStorage.getItem("mobile_wallet_type") || "phantom";
+          }
         } catch {}
         activateConnectedWallet(storedWalletType, res.publicKey);
 

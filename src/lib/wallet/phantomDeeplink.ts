@@ -177,13 +177,36 @@ export function initiateMobileWalletConnect(
   }
 
   const dappKeyPair = getOrCreateDappKeyPair();
+  const dappPubStr = bs58.encode(dappKeyPair.publicKey);
+  const dappSecStr = bs58.encode(dappKeyPair.secretKey);
+
   try {
-    sessionStorage.setItem("street_sync_temp_dapp_pubkey", bs58.encode(dappKeyPair.publicKey));
-    sessionStorage.setItem("street_sync_temp_dapp_seckey", bs58.encode(dappKeyPair.secretKey));
+    sessionStorage.setItem("street_sync_temp_dapp_pubkey", dappPubStr);
+    sessionStorage.setItem("street_sync_temp_dapp_seckey", dappSecStr);
+    localStorage.setItem("street_sync_temp_dapp_pubkey", dappPubStr);
+    localStorage.setItem("street_sync_temp_dapp_seckey", dappSecStr);
   } catch {}
 
   const currentUrl = customRedirectUrl || window.location.href;
-  const redirectLink = getMobileRedirectLink(currentUrl);
+  const baseRedirect = getMobileRedirectLink(currentUrl);
+
+  // CRITICAL: Attach ephemeral handshake keys to redirect_link.
+  // In-app browsers (e.g. Twitter, Instagram) launch Phantom, but on iOS/Android,
+  // Phantom redirects back by opening the system default browser (e.g. Chrome or Safari).
+  // Because Chrome's localStorage/sessionStorage is completely isolated from Twitter's in-app webview,
+  // passing the ephemeral dapp keys via redirect_link guarantees that whichever browser receives the callback
+  // can instantly and flawlessly derive the shared secret and decrypt the payload.
+  let redirectLink = baseRedirect;
+  try {
+    const redirectUrlObj = new URL(baseRedirect);
+    redirectUrlObj.searchParams.set("dapp_pub", dappPubStr);
+    redirectUrlObj.searchParams.set("dapp_sec", dappSecStr);
+    redirectUrlObj.searchParams.set("mw_type", walletType);
+    redirectLink = redirectUrlObj.toString();
+  } catch {
+    const sep = baseRedirect.includes("?") ? "&" : "?";
+    redirectLink = `${baseRedirect}${sep}dapp_pub=${encodeURIComponent(dappPubStr)}&dapp_sec=${encodeURIComponent(dappSecStr)}&mw_type=${encodeURIComponent(walletType)}`;
+  }
 
   sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
   try {
@@ -466,6 +489,9 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
       cleanParams.delete("data");
       cleanParams.delete("errorCode");
       cleanParams.delete("errorMessage");
+      cleanParams.delete("dapp_pub");
+      cleanParams.delete("dapp_sec");
+      cleanParams.delete("mw_type");
 
       const newSearch = cleanParams.toString();
       const newUrl =
@@ -519,20 +545,45 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
     try {
       let dappKeyPair = getOrCreateDappKeyPair();
       let sharedSecret: Uint8Array;
+      const returnedWalletType =
+        (urlParams.get("mw_type") as "phantom" | "solflare") ||
+        (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") ||
+        "phantom";
 
       if (phantomPubKeyStr) {
         // Connect response contains wallet's encryption public key
-        // Recover exact temporary dapp keys used during initiateMobileWalletConnect if available
-        try {
-          const tempPub = sessionStorage.getItem("street_sync_temp_dapp_pubkey");
-          const tempSec = sessionStorage.getItem("street_sync_temp_dapp_seckey");
-          if (tempPub && tempSec) {
+        // 1. First priority: Check if ephemeral dapp keys were passed via URL parameters
+        // (CRITICAL for cross-browser returns, e.g. when Twitter in-app browser delegates to Phantom,
+        // and Phantom redirects to the phone's default browser like Chrome or Safari).
+        const urlDappPub = urlParams.get("dapp_pub");
+        const urlDappSec = urlParams.get("dapp_sec");
+
+        if (urlDappPub && urlDappSec) {
+          try {
             dappKeyPair = {
-              publicKey: bs58.decode(tempPub),
-              secretKey: bs58.decode(tempSec),
+              publicKey: bs58.decode(urlDappPub),
+              secretKey: bs58.decode(urlDappSec),
             };
+          } catch (e) {
+            console.warn("[MobileDeeplink] Error decoding URL dapp keys:", e);
           }
-        } catch {}
+        } else {
+          // 2. Second priority: Recover exact temporary dapp keys from storage
+          try {
+            const tempPub =
+              sessionStorage.getItem("street_sync_temp_dapp_pubkey") ||
+              localStorage.getItem("street_sync_temp_dapp_pubkey");
+            const tempSec =
+              sessionStorage.getItem("street_sync_temp_dapp_seckey") ||
+              localStorage.getItem("street_sync_temp_dapp_seckey");
+            if (tempPub && tempSec) {
+              dappKeyPair = {
+                publicKey: bs58.decode(tempPub),
+                secretKey: bs58.decode(tempSec),
+              };
+            }
+          } catch {}
+        }
 
         const phantomPubKey = bs58.decode(phantomPubKeyStr);
         sharedSecret = nacl.box.before(phantomPubKey, dappKeyPair.secretKey);
@@ -569,7 +620,9 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
       // 1. Connect Response
       if (payload.public_key && payload.session) {
         const walletType =
-          (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") || "phantom";
+          returnedWalletType ||
+          (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") ||
+          "phantom";
 
         const sessionData: PhantomMobileSession = {
           publicKey: payload.public_key,
@@ -599,6 +652,7 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): {
           handled: true,
           type: "connect",
           publicKey: payload.public_key,
+          walletType,
         };
         return lastProcessedResult;
       }
