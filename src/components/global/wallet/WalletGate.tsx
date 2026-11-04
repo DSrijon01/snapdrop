@@ -85,7 +85,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
             {showExitMessage ? (
               <span>System <span className="text-destructive">Disconnected</span>.</span>
             ) : (
-              <span>Sync Your <span className="text-primary">Street</span>.</span>
+              <span>Sync <span className="text-primary">It</span>.</span>
             )}
           </h2>
           <p className="text-sm sm:text-base lg:text-xl text-muted-foreground mb-6 sm:mb-8 leading-relaxed font-light">
