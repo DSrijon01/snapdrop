@@ -124,6 +124,29 @@ git status -s
 
 ---
 
+### Incident #5: Mobile Subscription Deep Link Callback Parameter Dropping & Duplicate Broadcast Crash
+- **Date/Commit**: November 2026 / Commit `46841ee`
+- **Error Log / Symptom**:
+  Mobile users subscribing via Phantom or Solflare experiencing broken redirects and landing on `GlobalErrorPage` (`src/app/error.tsx`):
+  ```text
+  Client Exception Caught by Global Boundary: An unexpected error disrupted your browser session.
+  ```
+- **Trigger**: Subscribing to Pro tiers on mobile browsers (Chrome / Safari / Android WebShell).
+- **Root Cause**:
+  1. `src/app/page.tsx` synchronously forwarded `window.location.href = parsedSub.targetProRoute` upon detecting `hasDeeplinkCallbackParams`, stripping `?nonce=...&data=...` before the decryption routine could broadcast the signed transaction to Solana.
+  2. `SubscriptionContext.tsx` and `pendingTransactions.ts` both broadcast the raw signed transaction concurrently, causing `already been processed` errors.
+  3. `SubscriptionContext.tsx` lacked Solflare mobile event listeners.
+  4. `safeLocalStorageSet` threw uncaught `QuotaExceededError` when storage was near capacity.
+- **Recalibration & Fix**:
+  1. Removed synchronous route hijack from `src/app/page.tsx`; allow `handleGlobalResumption()` and `resumePendingTransactions()` to run first.
+  2. Unified broadcast delegation inside `SubscriptionContext.tsx` to `resumePendingTransactions`.
+  3. Added Solflare mobile event listeners and error handlers.
+  4. Wrapped `safeLocalStorageSet` to prune volatile caches and keep state without throwing.
+- **Correlation with `RECURRING_ISSUES.md`**:
+  Recorded as **Issue #9** in [`RECURRING_ISSUES.md`](RECURRING_ISSUES.md).
+
+---
+
 ## Classification Guide: Build Failure vs. Recurring Runtime Issue
 
 When investigating a failure, use this guide to identify the appropriate troubleshooting playbook:
@@ -137,3 +160,4 @@ When investigating a failure, use this guide to identify the appropriate trouble
 | **Phantom Wallet Simulation** | `WalletSignTransactionError: Unexpected error`, `AccountNotFound` | **`RECURRING_ISSUES.md`** (Issue #5) | Switch Phantom from Testnet to Devnet mode |
 | **Transaction Expiry / Compute Units** | `TransactionExpiredBlockheightExceededError` | **`RECURRING_ISSUES.md`** (Issue #6) | Add `setComputeUnitPrice` (100k) and tune CU limit |
 | **Asset Uploads / Broken Images** | `400 Confirmed tx not found`, Pink placeholders, 404 on IPFS | **`RECURRING_ISSUES.md`** (Issues #1, #8) | Use `pinataUploader()` & `resolveNftImageUrl()` |
+| **Mobile Wallet Deep Link / Subscription Resumption** | Premature redirect to Pro route without subscription, `GlobalErrorPage` disruption | **`RECURRING_ISSUES.md`** (Issue #9) & **`BUILD_FAILURES.md`** (Incident #5) | Verify `page.tsx` does not hijack URL parameters before `handleGlobalResumption` finishes |
