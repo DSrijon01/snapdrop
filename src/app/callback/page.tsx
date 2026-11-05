@@ -19,12 +19,18 @@ export default function CallbackPage() {
       try {
         const result = processPhantomMobileRedirect();
         if (result.handled) {
-          setStatus("Wallet action confirmed! Resuming transaction...");
-          try {
-            const connection = new Connection(HELIUS_DEVNET_RPC, "confirmed");
-            await resumePendingTransactions(connection);
-          } catch (resErr) {
-            console.warn("[CallbackPage] Resumption note:", resErr);
+          if (result.type === "error") {
+            setStatus("Action cancelled in wallet. Returning...");
+            localStorage.removeItem("street_sync_pending_subscription");
+            localStorage.removeItem("street_sync_pending_mobile_action");
+          } else {
+            setStatus("Wallet action confirmed! Resuming transaction...");
+            try {
+              const connection = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+              await resumePendingTransactions(connection);
+            } catch (resErr) {
+              console.warn("[CallbackPage] Resumption note:", resErr);
+            }
           }
         }
       } catch (e) {
@@ -40,11 +46,21 @@ export default function CallbackPage() {
             returnUrl = "/e-plays";
           } else if (parsed.type && String(parsed.type).startsWith("SESSION")) {
             returnUrl = "/sessions";
+          } else if (parsed.type === "SUBSCRIPTION_BUY") {
+            returnUrl = parsed.data?.targetProRoute || (parsed.data?.moduleId ? `/${parsed.data.moduleId}/${parsed.data.moduleId.replace(/-/g, "")}-pro` : "/");
           } else if (parsed.type && String(parsed.type).startsWith("SNBL_")) {
             returnUrl =
               parsed.type.includes("CBL") || parsed.type.includes("SBL") || parsed.type.includes("PRO")
                 ? "/snbl/snbl-pro"
                 : "/snbl";
+          }
+        }
+
+        const rawPendingSub = localStorage.getItem("street_sync_pending_subscription");
+        if (rawPendingSub) {
+          const parsedSub = JSON.parse(rawPendingSub);
+          if (parsedSub?.targetProRoute) {
+            returnUrl = parsedSub.targetProRoute;
           }
         }
       } catch {}

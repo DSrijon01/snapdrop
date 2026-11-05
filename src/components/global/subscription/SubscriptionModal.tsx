@@ -84,6 +84,25 @@ export const SubscriptionModal: React.FC = () => {
     return () => window.removeEventListener("subscription_updated", handleSubUpdated);
   }, [activeModuleId, router]);
 
+  // Listen for global modal close and error events
+  React.useEffect(() => {
+    const handleCloseAll = () => {
+      handleClose();
+    };
+    const handleWalletError = () => {
+      setSubmitting(false);
+      handleClose();
+    };
+    window.addEventListener("street_sync_close_all_modals", handleCloseAll);
+    window.addEventListener("phantom_mobile_error", handleWalletError);
+    window.addEventListener("solflare_mobile_error", handleWalletError);
+    return () => {
+      window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
+      window.removeEventListener("phantom_mobile_error", handleWalletError);
+      window.removeEventListener("solflare_mobile_error", handleWalletError);
+    };
+  }, []);
+
   if (!activeModuleId) return null;
 
   const handleSubscribe = async () => {
@@ -98,8 +117,12 @@ export const SubscriptionModal: React.FC = () => {
     } catch (err) {
       console.error("Subscription error:", err);
     } finally {
-      setSubmitting(false);
-      toast.dismiss();
+      const pending = typeof window !== "undefined" && Boolean(localStorage.getItem("street_sync_pending_subscription"));
+      const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent));
+      if (!pending || !isMobile) {
+        setSubmitting(false);
+        toast.dismiss();
+      }
     }
   };
 

@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import bs58 from "bs58";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
-import { savePendingAction } from "@/utils/pendingTransactions";
+import { savePendingAction, resumePendingTransactions } from "@/utils/pendingTransactions";
 import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
@@ -115,39 +115,40 @@ export const getEffectiveWalletAddress = (adapterPublicKey?: PublicKey | null): 
   return null;
 };
 
-// Helper to safely write to localStorage, clearing oversized simulated feed logs if quota is full
+// Helper to safely write to localStorage, clearing oversized simulated feed logs if quota is full without throwing
 const safeLocalStorageSet = (key: string, value: string) => {
   try {
     localStorage.setItem(key, value);
   } catch (error: any) {
     if (
-      error.name === "QuotaExceededError" ||
-      error.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
-      error.code === 22
+      error?.name === "QuotaExceededError" ||
+      error?.name === "NS_ERROR_DOM_QUOTA_REACHED" ||
+      error?.code === 22
     ) {
       console.warn("Storage quota exceeded! Clearing non-essential sessions feed cache to free space...");
       try {
         localStorage.removeItem("sessions_posts");
         localStorage.removeItem("sessions_chat");
+        localStorage.removeItem("sync_feed_pro_posts");
         localStorage.setItem(key, value);
         console.log("Successfully wrote subscription after clearing cache.");
       } catch (retryError) {
         console.error("Critical storage write failure even after pruning sessions feed cache:", retryError);
-        // Absolute fallback: Clear all items except other subscriptions
+        // Absolute fallback: Clear all items except other subscriptions and pending actions
         try {
           const keys = Object.keys(localStorage);
           keys.forEach((k) => {
-            if (!k.startsWith("street_sync_sub_")) {
+            if (!k.startsWith("street_sync_sub_") && !k.startsWith("street_sync_pending_")) {
               localStorage.removeItem(k);
             }
           });
           localStorage.setItem(key, value);
         } catch (e) {
-          throw retryError;
+          console.warn("localStorage write failed even after pruning, keeping in-memory state:", e);
         }
       }
     } else {
-      throw error;
+      console.warn("localStorage write error (silenced):", error);
     }
   }
 };
@@ -356,8 +357,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return;
       }
 
-      // Check freshness (within 10 minutes)
-      if (Date.now() - pendingAction.timestamp > 10 * 60 * 1000) {
+      // Check freshness (within 15 minutes)
+      if (Date.now() - pendingAction.timestamp > 15 * 60 * 1000) {
         localStorage.removeItem("street_sync_pending_subscription");
         localStorage.removeItem("street_sync_last_signed_tx");
         localStorage.removeItem("street_sync_last_tx_signature");
@@ -400,122 +401,33 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
       if (!signedTxStr && !txSigStr) return;
 
-      let toastId: string | null = null;
-      let toastSafetyTimer: any = null;
-
+      // Delegate unified broadcast and confirmation to resumePendingTransactions to prevent duplicate broadcasting race conditions
       try {
-        toastId = toast.loading(`Confirming ${pendingAction.planName || "Pro"} subscription on Solana...`);
-        // Absolute safety guard: never leave toast spinning more than 5s
-        toastSafetyTimer = setTimeout(() => {
-          if (toastId) toast.dismiss(toastId);
-          toast.dismiss();
-        }, 5000);
-
-        let signature = txSigStr;
-        if (!signature && signedTxStr) {
-          const rawBytes = bs58.decode(signedTxStr);
-          try {
-            signature = await withSolanaRetry(async () => {
-              return await connection.sendRawTransaction(rawBytes, {
-                skipPreflight: true,
-                maxRetries: 5,
-                preflightCommitment: "confirmed",
-              });
-            });
-          } catch (sendErr: any) {
-            const sendErrStr = (sendErr?.message || "").toLowerCase();
-            if (sendErrStr.includes("already been processed") || sendErrStr.includes("0x0")) {
-              const tx = Transaction.from(rawBytes);
-              signature = bs58.encode(tx.signatures[0]?.signature || (tx as any).signature);
-            } else {
-              throw sendErr;
-            }
-          }
-        }
-
-        if (signature) {
-          await confirmTransactionRobust(connection, signature);
-
-          const subDetails: Subscription = {
-            moduleId: pendingAction.moduleId,
-            isSubscribed: true,
-            expiresAt: pendingAction.expiresAt,
-            isCancelled: false,
-            txSignature: signature,
-            planId: pendingAction.planId,
-          };
-
-          localStorage.removeItem(`street_sync_cancelled_${pendingAction.walletKey}_${pendingAction.moduleId}`);
-          safeLocalStorageSet(
-            `street_sync_sub_${pendingAction.walletKey}_${pendingAction.moduleId}`,
-            JSON.stringify(subDetails)
-          );
-          setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: subDetails }));
-
-          // Persist to Firestore asynchronously (non-blocking)
-          setDoc(doc(db, "subscriptions", `${pendingAction.walletKey}_${pendingAction.moduleId}`), {
-            walletAddress: pendingAction.walletKey,
-            moduleId: pendingAction.moduleId,
-            planId: pendingAction.planId,
-            expiresAt: pendingAction.expiresAt,
-            txSignature: signature,
-            isCancelled: false,
-            updatedAt: Date.now(),
-          }).catch((fsErr) => {
-            console.warn("Firestore mobile return save note:", fsErr);
-          });
-
-          // Immediately dismiss all modals and loading toasts
-          setShowModal(false);
-          window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
-          window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
-          window.dispatchEvent(new Event("storage"));
-
-          if (toastId) toast.dismiss(toastId);
-          toast.dismiss();
-          toast.success(
-            `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
-          );
-
-          // Clear mobile resumption storage
-          localStorage.removeItem("street_sync_pending_subscription");
-          localStorage.removeItem("street_sync_last_signed_tx");
-          localStorage.removeItem("street_sync_last_tx_signature");
-          localStorage.removeItem("phantom_mobile_return_url");
-
-          // Reroute mobile user directly to the module's Pro dashboard
-          if (typeof window !== "undefined") {
-            window.location.href = targetProRoute;
-          }
-        }
+        await resumePendingTransactions(connection);
       } catch (err: any) {
-        console.error("Failed to broadcast returned mobile subscription tx:", err);
-        if (toastId) toast.dismiss(toastId);
-        toast.dismiss();
-
-        // Check if user is actually subscribed despite error/timeout
-        if (subscriptions[pendingAction.moduleId]?.isSubscribed) {
-          setShowModal(false);
-          if (typeof window !== "undefined") {
-            window.location.href = targetProRoute;
-          }
-        } else {
-          toast.error("Subscription transaction note: " + (err?.message || "Please check status"));
-        }
-      } finally {
-        if (toastSafetyTimer) clearTimeout(toastSafetyTimer);
-        if (toastId) toast.dismiss(toastId);
-        toast.dismiss();
-        localStorage.removeItem("street_sync_pending_subscription");
-        localStorage.removeItem("street_sync_last_signed_tx");
-        localStorage.removeItem("street_sync_last_tx_signature");
-        localStorage.removeItem("phantom_mobile_return_url");
+        console.warn("[SubscriptionContext] Mobile subscription resumption note:", err);
       }
+    };
+
+    const handleMobileWalletError = (e: any) => {
+      const err = e?.detail?.error || "Transaction was cancelled in wallet.";
+      setShowModal(false);
+      toast.dismiss();
+      localStorage.removeItem("street_sync_pending_subscription");
+      localStorage.removeItem("street_sync_last_signed_tx");
+      localStorage.removeItem("street_sync_last_tx_signature");
+      localStorage.removeItem("phantom_mobile_return_url");
+      toast.error(typeof err === "string" ? err : "Transaction was cancelled in wallet.");
     };
 
     handlePendingMobileSubscription();
     window.addEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
     window.addEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
+    window.addEventListener("solflare_mobile_tx_signed", handlePendingMobileSubscription);
+    window.addEventListener("solflare_mobile_tx_sent", handlePendingMobileSubscription);
+    window.addEventListener("phantom_mobile_error", handleMobileWalletError);
+    window.addEventListener("solflare_mobile_error", handleMobileWalletError);
+
     const handleSubUpdated = (e: any) => {
       const detail = e?.detail;
       if (detail && detail.moduleId) {
@@ -532,6 +444,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => {
       window.removeEventListener("phantom_mobile_tx_signed", handlePendingMobileSubscription);
       window.removeEventListener("phantom_mobile_tx_sent", handlePendingMobileSubscription);
+      window.removeEventListener("solflare_mobile_tx_signed", handlePendingMobileSubscription);
+      window.removeEventListener("solflare_mobile_tx_sent", handlePendingMobileSubscription);
+      window.removeEventListener("phantom_mobile_error", handleMobileWalletError);
+      window.removeEventListener("solflare_mobile_error", handleMobileWalletError);
       window.removeEventListener("subscription_updated", handleSubUpdated);
       window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
     };
@@ -633,14 +549,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       savePendingAction("SUBSCRIPTION_BUY", pendingSub);
 
-      toast.loading("Awaiting wallet approval in Phantom...", { id: toastId });
+      const walletDisplayName = wallet?.adapter?.name || "wallet";
+      toast.loading(`Awaiting wallet approval in ${walletDisplayName}...`, { id: toastId });
 
       let signature: string;
       const isMobile = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
-      const isPhantomMobile = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) || (isMobile && !Boolean((window as any).phantom?.solana));
+      const isMobileWallet = Boolean((wallet?.adapter as any)?.isPhantomMobileAdapter) ||
+        Boolean((wallet?.adapter as any)?.isSolflareMobileAdapter) ||
+        (isMobile && !Boolean((window as any).phantom?.solana) && !Boolean((window as any).solflare?.isSolflare));
 
-      if (isPhantomMobile) {
-        // Mobile path: execute signAndSendTransaction in Phantom so transaction is broadcast immediately
+      if (isMobileWallet) {
+        // Mobile path: execute sendTransaction which prompts Phantom/Solflare mobile deep link
         signature = await sendTransaction(transaction, connection, {
           skipPreflight: true,
           preflightCommitment: "confirmed",
@@ -719,11 +638,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       return true;
     } catch (error: any) {
       console.error("Subscription payment failed:", error);
+      toast.dismiss(toastId);
+      toast.dismiss();
+
+      // On mobile deep link navigation, the promise might reject/abort because window.location.href launched the external wallet app.
+      // If a pending subscription was saved, DO NOT wipe it or show false-positive failure toasts!
+      const hasPendingSub = typeof window !== "undefined" && Boolean(localStorage.getItem("street_sync_pending_subscription"));
+      const isMobileCheck = typeof window !== "undefined" && (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
+      if (hasPendingSub && isMobileCheck) {
+        // User was navigated to mobile wallet app, let resumption handle return
+        return false;
+      }
+
       localStorage.removeItem("street_sync_pending_subscription");
       localStorage.removeItem("street_sync_last_signed_tx");
       localStorage.removeItem("street_sync_last_tx_signature");
-      toast.dismiss(toastId);
-      toast.dismiss();
 
       // Check if user is actually subscribed despite timeout/error
       if (subscriptions[moduleId]?.isSubscribed) {

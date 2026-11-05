@@ -57,44 +57,37 @@ function StreetSyncContent() {
       window.location.search.includes("errorCode")
     );
 
-    if (hasDeeplinkCallbackParams) {
-      try {
-        const pendingSub = localStorage.getItem("street_sync_pending_subscription");
-        if (pendingSub) {
-          try {
-            const parsedSub = JSON.parse(pendingSub);
-            if (parsedSub?.targetProRoute) {
-              window.location.href = parsedSub.targetProRoute;
-              return;
-            }
-          } catch {}
-        }
-        const returnUrl = localStorage.getItem("phantom_mobile_return_url");
-        const pendingSiws = localStorage.getItem("street_sync_pending_siws");
-        if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {
-          localStorage.removeItem("phantom_mobile_return_url");
-          window.location.href = "/sessions";
-          return;
-        }
-      } catch {}
-    } else {
-      try {
-        localStorage.removeItem("phantom_mobile_return_url");
-      } catch {}
-    }
+    // Run global transaction/session resumption first so payload decrypts, broadcasts, and saves
+    handleGlobalResumption().then(() => {
+      if (hasDeeplinkCallbackParams && typeof window !== "undefined") {
+        try {
+          const returnUrl = localStorage.getItem("phantom_mobile_return_url");
+          const pendingSiws = localStorage.getItem("street_sync_pending_siws");
+          if ((returnUrl && returnUrl.toLowerCase().includes("sessions")) || pendingSiws) {
+            localStorage.removeItem("phantom_mobile_return_url");
+            window.location.href = "/sessions";
+          }
+        } catch {}
+      }
+    });
 
-    handleGlobalResumption();
     window.addEventListener("switch_tab", handleSwitchTab);
     window.addEventListener("redirect_route", handleRedirectRoute);
     window.addEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
     window.addEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
     window.addEventListener("phantom_mobile_signed", handleGlobalResumption);
+    window.addEventListener("solflare_mobile_tx_signed", handleGlobalResumption);
+    window.addEventListener("solflare_mobile_tx_sent", handleGlobalResumption);
+    window.addEventListener("solflare_mobile_signed", handleGlobalResumption);
     return () => {
       window.removeEventListener("switch_tab", handleSwitchTab);
       window.removeEventListener("redirect_route", handleRedirectRoute);
       window.removeEventListener("phantom_mobile_tx_signed", handleGlobalResumption);
       window.removeEventListener("phantom_mobile_tx_sent", handleGlobalResumption);
       window.removeEventListener("phantom_mobile_signed", handleGlobalResumption);
+      window.removeEventListener("solflare_mobile_tx_signed", handleGlobalResumption);
+      window.removeEventListener("solflare_mobile_tx_sent", handleGlobalResumption);
+      window.removeEventListener("solflare_mobile_signed", handleGlobalResumption);
     };
   }, [connection]);
 
