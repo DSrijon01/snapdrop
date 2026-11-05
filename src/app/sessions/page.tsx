@@ -11,6 +11,8 @@ export default function SessionsPage() {
     try {
       if (
         window.location.search.includes("phantom_encryption_public_key") ||
+        window.location.search.includes("solflare_encryption_public_key") ||
+        window.location.search.includes("encryption_public_key") ||
         window.location.search.includes("nonce") ||
         window.location.search.includes("data")
       ) {

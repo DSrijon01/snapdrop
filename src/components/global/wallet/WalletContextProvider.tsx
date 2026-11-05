@@ -44,6 +44,10 @@ import {
   PhantomMobileWalletAdapter,
   PhantomMobileWalletName,
 } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import {
+  SolflareMobileWalletAdapter,
+  SolflareMobileWalletName,
+} from "@/lib/wallet/SolflareMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import { resumePendingTransactions } from "@/utils/pendingTransactions";
 
@@ -475,13 +479,16 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
 
       const isMobile =
         typeof window !== "undefined" &&
-        /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        (/Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp());
       const isAndroid =
         typeof window !== "undefined" &&
         (/Android/i.test(navigator.userAgent) || isStandaloneApp());
       const hasInjectedPhantom =
         typeof window !== "undefined" &&
         Boolean((window as any).phantom?.solana);
+      const hasInjectedSolflare =
+        typeof window !== "undefined" &&
+        Boolean((window as any).solflare?.isSolflare || (window as any).SolflareApp);
 
       const adapterList: any[] = [];
 
@@ -519,9 +526,15 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
         console.debug("[WalletContextProvider] Phantom adapter init error:", e);
       }
 
-      // 3. Solflare
+      // 3. Solflare Adapter:
+      // Mobile browsers without injected extension use SolflareMobileWalletAdapter for 2-way universal deeplinks.
+      // Desktop / injected browsers use SolflareWalletAdapter.
       try {
-        adapterList.push(new SolflareWalletAdapter());
+        const solflareAdapter =
+          isMobile && !hasInjectedSolflare
+            ? new SolflareMobileWalletAdapter()
+            : new SolflareWalletAdapter();
+        adapterList.push(solflareAdapter);
       } catch (e) {
         console.debug("[WalletContextProvider] Solflare adapter init error:", e);
       }
@@ -546,12 +559,38 @@ export const WalletContextProvider: FC<{ children: ReactNode }> = ({
     [network]
   );
 
+  // Mark explicit user gesture when user clicks any wallet in standard modal
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const handleCaptureClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target?.closest?.(
+          ".wallet-adapter-modal-list, .wallet-adapter-modal, [data-wallet-adapter-button], .wallet-adapter-button"
+        )
+      ) {
+        PhantomMobileWalletAdapter.markExplicitUserInteraction();
+        SolflareMobileWalletAdapter.markExplicitUserInteraction();
+      }
+    };
+    document.addEventListener("click", handleCaptureClick, true);
+    return () => {
+      document.removeEventListener("click", handleCaptureClick, true);
+    };
+  }, []);
+
   // Only autoConnect on mobile if an established session already exists in storage.
   // This prevents un-authenticated mobile visitors from triggering any background wallet prompts or redirects.
   const shouldAutoConnect = useMemo(() => {
     if (typeof window === "undefined") return false;
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-    const hasInjected = Boolean((window as any).phantom?.solana || (window as any).solana);
+    const isMobile =
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || isStandaloneApp();
+    const hasInjected = Boolean(
+      (window as any).phantom?.solana ||
+      (window as any).solflare?.isSolflare ||
+      (window as any).SolflareApp ||
+      (window as any).solana
+    );
     if (isMobile && !hasInjected) {
       return Boolean(getStoredPhantomSession()?.publicKey);
     }

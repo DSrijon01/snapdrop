@@ -151,6 +151,8 @@ class MainActivity : ComponentActivity() {
             val query = uri.query
             val isWalletCallback = query?.contains("nonce") == true ||
                     query?.contains("phantom_encryption_public_key") == true ||
+                    query?.contains("solflare_encryption_public_key") == true ||
+                    query?.contains("encryption_public_key") == true ||
                     query?.contains("errorCode") == true
 
             webView.post {

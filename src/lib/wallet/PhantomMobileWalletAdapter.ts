@@ -78,9 +78,9 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
         this._readyState = WalletReadyState.Installed;
       }
 
-      // Check if session was already established
+      // Check if session was already established (for Phantom only)
       const stored = getStoredPhantomSession();
-      if (stored && stored.publicKey) {
+      if (stored && stored.publicKey && stored.walletType !== "solflare") {
         try {
           this._publicKey = new PublicKey(stored.publicKey);
           // Emit connect after microtask so WalletProvider listeners are registered
@@ -97,7 +97,7 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       // Listen for custom connect / disconnect events
       window.addEventListener("phantom_mobile_connected", (e: any) => {
         const detail = e.detail;
-        if (detail && detail.publicKey) {
+        if (detail && detail.publicKey && detail.walletType !== "solflare") {
           try {
             this._publicKey = new PublicKey(detail.publicKey);
             this.emit("connect", this._publicKey);
@@ -134,7 +134,7 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
     try {
       // 1. If stored session exists, silently restore it without redirecting
       const stored = getStoredPhantomSession();
-      if (stored && stored.publicKey) {
+      if (stored && stored.publicKey && stored.walletType !== "solflare") {
         this._publicKey = new PublicKey(stored.publicKey);
         this.emit("connect", this._publicKey);
         return;

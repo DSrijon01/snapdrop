@@ -50,6 +50,8 @@ function StreetSyncContent() {
     // Only forward if user is actively returning from a mobile wallet deep link callback with payload params
     const hasDeeplinkCallbackParams = typeof window !== "undefined" && (
       window.location.search.includes("phantom_encryption_public_key") ||
+      window.location.search.includes("solflare_encryption_public_key") ||
+      window.location.search.includes("encryption_public_key") ||
       window.location.search.includes("nonce") ||
       window.location.search.includes("data") ||
       window.location.search.includes("errorCode")

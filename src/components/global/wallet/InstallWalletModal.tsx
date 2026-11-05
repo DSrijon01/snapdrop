@@ -6,8 +6,10 @@ import {
   initiatePhantomMobileConnect,
   initiateSolflareMobileConnect,
   openInPhantomBrowser,
+  openInSolflareBrowser,
 } from "@/lib/wallet/phantomDeeplink";
 import { PhantomMobileWalletAdapter } from "@/lib/wallet/PhantomMobileWalletAdapter";
+import { SolflareMobileWalletAdapter } from "@/lib/wallet/SolflareMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import toast from "react-hot-toast";
 
@@ -54,10 +56,12 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
       window.addEventListener("street_sync_close_all_modals", handleCloseAll);
       window.addEventListener("phantom_mobile_connected", handleCloseAll);
+      window.addEventListener("solflare_mobile_connected", handleCloseAll);
 
       return () => {
         window.removeEventListener("street_sync_close_all_modals", handleCloseAll);
         window.removeEventListener("phantom_mobile_connected", handleCloseAll);
+        window.removeEventListener("solflare_mobile_connected", handleCloseAll);
       };
     }
   }, [isOpen, onClose]);
@@ -65,6 +69,12 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
   const handleOpenInPhantomBrowser = () => {
     if (typeof window === "undefined") return;
     openInPhantomBrowser();
+    onClose();
+  };
+
+  const handleOpenInSolflareBrowser = () => {
+    if (typeof window === "undefined") return;
+    openInSolflareBrowser();
     onClose();
   };
 
@@ -78,6 +88,8 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
 
   const handleOpenSolflareApp = () => {
     if (typeof window === "undefined") return;
+    SolflareMobileWalletAdapter.markExplicitUserInteraction();
+    window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
     initiateSolflareMobileConnect();
     onClose();
   };
@@ -256,6 +268,14 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                       <span>Connect via Deep Link</span>
                     </button>
 
+                    <button
+                      onClick={handleOpenInSolflareBrowser}
+                      className="w-full py-2.5 px-4 bg-secondary text-secondary-foreground font-display uppercase tracking-wider font-bold text-xs border border-border rounded-xl hover:bg-secondary/80 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    >
+                      <Zap className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
+                      <span>Open in Solflare App</span>
+                    </button>
+
                     <a
                       href={isIOS ? "https://apps.apple.com/app/phantom-solana-wallet/id1598432977" : "https://play.google.com/store/apps/details?id=app.phantom"}
                       target="_blank"
@@ -304,6 +324,16 @@ export const InstallWalletModal: FC<InstallWalletModalProps> = ({
                       <Zap className="w-3.5 h-3.5 text-orange-500 fill-orange-500" />
                       <span>Connect Solflare</span>
                     </button>
+
+                    <a
+                      href={isIOS ? "https://apps.apple.com/app/solflare-solana-wallet/id1580902717" : "https://play.google.com/store/apps/details?id=com.solflare.mobile"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-1.5 px-4 text-muted-foreground hover:text-foreground font-display uppercase tracking-wider font-bold text-[10px] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      <span>Download Solflare</span>
+                    </a>
 
                     {/* Solana Mobile Wallet Adapter (Android Only) */}
                     {(isAndroid || isApp) && (

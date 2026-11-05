@@ -105,6 +105,7 @@ export function disconnectPhantomMobileSession(): void {
     console.warn("[MobileDeeplink] Error clearing session storage:", e);
   }
   window.dispatchEvent(new CustomEvent("phantom_mobile_disconnected"));
+  window.dispatchEvent(new CustomEvent("solflare_mobile_disconnected"));
 }
 
 /**
@@ -155,6 +156,27 @@ export function openInPhantomBrowser(targetUrl?: string): void {
 
   const appOrigin = "https://streetsync-ss.com";
   const browseUrl = `https://phantom.com/ul/browse/${encodeURIComponent(resolvedUrl)}?ref=${encodeURIComponent(appOrigin)}`;
+  window.location.href = browseUrl;
+}
+
+/**
+ * Opens current dApp page directly in Solflare's in-app Web3 browser.
+ * Inside Solflare's browser, window.solflare is injected natively,
+ * ensuring immediate 1-tap connection.
+ */
+export function openInSolflareBrowser(targetUrl?: string): void {
+  if (typeof window === "undefined") return;
+  const current = targetUrl || window.location.href;
+  let resolvedUrl = current;
+  try {
+    const urlObj = new URL(current);
+    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1") {
+      resolvedUrl = `https://streetsync-ss.com${urlObj.pathname}${urlObj.search}`;
+    }
+  } catch {}
+
+  const appOrigin = "https://streetsync-ss.com";
+  const browseUrl = `https://solflare.com/ul/v1/browse/${encodeURIComponent(resolvedUrl)}?ref=${encodeURIComponent(appOrigin)}`;
   window.location.href = browseUrl;
 }
 
@@ -460,13 +482,16 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
     urlParams = new URLSearchParams(window.location.search);
   }
 
+  const solflarePubKeyStr = urlParams.get("solflare_encryption_public_key");
   const phantomPubKeyStr = urlParams.get("phantom_encryption_public_key");
+  const genericPubKeyStr = urlParams.get("encryption_public_key");
+  const walletEncryptionPubKeyStr = solflarePubKeyStr || phantomPubKeyStr || genericPubKeyStr;
   const nonceStr = urlParams.get("nonce");
   const dataStr = urlParams.get("data");
   const errorCode = urlParams.get("errorCode");
   const errorMessage = urlParams.get("errorMessage");
 
-  if (!customUrlOrQuery && !phantomPubKeyStr && !nonceStr && !dataStr && !errorCode && !errorMessage) {
+  if (!customUrlOrQuery && !walletEncryptionPubKeyStr && !nonceStr && !dataStr && !errorCode && !errorMessage) {
     if (lastProcessedResult) {
       const res = lastProcessedResult;
       lastProcessedResult = null;
@@ -480,6 +505,8 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
     try {
       const cleanParams = new URLSearchParams(window.location.search);
       cleanParams.delete("phantom_encryption_public_key");
+      cleanParams.delete("solflare_encryption_public_key");
+      cleanParams.delete("encryption_public_key");
       cleanParams.delete("nonce");
       cleanParams.delete("data");
       cleanParams.delete("errorCode");
@@ -527,6 +554,11 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
         detail: { error: errMsg, code: errorCode, isSessionDead },
       })
     );
+    window.dispatchEvent(
+      new CustomEvent("solflare_mobile_error", {
+        detail: { error: errMsg, code: errorCode, isSessionDead },
+      })
+    );
 
     return {
       handled: true,
@@ -540,12 +572,18 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
     try {
       let dappKeyPair = getOrCreateDappKeyPair();
       let sharedSecret: Uint8Array;
+      const isSolflare = Boolean(
+        solflarePubKeyStr ||
+        urlParams.get("mw_type") === "solflare" ||
+        (typeof sessionStorage !== "undefined" && sessionStorage.getItem("mobile_wallet_type") === "solflare")
+      );
       const returnedWalletType =
         (urlParams.get("mw_type") as "phantom" | "solflare") ||
+        (isSolflare ? "solflare" : null) ||
         (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") ||
         "phantom";
 
-      if (phantomPubKeyStr) {
+      if (walletEncryptionPubKeyStr) {
         // Connect response contains wallet's encryption public key
         // 1. First priority: Check if ephemeral dapp keys were passed via URL parameters
         // (CRITICAL for cross-browser returns, e.g. when Twitter in-app browser delegates to Phantom,
@@ -580,8 +618,8 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
           } catch {}
         }
 
-        const phantomPubKey = bs58.decode(phantomPubKeyStr);
-        sharedSecret = nacl.box.before(phantomPubKey, dappKeyPair.secretKey);
+        const walletPubKey = bs58.decode(walletEncryptionPubKeyStr);
+        sharedSecret = nacl.box.before(walletPubKey, dappKeyPair.secretKey);
       } else {
         // Sign response uses previously derived shared secret
         const existingSession = getStoredPhantomSession();
@@ -613,14 +651,16 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
       cleanUrl();
 
       // 1. Connect Response
-      if (payload.public_key && payload.session) {
-        const walletType =
+      const connectedPubKey = payload.public_key || payload.publicKey;
+      if (connectedPubKey && payload.session) {
+        const walletType: "phantom" | "solflare" =
+          (isSolflare ? "solflare" : null) ||
           returnedWalletType ||
           (sessionStorage.getItem("mobile_wallet_type") as "phantom" | "solflare") ||
           "phantom";
 
         const sessionData: PhantomMobileSession = {
-          publicKey: payload.public_key,
+          publicKey: connectedPubKey,
           session: payload.session,
           sharedSecret: bs58.encode(sharedSecret),
           connectedAt: Date.now(),
@@ -642,11 +682,14 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
         window.dispatchEvent(
           new CustomEvent("phantom_mobile_connected", { detail: sessionData })
         );
+        window.dispatchEvent(
+          new CustomEvent("solflare_mobile_connected", { detail: sessionData })
+        );
 
         const result: MobileRedirectResult = {
           handled: true,
           type: "connect",
-          publicKey: payload.public_key,
+          publicKey: connectedPubKey,
           walletType,
         };
         lastProcessedResult = result;
@@ -660,6 +703,11 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
 
         window.dispatchEvent(
           new CustomEvent("phantom_mobile_tx_signed", {
+            detail: { transaction: payload.transaction },
+          })
+        );
+        window.dispatchEvent(
+          new CustomEvent("solflare_mobile_tx_signed", {
             detail: { transaction: payload.transaction },
           })
         );
@@ -685,6 +733,11 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
             detail: { transactions: payload.transactions },
           })
         );
+        window.dispatchEvent(
+          new CustomEvent("solflare_mobile_all_tx_signed", {
+            detail: { transactions: payload.transactions },
+          })
+        );
 
         const result: MobileRedirectResult = {
           handled: true,
@@ -704,7 +757,15 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
           new CustomEvent("phantom_mobile_signed", { detail: payload.signature })
         );
         window.dispatchEvent(
+          new CustomEvent("solflare_mobile_signed", { detail: payload.signature })
+        );
+        window.dispatchEvent(
           new CustomEvent("phantom_mobile_tx_sent", {
+            detail: { signature: payload.signature },
+          })
+        );
+        window.dispatchEvent(
+          new CustomEvent("solflare_mobile_tx_sent", {
             detail: { signature: payload.signature },
           })
         );

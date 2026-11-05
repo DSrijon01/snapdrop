@@ -28,10 +28,14 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
       const handleConnect = () => setHasMobileSession(true);
       const handleDisconnect = () => setHasMobileSession(false);
       window.addEventListener("phantom_mobile_connected", handleConnect);
+      window.addEventListener("solflare_mobile_connected", handleConnect);
       window.addEventListener("phantom_mobile_disconnected", handleDisconnect);
+      window.addEventListener("solflare_mobile_disconnected", handleDisconnect);
       return () => {
         window.removeEventListener("phantom_mobile_connected", handleConnect);
+        window.removeEventListener("solflare_mobile_connected", handleConnect);
         window.removeEventListener("phantom_mobile_disconnected", handleDisconnect);
+        window.removeEventListener("solflare_mobile_disconnected", handleDisconnect);
       };
     }
   }, []);
