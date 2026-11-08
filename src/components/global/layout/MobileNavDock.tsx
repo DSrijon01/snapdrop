@@ -28,6 +28,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useSubscription } from "@/context/SubscriptionContext";
+import { SolanaLogo } from "@/components/global/theme-logo/SolanaLogo";
 import toast from "react-hot-toast";
 
 interface NavTab {
@@ -370,11 +371,16 @@ export function MobileNavDock() {
                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-foreground font-bold">Solana Devnet</span>
                   </div>
-                  <div className="flex items-center gap-3 text-muted-foreground">
-                    <span className="font-bold text-foreground font-mono">${solPrice}</span>
-                    <div className="flex items-center gap-1">
-                      <Droplets size={12} />
-                      <span>0.000005 SOL</span>
+                  <div className="flex items-center gap-3 text-muted-foreground text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <SolanaLogo className="w-3.5 h-3.5 drop-shadow-[0_0_6px_rgba(20,241,149,0.35)]" />
+                      <span className="text-muted-foreground uppercase font-mono tracking-wider font-semibold">SOL:</span>
+                      <span className="font-bold text-foreground font-mono">${solPrice}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Droplets size={12} className="text-primary shrink-0" />
+                      <span className="text-muted-foreground uppercase font-mono tracking-wider font-semibold">Fee:</span>
+                      <span className="font-mono text-foreground font-semibold">0.000005 SOL</span>
                     </div>
                   </div>
                 </div>

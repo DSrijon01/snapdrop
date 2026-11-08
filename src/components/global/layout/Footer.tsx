@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Twitter, MessageSquare as Discord, Send, Droplets } from 'lucide-react';
+import { SolanaLogo } from '@/components/global/theme-logo/SolanaLogo';
 import { motion } from 'framer-motion';
 
 export function Footer() {
@@ -76,20 +77,18 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Second Section: Solana Live Pricing & Animated Chart */}
-      <div className="hidden md:flex items-center space-x-8">
-          <div className="flex items-center space-x-1.5 hover:text-foreground transition-colors cursor-pointer">
-              <svg className="w-3.5 h-3.5 text-primary" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M125.751 38.3845L127.871 36.2655H112.98L92.0519 15.3374H24.3217L3.39355 36.2655L1.27464 38.3845H16.1664L37.0945 17.4564H104.824L125.751 38.3845ZM125.751 68.3245L127.871 66.2055H112.98L92.0519 45.2774H24.3217L3.39355 66.2055L1.27464 68.3245H16.1664L37.0945 47.3964H104.824L125.751 68.3245ZM1.27464 96.1455L3.39355 94.0264H18.2853L39.2133 114.955H106.944L127.871 94.0264L125.751 96.1455H110.86L89.932 117.074H22.2018L1.27464 96.1455Z" fill="currentColor"/>
-              </svg>
-              <span className="font-mono">${solPrice}</span>
+      {/* Second Section: Solana Live Pricing & Network Fee */}
+      <div className="hidden md:flex items-center space-x-6">
+          <div className="flex items-center space-x-2 hover:text-foreground transition-colors cursor-pointer" title="Solana Market Price">
+              <SolanaLogo className="w-4 h-4 drop-shadow-[0_0_8px_rgba(20,241,149,0.35)]" />
+              <span className="text-muted-foreground text-[10px] uppercase font-mono tracking-wider font-semibold">SOL:</span>
+              <span className="font-mono text-foreground font-bold">${solPrice}</span>
           </div>
 
-
-
-          <div className="flex items-center space-x-1.5 hover:text-foreground transition-colors cursor-pointer text-muted-foreground/80">
-               <Droplets className="w-3 h-3" />
-               <span className="font-mono">0.000005 SOL</span>
+          <div className="flex items-center space-x-2 hover:text-foreground transition-colors cursor-pointer text-muted-foreground/80" title="Estimated Network Fee">
+               <Droplets className="w-3.5 h-3.5 text-primary shrink-0" />
+               <span className="text-muted-foreground text-[10px] uppercase font-mono tracking-wider font-semibold">Fee:</span>
+               <span className="font-mono text-foreground">0.000005 SOL</span>
           </div>
       </div>
 
