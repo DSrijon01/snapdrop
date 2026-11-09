@@ -100,19 +100,22 @@ export const SubscriptionBadge: React.FC<{
   isCancelled?: boolean;
   onClick?: () => void;
   className?: string;
-}> = ({ expiresAt, isCancelled, onClick, className = "" }) => {
+  compact?: boolean;
+}> = ({ expiresAt, isCancelled, onClick, className = "", compact = false }) => {
   const timer = useSubscriptionTimer(expiresAt);
 
   if (timer.isExpired || isCancelled) {
     return (
       <span
         onClick={onClick}
-        className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold bg-muted text-muted-foreground border border-border/80 ${
+        className={`inline-flex items-center gap-1.5 ${
+          compact ? "px-2 py-1 text-[11px]" : "px-3 py-1 text-xs"
+        } rounded-full font-mono font-bold bg-muted text-muted-foreground border border-border/80 ${
           onClick ? "cursor-pointer hover:bg-muted/80" : ""
         } ${className}`}
       >
-        <ShieldAlert className="w-3.5 h-3.5 text-muted-foreground" />
-        <span>Pro Inactive</span>
+        <ShieldAlert className={`${compact ? "w-3 h-3" : "w-3.5 h-3.5"} text-muted-foreground`} />
+        <span>{compact ? "Inactive" : "Pro Inactive"}</span>
       </span>
     );
   }
@@ -121,7 +124,9 @@ export const SubscriptionBadge: React.FC<{
     <button
       onClick={onClick}
       type="button"
-      className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wide transition-all duration-200 border ${
+      className={`inline-flex items-center ${
+        compact ? "gap-1.5 px-2.5 py-1 text-[11px]" : "gap-2 px-3 py-1.5 text-xs"
+      } rounded-full font-mono font-bold tracking-wide transition-all duration-200 border ${
         isCancelled
           ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border-amber-500/30"
           : "bg-primary/10 hover:bg-primary/20 text-primary border-primary/30 shadow-[0_0_12px_rgba(var(--primary),0.15)]"
@@ -140,8 +145,8 @@ export const SubscriptionBadge: React.FC<{
           }`}
         />
       </span>
-      <Clock className="w-3.5 h-3.5 shrink-0" />
-      <span>Pro: {timer.formattedCompact}</span>
+      <Clock className={`${compact ? "w-3 h-3" : "w-3.5 h-3.5"} shrink-0`} />
+      <span>{compact ? timer.formattedCompact : `Pro: ${timer.formattedCompact}`}</span>
     </button>
   );
 };

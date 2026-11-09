@@ -767,11 +767,9 @@ export function generateSecurityChartData(
       minute: '2-digit',
     });
 
-    const shortDate = dateObj.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      ...(timeframeLabel === '1D' ? { hour: '2-digit', minute: '2-digit' } : {})
-    });
+    const shortDate = timeframeLabel === '1D'
+      ? dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+      : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
     points.push({
       timestamp: timeMs,

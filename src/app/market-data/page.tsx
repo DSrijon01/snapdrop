@@ -23,16 +23,16 @@ export default function MarketDataPage() {
     }, []);
 
     return (
-        <div className="flex flex-col h-full overflow-hidden bg-background text-foreground font-sans">
+        <div className="flex flex-col h-full overflow-y-auto md:overflow-hidden bg-background text-foreground font-sans">
             
             {/* Local Page Header */}
-            <div className="flex items-center justify-between px-3 sm:px-6 py-2.5 sm:py-3.5 border-b border-border/40 shrink-0 gap-2">
+            <div className="flex items-center justify-between px-3 sm:px-6 py-2 sm:py-3.5 border-b border-border/40 shrink-0 gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                    <h2 className="text-lg sm:text-2xl font-black font-display uppercase tracking-tight whitespace-nowrap">
+                    <h2 className="text-base sm:text-2xl font-black font-display uppercase tracking-tight truncate">
                         Market Data
                     </h2>
                 </div>
-                <div className="shrink-0 scale-90 sm:scale-100 origin-right">
+                <div className="shrink-0">
                     <ModuleSubscriptionWidget moduleId="market-data" />
                 </div>
             </div>
@@ -95,8 +95,8 @@ export default function MarketDataPage() {
                     />
                 </div>
             
-                {/* Mobile View: Chart Tab (Full height, zero scroll, zero blank space) */}
-                <div className={`flex-1 overflow-hidden bg-background min-h-0 md:hidden ${
+                {/* Mobile View: Chart Tab (Responsive scrollable container) */}
+                <div className={`flex-1 overflow-y-auto md:overflow-hidden bg-background min-h-0 md:hidden ${
                     mobileTab === 'chart' ? 'flex flex-col flex-1 h-full' : 'hidden'
                 }`}>
                     <MarketDetails 

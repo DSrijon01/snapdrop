@@ -121,7 +121,13 @@ const NativeChart: React.FC<NativeChartProps> = ({
     }, []);
 
     const { width, height } = dimensions;
-    const margin = { top: 15, right: 65, bottom: 28, left: 10 };
+    const isMobile = width > 0 && width < 500;
+    const margin = { 
+        top: 12, 
+        right: isMobile ? 52 : 65, 
+        bottom: 24, 
+        left: isMobile ? 6 : 10 
+    };
     const plotWidth = Math.max(width - margin.left - margin.right, 20);
     const plotHeight = Math.max(height - margin.top - margin.bottom, 20);
 
@@ -130,8 +136,10 @@ const NativeChart: React.FC<NativeChartProps> = ({
         let min = Infinity;
         let max = -Infinity;
         for (const d of data) {
-            if (d.low < min) min = d.low;
-            if (d.high > max) max = d.high;
+            const vLow = typeof d.low === 'number' && !isNaN(d.low) ? d.low : (d.close ?? d.rawPrice ?? 0);
+            const vHigh = typeof d.high === 'number' && !isNaN(d.high) ? d.high : (d.close ?? d.rawPrice ?? 0);
+            if (vLow < min) min = vLow;
+            if (vHigh > max) max = vHigh;
         }
         if (!isFinite(min) || !isFinite(max)) return { yMin: 0, yMax: 100, yRange: 100 };
         const pad = (max - min) * 0.05;
@@ -144,7 +152,7 @@ const NativeChart: React.FC<NativeChartProps> = ({
     const getX = (idx: number) => margin.left + ((idx + 0.5) / data.length) * plotWidth;
     const candleWidth = Math.max(Math.min((plotWidth / data.length) * 0.75, 14), 1.5);
     const gridLevels = [0.15, 0.4, 0.65, 0.9].map((ratio) => yMin + ratio * yRange);
-    const tickStep = Math.max(Math.floor(data.length / Math.min(Math.floor(plotWidth / 85), 8)), 1);
+    const tickStep = Math.max(Math.floor(data.length / Math.min(Math.floor(plotWidth / (isMobile ? 65 : 85)), 8)), 1);
 
     const handlePointerMove = (clientX: number, clientY: number) => {
         if (!data || data.length === 0 || !containerRef.current) return;
@@ -227,10 +235,10 @@ const NativeChart: React.FC<NativeChartProps> = ({
                             <text
                                 key={d.timestamp || i}
                                 x={getX(i)}
-                                y={height - 8}
+                                y={height - 6}
                                 textAnchor="middle"
                                 fill="#888"
-                                fontSize={11}
+                                fontSize={isMobile ? 10 : 11}
                                 fontFamily="monospace"
                                 fontWeight={600}
                             >
@@ -538,11 +546,9 @@ export const MarketDetails = ({
                             minute: '2-digit',
                         });
 
-                        const shortDate = dateObj.toLocaleDateString(undefined, { 
-                            month: 'short', 
-                            day: 'numeric',
-                            ...(currentTimeframe.label === '1D' ? { hour: '2-digit', minute: '2-digit' } : {}) 
-                        });
+                        const shortDate = currentTimeframe.label === '1D'
+                            ? dateObj.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+                            : dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
                         return {
                             timestamp: timeMs,
@@ -647,7 +653,7 @@ export const MarketDetails = ({
     // Mobile Coin Chips
     const renderCoinChips = () => (
         favorites && favorites.length > 0 && (
-            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-2 mb-2 scrollbar-hide shrink-0">
+            <div className="md:hidden flex items-center gap-1.5 overflow-x-auto pb-1.5 mb-1.5 scrollbar-hide shrink-0">
                 {favorites.map((coin) => (
                     <button
                         key={coin}
@@ -699,10 +705,10 @@ export const MarketDetails = ({
         const primaryVariantSymbol = securityAsset?.primaryVariant?.symbol || `${selectedCoin}x`;
 
         return (
-            <div className="mb-2 md:mb-3 shrink-0 flex items-start justify-between gap-3">
+            <div className="mb-1.5 md:mb-3 shrink-0 flex items-start justify-between gap-2 sm:gap-3">
                 <div className="min-w-0 flex-1">
                     {/* Symbol, Name & Verified Badges */}
-                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
                         <div className="flex items-center gap-1.5">
                             {securityAsset?.imageUrl && (
                                 <img 
@@ -722,31 +728,31 @@ export const MarketDetails = ({
 
                         {/* Category & Security Trust Badges */}
                         {isSecurity ? (
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
-                                    <Building2 className="w-3 h-3" />
+                            <div className="flex flex-wrap items-center gap-1 sm:gap-1.5">
+                                <span className="px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-blue-500/15 text-blue-400 border border-blue-500/30 flex items-center gap-1">
+                                    <Building2 className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                     <span>{securityAsset?.category || knownSecurityMeta?.category || 'Equity'}</span>
                                 </span>
                                 {securityAsset?.primaryVariant?.stockVariantTier && (
-                                    <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                                        <ShieldCheck className="w-3 h-3" />
+                                    <span className="px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                                        <ShieldCheck className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                                         <span>{securityAsset.primaryVariant.stockVariantTier.replace('_', ' ')}</span>
                                     </span>
                                 )}
-                                <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
+                                <span className="px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-mono font-bold bg-primary/10 text-primary border border-primary/20">
                                     Solana: {primaryVariantSymbol}
                                 </span>
                             </div>
                         ) : (
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            <span className="px-1.5 py-0.5 rounded-md text-[9px] sm:text-[10px] font-black uppercase tracking-wider bg-amber-500/15 text-amber-400 border border-amber-500/30">
                                 Crypto Pair
                             </span>
                         )}
                     </div>
                     
                     {/* Live Pricing Display */}
-                    <div className="flex flex-col mt-1">
-                        <div className="flex flex-wrap items-baseline gap-2.5">
+                    <div className="flex flex-col mt-0.5 sm:mt-1">
+                        <div className="flex flex-wrap items-baseline gap-2 sm:gap-2.5">
                             <span className="text-2xl sm:text-3xl md:text-5xl font-mono font-black tracking-tighter text-foreground leading-none">
                                 {displayPrice}
                             </span>
@@ -754,7 +760,8 @@ export const MarketDetails = ({
                             {/* Canonical Real-World Stock Price Benchmark */}
                             {isSecurity && canonicalPriceNum > 0 && (
                                 <div className="flex items-center gap-1.5 text-xs sm:text-sm font-mono text-muted-foreground">
-                                    <span>Wall St Benchmark:</span>
+                                    <span className="hidden sm:inline">Wall St Benchmark:</span>
+                                    <span className="sm:hidden">Benchmark:</span>
                                     <span className="font-bold text-foreground">
                                         {formatPrice(canonicalPriceNum, fiat)}
                                     </span>
@@ -763,7 +770,7 @@ export const MarketDetails = ({
                         </div>
 
                         {/* Change Pill & Spread Pill */}
-                        <div className="flex flex-wrap items-center gap-2 mt-1.5">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-1 sm:mt-1.5">
                             <span className={`text-xs sm:text-sm md:text-base font-bold font-mono px-2 py-0.5 rounded-lg ${
                                 isUp ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400'
                             }`}>
@@ -772,14 +779,15 @@ export const MarketDetails = ({
 
                             {/* Spread Pill */}
                             {isSecurity && dexSpreadPct !== null && (
-                                <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded-lg border ${
+                                <span className={`text-[10px] sm:text-[11px] font-mono font-bold px-1.5 sm:px-2 py-0.5 rounded-lg border ${
                                     Math.abs(dexSpreadPct) < 0.5 
                                         ? 'bg-blue-500/10 text-blue-400 border-blue-500/30' 
                                         : dexSpreadPct > 0 
                                             ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' 
                                             : 'bg-purple-500/10 text-purple-400 border-purple-500/30'
                                 }`} title="Difference between Solana DEX token price and real-world canonical stock price">
-                                    {dexSpreadPct >= 0 ? '+' : ''}{dexSpreadPct.toFixed(2)}% Spread vs NYSE/NASDAQ
+                                    <span className="hidden sm:inline">{dexSpreadPct >= 0 ? '+' : ''}{dexSpreadPct.toFixed(2)}% Spread vs NYSE/NASDAQ</span>
+                                    <span className="sm:hidden">{dexSpreadPct >= 0 ? '+' : ''}{dexSpreadPct.toFixed(2)}% Spread</span>
                                 </span>
                             )}
 
@@ -802,7 +810,7 @@ export const MarketDetails = ({
                                 setFavorites([...favorites, selectedCoin]);
                             }
                         }}
-                        className={`px-3 py-1.5 md:px-4 md:py-2 rounded-xl font-bold text-[10px] md:text-xs transition shrink-0 shadow-xs ${
+                        className={`px-2.5 py-1 md:px-4 md:py-2 rounded-xl font-bold text-[10px] md:text-xs transition shrink-0 shadow-xs ${
                             favorites.includes(selectedCoin) 
                                 ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/20' 
                                 : 'bg-primary text-primary-foreground hover:bg-primary/90'
@@ -817,7 +825,7 @@ export const MarketDetails = ({
 
     // Timeframe and Candlestick toggles
     const renderChartControls = () => (
-        <div className="flex items-center justify-between mb-2 md:mb-3 shrink-0 gap-3">
+        <div className="flex items-center justify-between mb-1.5 md:mb-3 shrink-0 gap-2 sm:gap-3">
             <div className="flex gap-1 md:gap-2 overflow-x-auto pb-1 scrollbar-hide">
                 {TIMEFRAMES.map((tf) => (
                     <button
@@ -1134,7 +1142,7 @@ export const MarketDetails = ({
 
     // Chart component
     const renderChart = () => (
-        <div className="w-full h-[280px] sm:h-[340px] md:h-[380px] lg:h-[400px] min-h-[260px] relative shrink-0">
+        <div className="w-full h-[220px] sm:h-[300px] md:h-[380px] lg:h-[400px] min-h-[200px] relative shrink-0">
             {isLoadingChart && (
                 <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm z-10 transition-opacity rounded-2xl">
                     <div className="text-muted-foreground text-xs md:text-sm font-bold animate-pulse font-mono">Loading Chart...</div>
@@ -1158,7 +1166,7 @@ export const MarketDetails = ({
     // Mobile View: Chart Tab
     if (viewMode === 'chart') {
         return (
-            <div className="flex flex-col h-full bg-background p-3 md:p-6 lg:px-8 py-2 md:py-4 overflow-hidden select-none">
+            <div className="flex flex-col min-h-full bg-background p-2.5 sm:p-4 md:p-6 lg:px-8 py-1.5 md:py-4 pb-28 md:pb-4 overflow-y-auto md:overflow-hidden select-none">
                 {renderCoinChips()}
                 {renderHeader()}
                 {renderChartControls()}

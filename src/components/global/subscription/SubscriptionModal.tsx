@@ -358,35 +358,6 @@ export const SubscriptionModal: React.FC = () => {
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         <span>Processing Transaction...</span>
                       </button>
-                    ) : isSubscribed ? (
-                      <div className="space-y-2">
-                        <button
-                          onClick={() => {
-                            handleClose();
-                            const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
-                            router.push(proPath);
-                          }}
-                          className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-emerald-500/25 font-display"
-                        >
-                          <Zap className="w-4 h-4 fill-white" />
-                          <span>Enter {moduleName} Pro Dashboard</span>
-                        </button>
-                        <button
-                          onClick={handleSubscribe}
-                          className="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none font-display"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          <span>
-                            Extend by {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"} ({currentPlan.priceSol} SOL)
-                          </span>
-                        </button>
-                        <button
-                          onClick={() => setShowCancelConfirm(true)}
-                          className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center gap-1.5 font-bold uppercase tracking-wider text-[11px] border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none"
-                        >
-                          Unsubscribe from Plan
-                        </button>
-                      </div>
                     ) : (
                       <>
                         {/* Mobile Responsive Dedicated Actions */}
@@ -409,16 +380,47 @@ export const SubscriptionModal: React.FC = () => {
                           />
                         </div>
 
-                        {/* Desktop Standard Action */}
-                        <div className="hidden sm:block">
-                          <button
-                            onClick={handleSubscribe}
-                            className="w-full py-3.5 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-primary/20 font-display"
-                          >
-                            <span>
-                              Subscribe Now ({currentPlan.priceSol} SOL / {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"})
-                            </span>
-                          </button>
+                        {/* Desktop Standard Actions */}
+                        <div className="hidden sm:block space-y-2">
+                          {isSubscribed ? (
+                            <>
+                              <button
+                                onClick={() => {
+                                  handleClose();
+                                  const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+                                  router.push(proPath);
+                                }}
+                                className="w-full py-3.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-emerald-500/25 font-display cursor-pointer"
+                              >
+                                <Zap className="w-4 h-4 fill-white" />
+                                <span>Enter {moduleName} Pro Dashboard</span>
+                              </button>
+                              <button
+                                onClick={handleSubscribe}
+                                className="w-full py-3 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none font-display cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5" />
+                                <span>
+                                  Extend by {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"} ({currentPlan.priceSol} SOL)
+                                </span>
+                              </button>
+                              <button
+                                onClick={() => setShowCancelConfirm(true)}
+                                className="w-full py-2 bg-red-500/10 hover:bg-red-500/20 text-red-500 rounded-xl flex items-center justify-center gap-1.5 font-bold uppercase tracking-wider text-[11px] border border-red-500/20 hover:border-red-500/30 transition-all focus:outline-none cursor-pointer"
+                              >
+                                Unsubscribe from Plan
+                              </button>
+                            </>
+                          ) : (
+                            <button
+                              onClick={handleSubscribe}
+                              className="w-full py-3.5 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-primary/20 font-display cursor-pointer"
+                            >
+                              <span>
+                                Subscribe Now ({currentPlan.priceSol} SOL / {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"})
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </>
                     )}
