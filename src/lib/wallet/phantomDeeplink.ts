@@ -345,7 +345,6 @@ export function initiatePhantomMobileSignTransaction(
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
-    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";
@@ -401,7 +400,6 @@ export function initiatePhantomMobileSignAllTransactions(
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
-    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";

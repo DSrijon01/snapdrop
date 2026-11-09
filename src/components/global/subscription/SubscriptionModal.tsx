@@ -34,6 +34,7 @@ export const SubscriptionModal: React.FC = () => {
     subscribe,
     cancelSubscription,
     closeSubscriptionModal,
+    hasAccess,
   } = useSubscription();
 
   const { connected } = useWallet();
@@ -44,7 +45,7 @@ export const SubscriptionModal: React.FC = () => {
 
   const moduleName = activeModuleId ? (MODULE_NAMES[activeModuleId] || "Selected Module") : "Selected Module";
   const sub = activeModuleId ? subscriptions[activeModuleId] : undefined;
-  const isSubscribed = Boolean(sub?.isSubscribed && !sub?.isCancelled && (!sub?.expiresAt || sub.expiresAt > Date.now()));
+  const isSubscribed = activeModuleId ? hasAccess(activeModuleId) : false;
   const expiresAtDate = sub?.expiresAt ? new Date(sub.expiresAt) : null;
   const currentPlan = SUBSCRIPTION_PLANS[selectedPlanId];
 
@@ -90,7 +91,7 @@ export const SubscriptionModal: React.FC = () => {
     setSubmitting(true);
     try {
       const success = await subscribe(activeModuleId, selectedPlanId);
-      if (success || (subscriptions[activeModuleId]?.isSubscribed && !subscriptions[activeModuleId]?.isCancelled)) {
+      if (success || hasAccess(activeModuleId) || (subscriptions[activeModuleId]?.isSubscribed && !subscriptions[activeModuleId]?.isCancelled)) {
         handleClose();
         const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
         router.push(proPath);

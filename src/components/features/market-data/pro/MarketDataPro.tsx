@@ -1050,16 +1050,8 @@ export function MarketDataPro() {
                   {/* Sub actions */}
                   <div className="space-y-2.5 sm:space-y-3">
                     <button
-                      onClick={async () => {
-                        try {
-                          await openSubscriptionModal("market-data");
-                          setSimulatedSubscribe(true);
-                          setPreviewState("StateB");
-                        } catch (err) {
-                          setSimulatedSubscribe(true);
-                          setPreviewState("StateB");
-                          toast.success("Demo Mode: Pro unlocked!");
-                        }
+                      onClick={() => {
+                        openSubscriptionModal("market-data");
                       }}
                       className="w-full py-3.5 sm:py-4 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] transition-all rounded-xl font-bold uppercase tracking-wider text-xs shadow-lg shadow-primary/20 cursor-pointer font-display"
                     >

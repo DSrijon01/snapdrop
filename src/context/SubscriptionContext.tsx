@@ -7,7 +7,7 @@ import toast from "react-hot-toast";
 import bs58 from "bs58";
 import { checkSolBalance } from "@/utils/balanceCheck";
 import { withSolanaRetry, confirmTransactionRobust } from "@/utils/solanaRetry";
-import { savePendingAction } from "@/utils/pendingTransactions";
+import { savePendingAction, resumePendingTransactions } from "@/utils/pendingTransactions";
 import { PhantomMobileWalletName } from "@/lib/wallet/PhantomMobileWalletAdapter";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
@@ -400,116 +400,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       const txSigStr = localStorage.getItem("street_sync_last_tx_signature");
       if (!signedTxStr && !txSigStr) return;
 
-      let toastId: string | null = null;
-      let toastSafetyTimer: any = null;
-
+      // Delegate broadcast and confirmation directly to universal resumption processor
       try {
-        toastId = toast.loading(`Confirming ${pendingAction.planName || "Pro"} subscription on Solana...`);
-        // Absolute safety guard: never leave toast spinning more than 5s
-        toastSafetyTimer = setTimeout(() => {
-          if (toastId) toast.dismiss(toastId);
-          toast.dismiss();
-        }, 5000);
-
-        let signature = txSigStr;
-        if (!signature && signedTxStr) {
-          const rawBytes = bs58.decode(signedTxStr);
-          try {
-            signature = await withSolanaRetry(async () => {
-              return await connection.sendRawTransaction(rawBytes, {
-                skipPreflight: true,
-                maxRetries: 5,
-                preflightCommitment: "confirmed",
-              });
-            });
-          } catch (sendErr: any) {
-            const sendErrStr = (sendErr?.message || "").toLowerCase();
-            if (sendErrStr.includes("already been processed") || sendErrStr.includes("0x0")) {
-              const tx = Transaction.from(rawBytes);
-              signature = bs58.encode(tx.signatures[0]?.signature || (tx as any).signature);
-            } else {
-              throw sendErr;
-            }
-          }
-        }
-
-        if (signature) {
-          await confirmTransactionRobust(connection, signature);
-
-          const subDetails: Subscription = {
-            moduleId: pendingAction.moduleId,
-            isSubscribed: true,
-            expiresAt: pendingAction.expiresAt,
-            isCancelled: false,
-            txSignature: signature,
-            planId: pendingAction.planId,
-          };
-
-          localStorage.removeItem(`street_sync_cancelled_${pendingAction.walletKey}_${pendingAction.moduleId}`);
-          safeLocalStorageSet(
-            `street_sync_sub_${pendingAction.walletKey}_${pendingAction.moduleId}`,
-            JSON.stringify(subDetails)
-          );
-          setSubscriptions((prev) => ({ ...prev, [pendingAction.moduleId]: subDetails }));
-
-          // Persist to Firestore asynchronously (non-blocking)
-          setDoc(doc(db, "subscriptions", `${pendingAction.walletKey}_${pendingAction.moduleId}`), {
-            walletAddress: pendingAction.walletKey,
-            moduleId: pendingAction.moduleId,
-            planId: pendingAction.planId,
-            expiresAt: pendingAction.expiresAt,
-            txSignature: signature,
-            isCancelled: false,
-            updatedAt: Date.now(),
-          }).catch((fsErr) => {
-            console.warn("Firestore mobile return save note:", fsErr);
-          });
-
-          // Immediately dismiss all modals and loading toasts
-          setShowModal(false);
-          window.dispatchEvent(new CustomEvent("street_sync_close_all_modals"));
-          window.dispatchEvent(new CustomEvent("subscription_updated", { detail: subDetails }));
-          window.dispatchEvent(new Event("storage"));
-
-          if (toastId) toast.dismiss(toastId);
-          toast.dismiss();
-          toast.success(
-            `Successfully Subscribed to ${MODULE_NAMES[pendingAction.moduleId] || "Pro"} (${pendingAction.planName || "Plan"})!`
-          );
-
-          // Clear mobile resumption storage
-          localStorage.removeItem("street_sync_pending_subscription");
-          localStorage.removeItem("street_sync_last_signed_tx");
-          localStorage.removeItem("street_sync_last_tx_signature");
-          localStorage.removeItem("phantom_mobile_return_url");
-
-          // Reroute mobile user directly to the module's Pro dashboard
-          if (typeof window !== "undefined") {
-            window.location.href = targetProRoute;
-          }
-        }
+        await resumePendingTransactions(connection);
       } catch (err: any) {
-        console.error("Failed to broadcast returned mobile subscription tx:", err);
-        if (toastId) toast.dismiss(toastId);
-        toast.dismiss();
-
-        // Check if user is actually subscribed despite error/timeout
-        if (subscriptions[pendingAction.moduleId]?.isSubscribed) {
-          setShowModal(false);
-          if (typeof window !== "undefined") {
-            window.location.href = targetProRoute;
-          }
-        } else {
-          toast.error("Subscription transaction note: " + (err?.message || "Please check status"));
-        }
-      } finally {
-        if (toastSafetyTimer) clearTimeout(toastSafetyTimer);
-        if (toastId) toast.dismiss(toastId);
-        toast.dismiss();
-        localStorage.removeItem("street_sync_pending_subscription");
-        localStorage.removeItem("street_sync_last_signed_tx");
-        localStorage.removeItem("street_sync_last_tx_signature");
-        localStorage.removeItem("phantom_mobile_return_url");
+        console.warn("[SubscriptionContext] Resumption delegate note:", err);
       }
     };
 
@@ -519,9 +414,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     const handleSubUpdated = (e: any) => {
       const detail = e?.detail;
       if (detail && detail.moduleId) {
+        const effectiveWallet = getEffectiveWalletAddress(publicKey);
+        if (effectiveWallet) {
+          if (!walletSubCache.current[effectiveWallet]) {
+            walletSubCache.current[effectiveWallet] = {};
+          }
+          walletSubCache.current[effectiveWallet][detail.moduleId] = detail;
+        }
         setSubscriptions((prev) => ({ ...prev, [detail.moduleId]: detail }));
       }
-      loadSubscriptions();
     };
     const handleCloseAll = () => {
       setShowModal(false);
@@ -842,12 +743,24 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (effectiveWallet === MERCHANT_WALLET) {
       return true;
     }
+    const now = Date.now();
     const sub = subscriptions[moduleId];
-    if (!sub) return false;
-    if (!sub.isSubscribed) return false;
-    if (sub.isCancelled) return false;
-    if (sub.expiresAt && Date.now() > sub.expiresAt) return false;
-    return true;
+    if (sub && sub.isSubscribed && !sub.isCancelled && (!sub.expiresAt || now <= sub.expiresAt)) {
+      return true;
+    }
+    // Synchronous fallback to localStorage for instant hydration on page load without render flash
+    if (effectiveWallet && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem(`street_sync_sub_${effectiveWallet}_${moduleId}`);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.isSubscribed && !parsed.isCancelled && (!parsed.expiresAt || now <= parsed.expiresAt)) {
+            return true;
+          }
+        }
+      } catch {}
+    }
+    return false;
   }, [subscriptions, publicKey]);
 
   const openSubscriptionModal = (moduleId: string) => {
