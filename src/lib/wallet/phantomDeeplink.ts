@@ -115,26 +115,28 @@ export function disconnectPhantomMobileSession(): void {
 export function getMobileRedirectLink(customRedirectUrl?: string): string {
   if (typeof window === "undefined") return "https://streetsync-ss.com/";
   const currentUrl = customRedirectUrl || window.location.href;
-  if (isStandaloneApp()) {
-    try {
-      const urlObj = new URL(currentUrl);
-      const cleanPath = urlObj.pathname.replace(/^\//, "");
-      return cleanPath ? `streetsync://${cleanPath}` : "streetsync://callback";
-    } catch {
-      return "streetsync://callback";
-    }
-  }
+  
+  let urlObj: URL;
   try {
-    const urlObj = new URL(currentUrl);
-    // If not production domain (e.g. localhost, 127.0.0.1, or local IP), use production domain
-    // so Phantom accepts the universal link and matches app_url
-    if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1" || !currentUrl.startsWith("https://")) {
-      return `https://streetsync-ss.com${urlObj.pathname}`;
-    }
-    return currentUrl.split("#")[0].split("?")[0];
+    urlObj = new URL(currentUrl, window.location.origin);
   } catch {
-    return "https://streetsync-ss.com/";
+    urlObj = new URL("https://streetsync-ss.com/");
   }
+
+  const cleanPath = urlObj.pathname.replace(/^\//, "");
+
+  if (isStandaloneApp()) {
+    return cleanPath ? `streetsync://${cleanPath}` : "streetsync://callback";
+  }
+
+  // Mobile Web Browser:
+  // If not production domain (e.g. localhost, 127.0.0.1, or local IP), use production domain
+  // so Phantom accepts the universal link and matches app_url
+  if (urlObj.hostname === "localhost" || urlObj.hostname === "127.0.0.1" || !urlObj.origin.startsWith("https://")) {
+    return cleanPath ? `https://streetsync-ss.com/${cleanPath}` : "https://streetsync-ss.com/";
+  }
+
+  return cleanPath ? `${urlObj.origin}/${cleanPath}` : `${urlObj.origin}/`;
 }
 
 /**
@@ -328,7 +330,10 @@ export function initiatePhantomMobileSignTransaction(
     sharedSecret
   );
 
-  const currentUrl = customRedirectUrl || window.location.href;
+  const storedReturn = (typeof window !== "undefined")
+    ? (localStorage.getItem("phantom_mobile_return_url") || sessionStorage.getItem("phantom_mobile_return_url"))
+    : null;
+  const currentUrl = customRedirectUrl || storedReturn || window.location.href;
   try {
     sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
     localStorage.setItem("phantom_mobile_return_url", currentUrl);
@@ -340,6 +345,7 @@ export function initiatePhantomMobileSignTransaction(
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
+    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";
@@ -380,7 +386,10 @@ export function initiatePhantomMobileSignAllTransactions(
     sharedSecret
   );
 
-  const currentUrl = customRedirectUrl || window.location.href;
+  const storedReturn = (typeof window !== "undefined")
+    ? (localStorage.getItem("phantom_mobile_return_url") || sessionStorage.getItem("phantom_mobile_return_url"))
+    : null;
+  const currentUrl = customRedirectUrl || storedReturn || window.location.href;
   try {
     sessionStorage.setItem("phantom_mobile_return_url", currentUrl);
     localStorage.setItem("phantom_mobile_return_url", currentUrl);
@@ -392,6 +401,7 @@ export function initiatePhantomMobileSignAllTransactions(
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
+    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";
@@ -503,11 +513,11 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
     const errMsg = errorMessage || `Error ${errorCode}`;
     console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errMsg}`);
 
-    // If unauthorized (4100), decryption failure, or session expired/invalid (-32603),
+    // If unauthorized (4100), decryption failure, or session invalid,
     // the Phantom session is dead/stale. Purge it immediately so the user is never trapped in a bounce loop!
+    // NOTE: -32603 is standard JSON-RPC Internal Error (e.g. simulation rejection, user declined) - NOT a dead session!
     const isSessionDead =
       String(errorCode) === "4100" ||
-      String(errorCode) === "-32603" ||
       errMsg.toLowerCase().includes("unauthorized") ||
       errMsg.toLowerCase().includes("session") ||
       errMsg.toLowerCase().includes("decrypt");

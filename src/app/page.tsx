@@ -47,12 +47,14 @@ function StreetSyncContent() {
       }
     };
 
-    // Only forward if user is actively returning from a mobile wallet deep link callback with payload params
+    // Check if user is returning from a mobile wallet deep link (search params or recently decrypted payload in storage)
     const hasDeeplinkCallbackParams = typeof window !== "undefined" && (
       window.location.search.includes("phantom_encryption_public_key") ||
       window.location.search.includes("nonce") ||
       window.location.search.includes("data") ||
-      window.location.search.includes("errorCode")
+      window.location.search.includes("errorCode") ||
+      Boolean(localStorage.getItem("street_sync_last_signed_tx")) ||
+      Boolean(localStorage.getItem("street_sync_last_tx_signature"))
     );
 
     if (hasDeeplinkCallbackParams) {
@@ -73,6 +75,13 @@ function StreetSyncContent() {
           localStorage.removeItem("phantom_mobile_return_url");
           window.location.href = "/sessions";
           return;
+        }
+        if (returnUrl && returnUrl !== "/" && returnUrl !== window.location.href) {
+          const target = returnUrl.startsWith("http") ? new URL(returnUrl, window.location.origin).pathname : returnUrl;
+          if (target && target !== "/") {
+            window.location.href = target;
+            return;
+          }
         }
       } catch {}
     } else {

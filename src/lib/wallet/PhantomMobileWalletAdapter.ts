@@ -325,7 +325,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       }, 5 * 60 * 1000);
 
       try {
-        initiatePhantomMobileSignTransaction(serializedBytes);
+        const returnTarget = (typeof window !== "undefined")
+          ? (localStorage.getItem("phantom_mobile_return_url") || window.location.href)
+          : undefined;
+        initiatePhantomMobileSignTransaction(serializedBytes, returnTarget);
       } catch (err) {
         cleanup();
         reject(err);
@@ -417,7 +420,10 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
       }, 5 * 60 * 1000);
 
       try {
-        initiatePhantomMobileSignAllTransactions(serializedList);
+        const returnTarget = (typeof window !== "undefined")
+          ? (localStorage.getItem("phantom_mobile_return_url") || window.location.href)
+          : undefined;
+        initiatePhantomMobileSignAllTransactions(serializedList, returnTarget);
       } catch (err) {
         cleanup();
         reject(err);

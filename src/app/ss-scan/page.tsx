@@ -24,6 +24,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { resolveNftImageUrl, handleImageFallback } from "@/utils/nftImageResolver";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
+import { ModuleSubscriptionWidget } from "@/components/global/subscription/ModuleSubscriptionWidget";
 import toast from "react-hot-toast";
 
 // Transaction Data Models
@@ -611,6 +612,7 @@ export default function SSScanPage() {
 
         {/* Sync Controls */}
         <div className="relative z-10 shrink-0 flex flex-row items-center gap-2.5 self-start md:self-center">
+          <ModuleSubscriptionWidget moduleId="ss-scan" />
           <button
             type="button"
             onClick={loadAllHistory}

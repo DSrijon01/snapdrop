@@ -13,6 +13,7 @@ import { savePendingAction, recordActionSuccess, clearPendingAction, setInFlight
 import idl from '@/idl/e_plays.json';
 import toast from 'react-hot-toast';
 import { MarketCard, Market } from '@/components/features/e-plays/MarketCard';
+import { ModuleSubscriptionWidget } from '@/components/global/subscription/ModuleSubscriptionWidget';
 
 
 type Position = {
@@ -950,6 +951,7 @@ export default function EPlaysPage() {
         </div>
         
         <div className="flex flex-col sm:flex-row items-center gap-4">
+          <ModuleSubscriptionWidget moduleId="e-plays" />
           <div className="flex bg-muted/60 p-1 border border-border/60 rounded-xl backdrop-blur-sm">
             <button
               onClick={() => setActiveTab('markets')}

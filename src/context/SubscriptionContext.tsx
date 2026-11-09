@@ -629,7 +629,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       };
       safeLocalStorageSet("street_sync_pending_subscription", JSON.stringify(pendingSub));
       if (typeof window !== "undefined") {
-        safeLocalStorageSet("phantom_mobile_return_url", window.location.href);
+        safeLocalStorageSet("phantom_mobile_return_url", targetProRoute);
+        safeLocalStorageSet("street_sync_last_subscribed_route", targetProRoute);
       }
       savePendingAction("SUBSCRIPTION_BUY", pendingSub);
 

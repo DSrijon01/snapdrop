@@ -35,8 +35,7 @@ export function OpenClawPro() {
     );
   }
 
-  // Paywall bypassed; components preserved intact
-  const access = true;
+  const access = hasAccess("openclaw");
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">

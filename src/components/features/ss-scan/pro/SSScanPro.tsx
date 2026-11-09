@@ -348,8 +348,7 @@ export function SSScanPro() {
     );
   }
 
-  // Paywall bypassed; components preserved intact
-  const access = true;
+  const access = hasAccess("ss-scan");
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-20 relative overflow-hidden flex flex-col items-center">

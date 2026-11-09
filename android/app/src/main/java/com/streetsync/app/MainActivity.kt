@@ -122,9 +122,12 @@ class MainActivity : ComponentActivity() {
                     val js = """
                         (function() {
                             window.dispatchEvent(new CustomEvent('street_sync_close_all_modals'));
-                            if ('$fullPath' === 'sessions' && !window.location.pathname.includes('/sessions')) {
-                                window.history.pushState({}, document.title, '/sessions');
-                                window.dispatchEvent(new Event('popstate'));
+                            if ('$fullPath'.length > 0 && '$fullPath' !== 'callback') {
+                                const targetPath = '/' + '$fullPath';
+                                if (!window.location.pathname.includes(targetPath)) {
+                                    window.history.pushState({}, document.title, targetPath);
+                                    window.dispatchEvent(new Event('popstate'));
+                                }
                             }
                             if (window.__handlePhantomDeepLink) {
                                 window.__handlePhantomDeepLink('$fullDeepLink');
@@ -157,9 +160,17 @@ class MainActivity : ComponentActivity() {
                 val currentUrl = webView.url
                 if (isWalletCallback && !currentUrl.isNullOrBlank() && !currentUrl.startsWith("data:") && !currentUrl.startsWith("about:")) {
                     val fullDeepLink = uri.toString().replace("\\", "\\\\").replace("'", "\\'")
+                    val pathPart = uri.path?.removePrefix("/") ?: ""
                     val js = """
                         (function() {
                             window.dispatchEvent(new CustomEvent('street_sync_close_all_modals'));
+                            if ('$pathPart'.length > 0 && '$pathPart' !== 'callback') {
+                                const targetPath = '/' + '$pathPart';
+                                if (!window.location.pathname.includes(targetPath)) {
+                                    window.history.pushState({}, document.title, targetPath);
+                                    window.dispatchEvent(new Event('popstate'));
+                                }
+                            }
                             if (window.__handlePhantomDeepLink) {
                                 window.__handlePhantomDeepLink('$fullDeepLink');
                             } else {
