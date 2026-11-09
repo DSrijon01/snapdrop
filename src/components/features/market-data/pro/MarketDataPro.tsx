@@ -6,7 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { 
   ArrowLeft, ShieldAlert, Sparkles, Zap, CheckCircle2, DollarSign, Activity, Percent,
   MessageSquare, Bell, Wallet, Send, ChevronLeft, ChevronRight, PlusCircle, Trash2, 
-  Settings, RefreshCw, BarChart2, PieChart, Info, HelpCircle, Link as LinkIcon, Paperclip, Wrench
+  Settings, RefreshCw, BarChart2, PieChart, Info, HelpCircle, Link as LinkIcon, Paperclip, Wrench,
+  Smartphone, ExternalLink
 } from "lucide-react";
 import Link from "next/link";
 import { Logo } from "@/components/global/theme-logo/Logo";
@@ -21,6 +22,7 @@ import { getOpenClawConfig } from "@/lib/openclaw/skillsStore";
 import { executeOpenClawChat } from "@/lib/openclaw/clientChat";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
+import { openInPhantomBrowser } from "@/lib/wallet/phantomDeeplink";
 
 // ==========================================
 // CUSTOM CHAT MESSAGE TYPE
@@ -1057,6 +1059,22 @@ export function MarketDataPro() {
                     >
                       Choose Plan & Unlock Pro
                     </button>
+
+                    {typeof window !== "undefined" &&
+                      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
+                      !Boolean((window as any).phantom?.solana) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openInPhantomBrowser(window.location.href);
+                          }}
+                          className="w-full py-3 bg-[#AB9FF2]/15 hover:bg-[#AB9FF2]/25 active:scale-[0.99] text-[#AB9FF2] border border-[#AB9FF2]/30 rounded-xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all font-display cursor-pointer"
+                        >
+                          <Smartphone className="w-4 h-4" />
+                          <span>Open in Phantom Wallet App</span>
+                          <ExternalLink className="w-3 h-3 opacity-60 ml-0.5" />
+                        </button>
+                      )}
                     
                     <button
                       onClick={() => {

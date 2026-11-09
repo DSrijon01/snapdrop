@@ -324,7 +324,15 @@ const PhantomMobileRedirectWatcher: FC = () => {
           console.warn("[PhantomMobileRedirectWatcher] Devnet connection error:", connErr);
         }
       } else if (res.type === "error") {
-        toast.error(res.error || "Connection or transaction cancelled in Phantom.");
+        const rawErr = res.error || "Connection or transaction cancelled in Phantom.";
+        if (rawErr.toLowerCase().includes("unexpected error") || rawErr.includes("-32603")) {
+          toast.error(
+            "Phantom Simulation Error: Please ensure Phantom is set to Solana Devnet (Phantom ⚙️ ➔ Developer Settings ➔ Solana Devnet) and retry.",
+            { duration: 6000 }
+          );
+        } else {
+          toast.error(rawErr);
+        }
       }
     } else {
       // Also check if a signed transaction is waiting to be broadcast

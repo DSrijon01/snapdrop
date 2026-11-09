@@ -156,7 +156,7 @@ export function openInPhantomBrowser(targetUrl?: string): void {
   } catch {}
 
   const appOrigin = "https://streetsync-ss.com";
-  const browseUrl = `https://phantom.com/ul/browse/${encodeURIComponent(resolvedUrl)}?ref=${encodeURIComponent(appOrigin)}`;
+  const browseUrl = `https://phantom.app/ul/browse/${encodeURIComponent(resolvedUrl)}?ref=${encodeURIComponent(appOrigin)}`;
   window.location.href = browseUrl;
 }
 
@@ -234,7 +234,7 @@ export function initiateMobileWalletConnect(
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/connect"
-      : "https://phantom.com/ul/v1/connect";
+      : "https://phantom.app/ul/v1/connect";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -340,18 +340,24 @@ export function initiatePhantomMobileSignTransaction(
   } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
 
+  const appUrl = (typeof window !== "undefined" && window.location.origin.startsWith("https://"))
+    ? window.location.origin
+    : "https://streetsync-ss.com";
+
   const params = new URLSearchParams({
+    app_url: appUrl,
     dapp_encryption_public_key: dappPubKeyStr,
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
+    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signTransaction"
-      : "https://phantom.com/ul/v1/signTransaction";
+      : "https://phantom.app/ul/v1/signTransaction";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -395,18 +401,24 @@ export function initiatePhantomMobileSignAllTransactions(
   } catch {}
   const redirectLink = getMobileRedirectLink(currentUrl);
 
+  const appUrl = (typeof window !== "undefined" && window.location.origin.startsWith("https://"))
+    ? window.location.origin
+    : "https://streetsync-ss.com";
+
   const params = new URLSearchParams({
+    app_url: appUrl,
     dapp_encryption_public_key: dappPubKeyStr,
     nonce: bs58.encode(nonce),
     redirect_link: redirectLink,
     payload: bs58.encode(encryptedPayload),
+    cluster: "devnet",
   });
 
   const walletType = session.walletType || "phantom";
   const baseUrl =
     walletType === "solflare"
       ? "https://solflare.com/ul/v1/signAllTransactions"
-      : "https://phantom.com/ul/v1/signAllTransactions";
+      : "https://phantom.app/ul/v1/signAllTransactions";
 
   window.location.href = `${baseUrl}?${params.toString()}`;
 }
@@ -511,14 +523,15 @@ export function processPhantomMobileRedirect(customUrlOrQuery?: string): MobileR
     const errMsg = errorMessage || `Error ${errorCode}`;
     console.warn(`[MobileDeeplink] Mobile action rejected or failed (${errorCode}): ${errMsg}`);
 
-    // If unauthorized (4100), decryption failure, or session invalid,
-    // the Phantom session is dead/stale. Purge it immediately so the user is never trapped in a bounce loop!
-    // NOTE: -32603 is standard JSON-RPC Internal Error (e.g. simulation rejection, user declined) - NOT a dead session!
+    // If unauthorized (4100), decryption failure, session invalid, or internal unexpected error (-32603),
+    // the Phantom session is dead/stale or network-mismatched. Purge it so the user is never trapped in a bounce loop!
     const isSessionDead =
       String(errorCode) === "4100" ||
+      String(errorCode) === "-32603" ||
       errMsg.toLowerCase().includes("unauthorized") ||
       errMsg.toLowerCase().includes("session") ||
-      errMsg.toLowerCase().includes("decrypt");
+      errMsg.toLowerCase().includes("decrypt") ||
+      errMsg.toLowerCase().includes("unexpected error");
 
     if (isSessionDead) {
       console.warn("[MobileDeeplink] Stale/unauthorized mobile session detected. Purging session.");

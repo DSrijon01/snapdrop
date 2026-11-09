@@ -24,6 +24,7 @@ import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { SubscriptionCountdownCards } from "@/components/global/subscription/SubscriptionCountdown";
+import { MobileSubscriptionActions } from "@/components/global/subscription/MobileSubscriptionActions";
 import { getStoredPhantomSession, openInPhantomBrowser } from "@/lib/wallet/phantomDeeplink";
 
 export const SubscriptionModal: React.FC = () => {
@@ -387,26 +388,53 @@ export const SubscriptionModal: React.FC = () => {
                         </button>
                       </div>
                     ) : (
-                      <button
-                        onClick={handleSubscribe}
-                        className="w-full py-3.5 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-primary/20 font-display"
-                      >
-                        <span>
-                          Subscribe Now ({currentPlan.priceSol} SOL / {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"})
-                        </span>
-                      </button>
+                      <>
+                        {/* Mobile Responsive Dedicated Actions */}
+                        <div className="block sm:hidden">
+                          <MobileSubscriptionActions
+                            moduleId={activeModuleId}
+                            planName={currentPlan.name}
+                            priceSol={currentPlan.priceSol}
+                            durationDays={currentPlan.durationDays}
+                            submitting={submitting}
+                            isSubscribed={isSubscribed}
+                            onSubscribe={handleSubscribe}
+                            onClose={handleClose}
+                            onEnterPro={() => {
+                              handleClose();
+                              const proPath = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+                              router.push(proPath);
+                            }}
+                            onCancelClick={() => setShowCancelConfirm(true)}
+                          />
+                        </div>
+
+                        {/* Desktop Standard Action */}
+                        <div className="hidden sm:block">
+                          <button
+                            onClick={handleSubscribe}
+                            className="w-full py-3.5 bg-primary text-primary-foreground hover:scale-[1.01] active:scale-[0.99] rounded-2xl flex items-center justify-center gap-2 font-bold uppercase tracking-wider text-xs transition-all focus:outline-none shadow-lg shadow-primary/20 font-display"
+                          >
+                            <span>
+                              Subscribe Now ({currentPlan.priceSol} SOL / {currentPlan.durationDays} {currentPlan.durationDays === 1 ? "Day" : "Days"})
+                            </span>
+                          </button>
+                        </div>
+                      </>
                     )}
 
                     {/* Phantom In-App Browser Direct Fallback for mobile browsers */}
                     {typeof window !== "undefined" &&
                       /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) &&
                       !Boolean((window as any).phantom?.solana) && (
-                        <div className="pt-2 text-center">
+                        <div className="hidden sm:block pt-2 text-center">
                           <button
                             type="button"
                             onClick={() => {
                               handleClose();
-                              openInPhantomBrowser();
+                              const targetPro = `/${activeModuleId}/${activeModuleId.replace(/-/g, "")}-pro`;
+                              const fullUrl = `${window.location.origin}${targetPro}`;
+                              openInPhantomBrowser(fullUrl);
                             }}
                             className="text-[11px] font-mono text-muted-foreground hover:text-primary transition-colors inline-flex items-center justify-center gap-1.5 mx-auto py-1 px-2 rounded-lg hover:bg-muted/50"
                           >

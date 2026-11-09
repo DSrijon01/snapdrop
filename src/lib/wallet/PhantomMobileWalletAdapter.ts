@@ -23,6 +23,7 @@ import {
   disconnectPhantomMobileSession,
 } from "./phantomDeeplink";
 import { isStandaloneApp } from "@/utils/isStandaloneApp";
+import { HELIUS_DEVNET_RPC } from "@/utils/solanaRpc";
 
 export const PhantomMobileWalletName = "Phantom" as WalletName<"Phantom">;
 
@@ -257,11 +258,20 @@ export class PhantomMobileWalletAdapter extends BaseMessageSignerWalletAdapter {
 
     const isVersioned = "version" in (transaction as any);
 
-    // Ensure feePayer is set for standard transaction if missing
+    // Ensure feePayer and recentBlockhash are set for standard transaction if missing
     if (!isVersioned) {
       const tx = transaction as Transaction;
       if (!tx.feePayer) {
         tx.feePayer = this._publicKey;
+      }
+      if (!tx.recentBlockhash) {
+        try {
+          const devnetConn = new Connection(HELIUS_DEVNET_RPC, "confirmed");
+          const { blockhash } = await devnetConn.getLatestBlockhash("confirmed");
+          tx.recentBlockhash = blockhash;
+        } catch (bhErr) {
+          console.warn("[PhantomMobileAdapter] Blockhash auto-sync note:", bhErr);
+        }
       }
     }
 
