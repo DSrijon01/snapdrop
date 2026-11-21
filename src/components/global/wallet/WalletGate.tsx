@@ -2,6 +2,7 @@
 
 import { useWallet } from "@solana/wallet-adapter-react";
 import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { ClientWalletMultiButton as WalletMultiButton } from "@/components/global/wallet/ClientWalletMultiButton";
 import { getStoredPhantomSession } from "@/lib/wallet/phantomDeeplink";
 
@@ -19,6 +20,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
   const hasConnected = useRef(false);
   const [showExitMessage, setShowExitMessage] = useState(false);
   const [itemIndex, setItemIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -35,6 +37,27 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
       };
     }
   }, []);
+
+  // Preload bot avatar images to eliminate any flickering during auto-cycling
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      BOT_ITEMS.forEach((item) => {
+        const img = new Image();
+        img.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${item.seed}&backgroundColor=transparent`;
+      });
+    }
+  }, []);
+
+  // Auto-animate across bot items with a brief time pause (3 seconds)
+  useEffect(() => {
+    if (isPaused) return;
+
+    const timer = setTimeout(() => {
+      setItemIndex((prev) => (prev + 1) % BOT_ITEMS.length);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, [itemIndex, isPaused]);
 
   const isUserConnected = connected || hasMobileSession;
 
@@ -65,19 +88,30 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
           <div className="lg:hidden flex items-center justify-center mb-4">
             <div 
               onClick={cycleNext}
-              className="relative cursor-pointer flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/80 border border-border shadow-sm active:scale-95 transition-transform"
+              className="relative cursor-pointer flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-secondary/80 border border-border shadow-sm active:scale-95 transition-transform"
             >
-              <img
-                src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
-                alt="Street Sync Bot"
-                width={28}
-                height={28}
-                className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
-              />
-              <span className="text-[11px] font-black uppercase tracking-widest font-display text-foreground">
-                {BOT_ITEMS[itemIndex].word}
-              </span>
-              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={itemIndex}
+                  initial={{ opacity: 0, y: 4, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -4, scale: 0.92 }}
+                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  className="flex items-center gap-2"
+                >
+                  <img
+                    src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
+                    alt="Street Sync Bot"
+                    width={28}
+                    height={28}
+                    className="w-7 h-7 object-contain drop-shadow-[0_0_8px_rgba(255,24,1,0.5)]"
+                  />
+                  <span className="text-[11px] font-black uppercase tracking-widest font-display text-foreground">
+                    {BOT_ITEMS[itemIndex].word}
+                  </span>
+                </motion.div>
+              </AnimatePresence>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
             </div>
           </div>
 
@@ -97,7 +131,11 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
         </div>
 
         {/* Animated Bottts Robot Avatar on the Right (Desktop Only) */}
-        <div className="hidden lg:flex flex-col items-center justify-center shrink-0">
+        <div 
+          className="hidden lg:flex flex-col items-center justify-center shrink-0"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           <div 
             onClick={cycleNext}
             title="Click to cycle"
@@ -106,42 +144,75 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
             {/* Glowing Backdrop Ring */}
             <div className="absolute inset-0 bg-primary/25 dark:bg-primary/35 blur-3xl rounded-full scale-125 pointer-events-none -z-10 animate-pulse" />
 
-            {/* Avatar Image using exact DiceBear bottts API, scaled larger */}
-            <img
-              src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
-              alt="Street Sync Bot"
-              width={224}
-              height={224}
-              className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain drop-shadow-[0_0_25px_rgba(255,24,1,0.5)] dark:drop-shadow-[0_0_35px_rgba(255,24,1,0.7)] animate-bounce group-hover:scale-110 transition-transform duration-300 pointer-events-auto"
-            />
+            {/* Avatar Image using exact DiceBear bottts API with smooth transition */}
+            <div className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 flex items-center justify-center relative">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={itemIndex}
+                  initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.88, y: -8 }}
+                  transition={{ duration: 0.32, ease: "easeOut" }}
+                  className="w-full h-full flex items-center justify-center"
+                >
+                  <img
+                    src={`https://api.dicebear.com/7.x/bottts/svg?seed=${BOT_ITEMS[itemIndex].seed}&backgroundColor=transparent`}
+                    alt="Street Sync Bot"
+                    width={224}
+                    height={224}
+                    className="w-40 h-40 sm:w-48 sm:h-48 md:w-56 md:h-56 object-contain drop-shadow-[0_0_25px_rgba(255,24,1,0.5)] dark:drop-shadow-[0_0_35px_rgba(255,24,1,0.7)] animate-bounce group-hover:scale-110 transition-transform duration-300 pointer-events-auto"
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-            {/* Dynamic Street Sync Keyword Badge (changes on click) */}
+            {/* Dynamic Street Sync Keyword Badge (changes on auto or click) */}
             <div className="mt-4 flex flex-col items-center gap-2">
               <div className="px-6 py-2 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-md flex items-center gap-2.5 text-sm font-black uppercase tracking-widest font-display text-foreground transition-all group-hover:border-primary/50 group-hover:scale-105">
                 <span className="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0 drop-shadow-[0_0_6px_rgba(255,24,1,0.8)]" />
-                <span className="text-foreground font-black tracking-widest font-display">
-                  {BOT_ITEMS[itemIndex].word}
-                </span>
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={itemIndex}
+                    initial={{ opacity: 0, y: 5 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -5 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-foreground font-black tracking-widest font-display min-w-[70px] text-center inline-block"
+                  >
+                    {BOT_ITEMS[itemIndex].word}
+                  </motion.span>
+                </AnimatePresence>
               </div>
 
               {/* All keywords strip with active one highlighted */}
               <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider font-display">
-                {BOT_ITEMS.map((item, idx) => (
-                  <span
-                    key={item.word}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setItemIndex(idx);
-                    }}
-                    className={`px-2 py-0.5 rounded transition-all cursor-pointer ${
-                      idx === itemIndex
-                        ? "text-primary bg-primary/10 border border-primary/30"
-                        : "text-muted-foreground/60 hover:text-foreground"
-                    }`}
-                  >
-                    {item.word}
-                  </span>
-                ))}
+                {BOT_ITEMS.map((item, idx) => {
+                  const isActive = idx === itemIndex;
+                  return (
+                    <button
+                      key={item.word}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setItemIndex(idx);
+                      }}
+                      className={`relative px-2 py-0.5 rounded transition-all cursor-pointer ${
+                        isActive
+                          ? "text-primary font-black"
+                          : "text-muted-foreground/60 hover:text-foreground"
+                      }`}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="activeKeyword"
+                          className="absolute inset-0 bg-primary/10 border border-primary/30 rounded"
+                          transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                        />
+                      )}
+                      <span className="relative z-10">{item.word}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
