@@ -48,13 +48,13 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Auto-animate across bot items with a brief time pause (3 seconds)
+  // Auto-animate across bot items with a fast, snappy pause (1.6 seconds)
   useEffect(() => {
     if (isPaused) return;
 
     const timer = setTimeout(() => {
       setItemIndex((prev) => (prev + 1) % BOT_ITEMS.length);
-    }, 3000);
+    }, 1600);
 
     return () => clearTimeout(timer);
   }, [itemIndex, isPaused]);
@@ -93,10 +93,10 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={itemIndex}
-                  initial={{ opacity: 0, y: 4, scale: 0.92 }}
+                  initial={{ opacity: 0, y: 3, scale: 0.94 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -4, scale: 0.92 }}
-                  transition={{ duration: 0.25, ease: "easeInOut" }}
+                  exit={{ opacity: 0, y: -3, scale: 0.94 }}
+                  transition={{ duration: 0.16, ease: "easeOut" }}
                   className="flex items-center gap-2"
                 >
                   <img
@@ -149,10 +149,10 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
               <AnimatePresence mode="wait">
                 <motion.div
                   key={itemIndex}
-                  initial={{ opacity: 0, scale: 0.88, y: 8 }}
+                  initial={{ opacity: 0, scale: 0.9, y: 6 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.88, y: -8 }}
-                  transition={{ duration: 0.32, ease: "easeOut" }}
+                  exit={{ opacity: 0, scale: 0.9, y: -6 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
                   className="w-full h-full flex items-center justify-center"
                 >
                   <img
@@ -173,10 +173,10 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
                 <AnimatePresence mode="wait">
                   <motion.span
                     key={itemIndex}
-                    initial={{ opacity: 0, y: 5 }}
+                    initial={{ opacity: 0, y: 4 }}
                     animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -5 }}
-                    transition={{ duration: 0.2 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.14 }}
                     className="text-foreground font-black tracking-widest font-display min-w-[70px] text-center inline-block"
                   >
                     {BOT_ITEMS[itemIndex].word}
@@ -206,7 +206,7 @@ export function WalletGate({ children }: { children: React.ReactNode }) {
                         <motion.span
                           layoutId="activeKeyword"
                           className="absolute inset-0 bg-primary/10 border border-primary/30 rounded"
-                          transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                          transition={{ type: "spring", stiffness: 550, damping: 28 }}
                         />
                       )}
                       <span className="relative z-10">{item.word}</span>
