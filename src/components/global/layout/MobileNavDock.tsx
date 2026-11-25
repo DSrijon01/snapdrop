@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { SolanaLogo } from "@/components/global/theme-logo/SolanaLogo";
+import { MobileIdentityStreakCard } from "@/components/responsive/MobileIdentityStreakCard";
 import toast from "react-hot-toast";
 
 interface NavTab {
@@ -264,36 +265,14 @@ export function MobileNavDock() {
 
               {/* Scrollable Body */}
               <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                {/* User Identity Banner */}
+                {/* User Identity + Daily Login Streak & Level Progression Card */}
                 {publicKey && (
-                  <div className="p-3.5 rounded-2xl bg-secondary/40 border border-border flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={`https://api.dicebear.com/7.x/bottts/svg?seed=${publicKey.toBase58()}&backgroundColor=transparent`}
-                        alt="Avatar"
-                        className="w-10 h-10 rounded-full bg-background border border-border p-1 shrink-0"
-                      />
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-xs font-mono font-bold text-foreground truncate">
-                            {publicKey.toBase58().slice(0, 4)}...{publicKey.toBase58().slice(-4)}
-                          </span>
-                          <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                        </div>
-                        <p className="text-[11px] font-mono text-muted-foreground">
-                          {balance !== null ? `${balance.toFixed(4)} SOL` : "Loading..."}
-                        </p>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={copyAddress}
-                      className="p-2 rounded-xl bg-muted/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                      title="Copy Address"
-                    >
-                      {copied ? <Check size={16} className="text-emerald-500" /> : <Copy size={16} />}
-                    </button>
-                  </div>
+                  <MobileIdentityStreakCard
+                    walletAddress={publicKey.toBase58()}
+                    balance={balance}
+                    copied={copied}
+                    onCopyAddress={copyAddress}
+                  />
                 )}
 
                 {/* Modules Grid */}
