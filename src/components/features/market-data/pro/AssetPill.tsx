@@ -18,8 +18,8 @@ interface AssetPillProps extends TokenData {
 export function AssetPill({ ticker, name, price, change24h, logoBg, description, showDescription }: AssetPillProps) {
   const isPositive = change24h >= 0;
   return (
-    <div className="flex items-center gap-3 p-3 bg-card border border-border/80 rounded-xl hover:bg-secondary/40 transition-all shadow-sm max-w-sm shrink-0">
-      <div className={`w-8 h-8 rounded-full ${logoBg} flex items-center justify-center font-bold text-xs text-white shadow-inner font-mono`}>
+    <div className="flex items-center gap-3 p-3 bg-card border border-border/80 rounded-xl hover:bg-secondary/40 transition-all shadow-sm w-full sm:w-auto sm:max-w-sm">
+      <div className={`w-8 h-8 rounded-full ${logoBg} flex items-center justify-center font-bold text-xs text-white shadow-inner font-mono shrink-0`}>
         {ticker.slice(0, 3)}
       </div>
       <div className="flex-1 min-w-0">
