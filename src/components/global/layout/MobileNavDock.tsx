@@ -25,7 +25,7 @@ import {
   Send,
   MessageSquare as Discord,
   Droplets,
-  ExternalLink,
+  ArrowRight,
 } from "lucide-react";
 import { useSubscription } from "@/context/SubscriptionContext";
 import { SolanaLogo } from "@/components/global/theme-logo/SolanaLogo";
@@ -292,15 +292,21 @@ export function MobileNavDock() {
                           href={item.href}
                           prefetch={true}
                           onClick={() => setIsMenuOpen(false)}
-                          className={`flex items-center justify-between p-3 rounded-xl border transition-all ${
+                          className={`group flex items-center justify-between p-3 rounded-xl border transition-all active:scale-[0.98] ${
                             isActive
-                              ? "bg-primary/10 border-primary/40 text-primary font-bold shadow-sm"
-                              : "bg-muted/30 hover:bg-muted/70 border-border text-foreground"
+                              ? "bg-primary/10 dark:bg-primary/15 border-primary/40 dark:border-primary/50 text-primary font-bold shadow-sm"
+                              : "bg-muted/30 dark:bg-secondary/35 hover:bg-muted/70 dark:hover:bg-secondary/65 border-border dark:border-border/80 text-foreground"
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="p-2 rounded-lg bg-background border border-border shrink-0">
-                              <Icon size={18} className={isActive ? "text-primary" : "text-muted-foreground"} />
+                            <div
+                              className={`p-2 rounded-lg border shrink-0 transition-colors ${
+                                isActive
+                                  ? "bg-primary/15 dark:bg-primary/20 border-primary/30 text-primary"
+                                  : "bg-background dark:bg-background/60 border-border dark:border-border/80 text-muted-foreground group-hover:text-foreground"
+                              }`}
+                            >
+                              <Icon size={18} />
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
@@ -308,7 +314,7 @@ export function MobileNavDock() {
                                   {item.label}
                                 </span>
                                 {isSubscribed && (
-                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/20 text-primary uppercase font-bold">
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-primary/20 dark:bg-primary/25 text-primary uppercase font-bold border border-primary/20">
                                     PRO
                                   </span>
                                 )}
@@ -316,7 +322,15 @@ export function MobileNavDock() {
                               <p className="text-[10px] text-muted-foreground truncate">{item.desc}</p>
                             </div>
                           </div>
-                          <ExternalLink size={14} className="text-muted-foreground/60 shrink-0 ml-2" />
+                          <div
+                            className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ml-2 border transition-all ${
+                              isActive
+                                ? "bg-primary/15 dark:bg-primary/20 border-primary/40 text-primary"
+                                : "bg-primary/10 dark:bg-white/5 border-primary/25 dark:border-white/10 text-primary dark:text-muted-foreground dark:group-hover:text-foreground group-hover:translate-x-0.5"
+                            }`}
+                          >
+                            <ArrowRight size={14} />
+                          </div>
                         </Link>
                       );
                     })}
@@ -326,18 +340,21 @@ export function MobileNavDock() {
                       <Link
                         href="/one-click-launch"
                         onClick={() => setIsMenuOpen(false)}
-                        className="flex items-center justify-between p-3 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive transition-all"
+                        className="group flex items-center justify-between p-3 rounded-xl border border-destructive/40 bg-destructive/10 dark:bg-destructive/15 text-destructive transition-all active:scale-[0.98]"
                       >
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-background border border-destructive/30">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="p-2 rounded-lg bg-background dark:bg-background/60 border border-destructive/30 shrink-0">
                             <ShieldCheck size={18} />
                           </div>
-                          <div>
-                            <span className="text-xs font-black uppercase tracking-wide font-display">
+                          <div className="min-w-0">
+                            <span className="text-xs font-black uppercase tracking-wide font-display block truncate">
                               One Click Launch
                             </span>
-                            <p className="text-[10px] text-destructive/80">Admin Token Deployer</p>
+                            <p className="text-[10px] text-destructive/80 truncate">Admin Token Deployer</p>
                           </div>
+                        </div>
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ml-2 bg-destructive/15 border border-destructive/30 text-destructive group-hover:translate-x-0.5 transition-transform">
+                          <ArrowRight size={14} />
                         </div>
                       </Link>
                     )}
