@@ -45,7 +45,7 @@ export function Sidebar() {
       className="hidden md:flex group sticky top-0 z-40 h-full w-20 hover:w-64 bg-background border-r border-border transition-all duration-300 ease-in-out flex-col overflow-hidden shrink-0"
     >
         {/* User Avatar Area (Highest Element) */}
-        <div className="px-5 border-b border-border shrink-0 bg-secondary/20 flex items-center md:h-[96px] h-[88px]">
+        <div className="px-4 py-3 border-b border-border shrink-0 bg-secondary/20 flex items-center md:min-h-[96px] min-h-[88px]">
           <UserAvatar />
         </div>
 

@@ -3,6 +3,7 @@
 import React from "react";
 import { Copy, Check, TrendingUp, TrendingDown } from "lucide-react";
 import { motion } from "framer-motion";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useDailyStreak } from "@/lib/streak/useDailyStreak";
 
 interface MobileIdentityStreakCardProps {
@@ -22,16 +23,19 @@ export function MobileIdentityStreakCard({
   copied,
   onCopyAddress,
 }: MobileIdentityStreakCardProps) {
+  const { connection } = useConnection();
+  const { publicKey, sendTransaction } = useWallet();
   const {
+    streak,
     levelInfo,
     levelEvent,
     progressPercent,
     daysToNextLevel,
-    simulateNextDay,
-    simulateMissedDay,
-  } = useDailyStreak(walletAddress);
-
-  const isDev = process.env.NODE_ENV === "development";
+  } = useDailyStreak(walletAddress, {
+    connection,
+    publicKey,
+    sendTransaction,
+  });
 
   return (
     <div
@@ -46,7 +50,7 @@ export function MobileIdentityStreakCard({
         className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-15 blur-2xl pointer-events-none"
       />
 
-      {/* Top Row: Robot Avatar + Wallet Address + SOL Balance + Level Pill + Copy */}
+      {/* Top Row: Robot Avatar + Wallet Address + SOL Balance + Solid Level Tab + Copy */}
       <div className="flex items-center justify-between gap-2.5 relative z-10">
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -96,12 +100,12 @@ export function MobileIdentityStreakCard({
         </div>
       </div>
 
-      {/* Bottom Row: Level Progression Bar */}
+      {/* Bottom Row: Level Progression Bar with Day Count */}
       <div className="space-y-1.5 pt-2 border-t border-border/50 relative z-10">
         <div className="flex items-center justify-between text-[10px] font-mono">
           <div className="flex items-center gap-1.5">
             <span className="font-bold text-foreground uppercase tracking-wide">
-              {levelInfo.title}
+              {levelInfo.title} • Day {streak}
             </span>
             {levelEvent === "up" && (
               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-400/50 text-[8px] font-black uppercase">
@@ -135,29 +139,6 @@ export function MobileIdentityStreakCard({
             className="h-full rounded-full"
           />
         </div>
-
-        {/* Dev-only quick controls to test progression on localhost */}
-        {isDev && (
-          <div className="flex items-center justify-end gap-1.5 pt-1">
-            <span className="text-[9px] font-mono text-muted-foreground mr-auto">
-              Streak Test:
-            </span>
-            <button
-              type="button"
-              onClick={simulateNextDay}
-              className="px-2 py-0.5 rounded bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[9px] font-mono font-bold cursor-pointer"
-            >
-              +1 Day
-            </button>
-            <button
-              type="button"
-              onClick={simulateMissedDay}
-              className="px-2 py-0.5 rounded bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 text-[9px] font-mono font-bold cursor-pointer"
-            >
-              Miss Day
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );
